@@ -16,14 +16,29 @@
 
 //! Manta SDK
 
+#![no_std]
+#![cfg_attr(doc_cfg, feature(doc_cfg))]
+#![forbid(rustdoc::broken_intra_doc_links)]
+#![forbid(missing_docs)]
+
+use serde::{Deserialize, Serialize};
+
 /// Manta Pay
 ///
 /// See [`manta-pay`](https://github.com/manta-network/manta-rs) for the definitions.
 pub mod pay {
+    use super::*;
+
     /// Testnet Data
     pub mod testnet {
+        use super::*;
+
         /// Asset Definitions
-        pub mod asset {}
+        pub mod asset {
+            use super::*;
+
+            include!(concat!(env!("OUT_DIR"), "/data/pay/testnet/asset/map.rs"));
+        }
 
         /// Parameters
         pub mod parameters {}

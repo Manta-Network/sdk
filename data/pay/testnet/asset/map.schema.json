@@ -1,0 +1,34 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://manta.network",
+    "title": "AssetIdMapEntry",
+    "description": "Asset Id Map Entry",
+    "type": "object",
+    "properties": {
+        "ticker": {
+            "description": "Asset Ticker Symbol",
+            "type": "string"
+        },
+        "decimal": {
+            "description": "Number of decimal places for a canonical unit of currency",
+            "type": "integer"
+        },
+        "name": {
+            "description": "Asset Name",
+            "type": ["string", "null"]
+        },
+        "logo": {
+            "description": "Path to Asset Logo",
+            "type": ["string", "null"]
+        },
+        "totalSupply": {
+            "description": "Total Supply",
+            "type": ["string", "null"]
+        },
+        "xcmPath": {
+            "description": "XCM Path",
+            "type": ["string", "null"]
+        }
+    },
+    "required": [ "ticker", "decimal" ]
+}

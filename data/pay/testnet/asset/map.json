@@ -1,0 +1,42 @@
+{
+    "0": {
+        "ticker": "DOT",
+        "decimal": 10,
+        "name": null,
+        "logo": null,
+        "totalSupply": null,
+        "xcmPath": null
+    },
+    "1": {
+        "ticker": "KSM",
+        "decimal": 12,
+        "name": null,
+        "logo": null,
+        "totalSupply": null,
+        "xcmPath": null
+    },
+    "2": {
+        "ticker": "BTC",
+        "decimal": 8,
+        "name": null,
+        "logo": null,
+        "totalSupply": null,
+        "xcmPath": null
+    },
+    "3": {
+        "ticker": "ETH",
+        "decimal": 18,
+        "name": null,
+        "logo": null,
+        "totalSupply": null,
+        "xcmPath": null
+    },
+    "4": {
+        "ticker": "ACA",
+        "decimal": 18,
+        "name": null,
+        "logo": null,
+        "totalSupply": null,
+        "xcmPath": null
+    }
+}

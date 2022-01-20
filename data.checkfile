@@ -1,4 +1,5 @@
-1e983e7ae49b653878c2c2e2ce49cfab4a4b00fee6f446702bfc9b049e02f81d  data/pay/testnet/assets.json
+e1f30768e9eaf0993a2bf621e55797ecb8aabf57f49863ecdfa048943fe007f3  data/pay/testnet/asset/map.json
+4952986bfe21142fcd061ccfc22e1cab73f88351b6e22953e69481a5d0853670  data/pay/testnet/asset/map.schema.json
 af37d3b577f3579030034ab085b89083dbbe166a60035fb6bc48d3ee128a4094  data/pay/testnet/proving/mint.dat
 9ee26bf870dc1f953f0147a37fade9d2fb9056a2029b064bb17ff8c77aac0c9c  data/pay/testnet/proving/private-transfer.dat
 20e4f80d3726cfe4ec2a1182e0233ceea01f9c364fda1a5762ee4fa31a9ffbbf  data/pay/testnet/proving/reclaim.dat
