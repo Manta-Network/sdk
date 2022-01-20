@@ -31,4 +31,5 @@ phf = { version = "0.10.1", default-features = false }
 [build-dependencies]
 serde = { version = "1.0.133" }
 serde_json = { version = "1.0.75" }
+walkdir = { version = "2.3.2" }
 

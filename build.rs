@@ -16,4 +16,20 @@
 
 //! Manta SDK Build Script
 
-fn main() {}
+use std::{env, fs, io, path::PathBuf};
+
+/// Loads all the files from `data` into the `OUT_DIR` directory for inclusion into the library.
+#[inline]
+fn main() -> io::Result<()> {
+    let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    for file in walkdir::WalkDir::new("data") {
+        let file = file?;
+        let path = file.path();
+        if !path.is_dir() {
+            let target = out_dir.join(path);
+            fs::create_dir_all(target.parent().unwrap())?;
+            fs::copy(path, target)?;
+        }
+    }
+    Ok(())
+}
