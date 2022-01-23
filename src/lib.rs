@@ -38,29 +38,128 @@ pub mod pay {
             use super::*;
 
             include!(concat!(env!("OUT_DIR"), "/data/pay/testnet/asset/map.rs"));
+
+            /// Asset Map JSON File Checksum
+            pub const MAP_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/asset/map.checksum",
+            ));
+
+            /// Asset Map JSON Schema File Checksum
+            pub const MAP_SCHEMA_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/asset/map.schema.checksum",
+            ));
         }
 
         /// Parameters
-        pub mod parameters {}
+        pub mod parameters {
+            /// Key Agreement Scheme Parameters
+            pub const KEY_AGREEMENT: &[u8] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/parameters/key-agreement.dat",
+            ));
 
-        /// Zero-Knowledge Proof Verifying Data
+            /// Key Agreement Scheme Parameters Checksum
+            pub const KEY_AGREEMENT_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/parameters/key-agreement.checksum",
+            ));
+
+            /// UTXO Commitment Scheme Parameters
+            pub const UTXO_COMMITMENT_SCHEME: &[u8] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/parameters/utxo-commitment-scheme.dat",
+            ));
+
+            /// UTXO Commitment Scheme Parameters Checksum
+            pub const UTXO_COMMITMENT_SCHEME_CHECKSUM: &[u8] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/parameters/utxo-commitment-scheme.checksum",
+            ));
+
+            /// Void Number Hash Function Parameters
+            pub const VOID_NUMBER_HASH_FUNCTION: &[u8] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/parameters/void-number-hash-function.dat",
+            ));
+
+            /// Void Number Hash Function Parameters Checksum
+            pub const VOID_NUMBER_HASH_FUNCTION_CHECKSUM: &[u8] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/parameters/void-number-hash-function.checksum",
+            ));
+
+            /// UTXO Set Parameters
+            pub const UTXO_SET_PARAMETERS: &[u8] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/parameters/utxo-set-parameters.dat",
+            ));
+
+            /// UTXO Set Parameters Checksum
+            pub const UTXO_SET_PARAMETERS_CHECKSUM: &[u8] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/parameters/utxo-set-parameters.checksum",
+            ));
+        }
+
+        /// Zero-Knowledge Proof System Proving Data
+        pub mod proving {
+            /// Mint Proving Context Checksum
+            pub const MINT_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/proving/mint.checksum",
+            ));
+
+            /// Private Transfer Proving Context Checksum
+            pub const PRIVATE_TRANSFER_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/proving/private-transfer.checksum",
+            ));
+
+            /// Reclaim Proving Context Checksum
+            pub const RECLAIM_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/proving/reclaim.checksum",
+            ));
+        }
+
+        /// Zero-Knowledge Proof System Verifying Data
         pub mod verifying {
             /// Mint Verifying Context
             pub const MINT: &[u8] = include_bytes!(concat!(
                 env!("OUT_DIR"),
-                "/data/pay/testnet/verifying/mint.dat"
+                "/data/pay/testnet/verifying/mint.dat",
+            ));
+
+            /// Mint Verifying Context Checksum
+            pub const MINT_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/verifying/mint.checksum",
             ));
 
             /// Private Transfer Verifying Context
             pub const PRIVATE_TRANSFER: &[u8] = include_bytes!(concat!(
                 env!("OUT_DIR"),
-                "/data/pay/testnet/verifying/private-transfer.dat"
+                "/data/pay/testnet/verifying/private-transfer.dat",
+            ));
+
+            /// Private Transfer Verifying Context Checksum
+            pub const PRIVATE_TRANSFER_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/verifying/private-transfer.checksum",
             ));
 
             /// Reclaim Verifying Context
             pub const RECLAIM: &[u8] = include_bytes!(concat!(
                 env!("OUT_DIR"),
-                "/data/pay/testnet/verifying/reclaim.dat"
+                "/data/pay/testnet/verifying/reclaim.dat",
+            ));
+
+            /// Reclaim Verifying Context Checksum
+            pub const RECLAIM_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
+                env!("OUT_DIR"),
+                "/data/pay/testnet/verifying/reclaim.checksum",
             ));
         }
     }

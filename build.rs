@@ -19,13 +19,15 @@
 use anyhow::{anyhow, bail, ensure, Result};
 use convert_case::{Case, Casing};
 use core::fmt::{self, Write as _};
+use hex::FromHex;
 use indoc::indoc;
 use jsonschema::JSONSchema;
 use serde_json::Value as JsonValue;
 use std::{
     collections::{HashMap, HashSet},
     env,
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
+    io::{BufRead, BufReader},
     path::{Path, PathBuf},
 };
 
@@ -37,20 +39,73 @@ fn parent(path: &Path) -> Result<&Path> {
     ))
 }
 
+/// Checksum
+type Checksum = [u8; 32];
+
+/// Checksum Map
+type ChecksumMap = HashMap<PathBuf, Checksum>;
+
+/// Parses the checkfile at `path` producing a [`ChecksumMap`] for all the files in the data
+/// directory.
+#[inline]
+fn parse_checkfile<P>(path: P) -> Result<ChecksumMap>
+where
+    P: AsRef<Path>,
+{
+    let file = OpenOptions::new().read(true).open(path)?;
+    let mut checksums = ChecksumMap::new();
+    for line in BufReader::new(file).lines() {
+        let line = line?;
+        let mut iter = line.split("  ");
+        match (iter.next(), iter.next(), iter.next()) {
+            (Some(checksum), Some(path), None) => {
+                checksums.insert(path.into(), Checksum::from_hex(checksum)?);
+            }
+            _ => bail!("Invalid checkfile line: {:?}", line),
+        }
+    }
+    Ok(checksums)
+}
+
+/// Gets the checksum from the `checksums` map for `path` returning an error if it was not found.
+#[inline]
+fn get_checksum<P>(checksums: &ChecksumMap, path: P) -> Result<Checksum>
+where
+    P: AsRef<Path>,
+{
+    let path = path.as_ref();
+    checksums
+        .get(path)
+        .ok_or_else(|| anyhow!("Unable to get checksum for path: {:?}", path))
+        .copied()
+}
+
+/// Writes the `checksum` to `path` returning an error if the write failed.
+#[inline]
+fn write_checksum<P>(path: P, checksum: Checksum) -> Result<()>
+where
+    P: AsRef<Path>,
+{
+    Ok(fs::write(
+        path.as_ref().with_extension("checksum"),
+        checksum,
+    )?)
+}
+
 /// JSON Schema Matcher
 #[derive(Clone, Debug, Default)]
 struct JsonSchemaMatcher {
-    /// Base Data File Path
-    base: Option<PathBuf>,
+    /// Base Data File Path and Checksum
+    base: Option<(PathBuf, Checksum)>,
 
-    /// Schema Path
-    schema: Option<PathBuf>,
+    /// Schema Path and Checksum
+    schema: Option<(PathBuf, Checksum)>,
 }
 
 /// Compiles all JSON files in `source_dir` checking against the schemas present in the same
 /// directory.
 #[inline]
-fn compile_json(source_dir: &Path, out_dir: &Path) -> Result<()> {
+fn compile_json(source_dir: &Path, out_dir: &Path, checksums: &ChecksumMap) -> Result<()> {
     let mut kinds = HashMap::<String, JsonSchemaMatcher>::new();
     for file in fs::read_dir(source_dir)? {
         let file = file?;
@@ -70,14 +125,16 @@ fn compile_json(source_dir: &Path, out_dir: &Path) -> Result<()> {
                     if kind_entry.base.is_some() {
                         bail!("Only one matching entry allowed for JSON data files.");
                     }
-                    kind_entry.base = Some(path.to_owned());
+                    let checksum = get_checksum(checksums, &path)?;
+                    kind_entry.base = Some((path.to_owned(), checksum));
                 }
                 "schema" => {
                     let kind_entry = kinds.entry(name_componenets[0].to_string()).or_default();
                     if kind_entry.schema.is_some() {
                         bail!("Only one matching entry allowed for schemas.");
                     }
-                    kind_entry.schema = Some(path.to_owned());
+                    let checksum = get_checksum(checksums, &path)?;
+                    kind_entry.schema = Some((path.to_owned(), checksum));
                 }
                 _ => bail!("JSON file names must be of the form XXX.json or XXX.schema.json."),
             }
@@ -85,10 +142,10 @@ fn compile_json(source_dir: &Path, out_dir: &Path) -> Result<()> {
     }
     for (_, matcher) in kinds {
         match (matcher.base, matcher.schema) {
-            (Some(base_path), Some(schema_path)) => {
+            (Some((base_path, base_checksum)), Some((schema_path, schema_checksum))) => {
                 match serde_json::from_reader(File::open(&base_path)?)? {
                     JsonValue::Object(object) => {
-                        let raw_schema = serde_json::from_reader(File::open(schema_path)?)?;
+                        let raw_schema = serde_json::from_reader(File::open(&schema_path)?)?;
                         let schema = JSONSchema::options().compile(&raw_schema).map_err(|err| {
                             anyhow!("Unable to compile JSON schema: {:#?}", err.kind)
                         })?;
@@ -115,16 +172,28 @@ fn compile_json(source_dir: &Path, out_dir: &Path) -> Result<()> {
                                 })?,
                             );
                         }
+                        // TODO: Customize this doc-string
+                        let docs = "/// Map";
+                        // TODO: Customize this name
+                        let name = "MAP";
                         write!(
                             code,
-                            "{DOCS}\npub static MAP: phf::Map<&'static str, {VALUE}> = \n{DATA};\n",
-                            DOCS = "/// Map",
+                            "{DOCS}\npub const {NAME}: phf::Map<&'static str, {VALUE}> = \n{DATA};\n",
+                            DOCS = docs,
+                            NAME = name,
                             VALUE = type_name,
                             DATA = map_data.build()
                         )?;
-                        let target = out_dir.join(base_path).with_extension("rs");
+
+                        let target_base = out_dir.join(base_path);
+                        let target_schema = out_dir.join(schema_path);
+
+                        let target = target_base.with_extension("rs");
                         fs::create_dir_all(parent(&target)?)?;
                         fs::write(target, code)?;
+
+                        write_checksum(target_base, base_checksum)?;
+                        write_checksum(target_schema, schema_checksum)?;
                     }
                     _ => bail!("Only JSON files as objects are supported."),
                 }
@@ -256,10 +325,12 @@ where
 
 /// Compiles raw data files by copying them to the `out_dir` directory to be interpreted as blobs.
 #[inline]
-fn compile_dat(source: &Path, out_dir: &Path) -> Result<()> {
+fn compile_dat(source: &Path, out_dir: &Path, checksums: &ChecksumMap) -> Result<()> {
+    let checksum = get_checksum(checksums, source)?;
     let target = out_dir.join(source);
     fs::create_dir_all(parent(&target)?)?;
-    fs::copy(source, target)?;
+    fs::copy(source, &target)?;
+    write_checksum(target, checksum)?;
     Ok(())
 }
 
@@ -267,6 +338,7 @@ fn compile_dat(source: &Path, out_dir: &Path) -> Result<()> {
 #[inline]
 fn main() -> Result<()> {
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let checksums = parse_checkfile("data.checkfile")?;
     let mut json_directories = HashSet::new();
     for file in walkdir::WalkDir::new("data") {
         let file = file?;
@@ -277,11 +349,11 @@ fn main() -> Result<()> {
                     Some("json") => {
                         let parent = parent(path)?;
                         if !json_directories.contains(parent) {
-                            compile_json(parent, &out_dir)?;
+                            compile_json(parent, &out_dir, &checksums)?;
                             json_directories.insert(parent.to_owned());
                         }
                     }
-                    Some("dat") => compile_dat(path, &out_dir)?,
+                    Some("dat") => compile_dat(path, &out_dir, &checksums)?,
                     _ => bail!("Unsupported data file extension."),
                 },
                 _ => bail!("All data files must have an extension."),
