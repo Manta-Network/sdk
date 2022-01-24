@@ -16,12 +16,54 @@
 
 //! Manta SDK
 
-#![no_std]
+// TODO: Check checksums when decoding or maybe also when downloading.
+// TODO: Use more code-generation to reduce duplication here.
+
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![cfg_attr(doc_cfg, feature(doc_cfg))]
 #![forbid(rustdoc::broken_intra_doc_links)]
 #![forbid(missing_docs)]
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "download")]
+use std::{fs, path::Path};
+
+/// GitHub Data File Downloading
+#[cfg(feature = "download")]
+#[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
+pub mod github {
+    use super::*;
+
+    /// GitHub Organization
+    pub const ORGANIZATION: &str = "manta-network";
+
+    /// SDK GitHub Repository Name
+    pub const REPO: &str = "sdk";
+
+    /// Default GitHub Branch
+    pub const DEFAULT_BRANCH: &str = "add-sdk-library";
+
+    /// Downloads data from `data_path` relative to the given `branch` to a file at `path`.
+    #[cfg(feature = "download")]
+    #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
+    #[inline]
+    pub fn download<P>(branch: &str, data_path: &str, path: P) -> anyhow::Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let data = attohttpc::get(alloc::format!(
+            "https://media.githubusercontent.com/media/{ORGANIZATION}/{REPO}/{branch}/{data_path}"
+        ))
+        .send()?
+        .text()?;
+        fs::write(path, data)?;
+        Ok(())
+    }
+}
 
 /// Manta Pay
 ///
@@ -105,17 +147,65 @@ pub mod pay {
 
         /// Zero-Knowledge Proof System Proving Data
         pub mod proving {
+            #[cfg(feature = "download")]
+            use super::*;
+
+            /// Downloads the `MINT` data to `path`.
+            #[cfg(feature = "download")]
+            #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
+            #[inline]
+            pub fn mint<P>(path: P) -> anyhow::Result<()>
+            where
+                P: AsRef<Path>,
+            {
+                github::download(
+                    github::DEFAULT_BRANCH,
+                    "data/pay/testnet/proving/mint.dat",
+                    path,
+                )
+            }
+
             /// Mint Proving Context Checksum
             pub const MINT_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
                 env!("OUT_DIR"),
                 "/data/pay/testnet/proving/mint.checksum",
             ));
 
+            /// Downloads the `PRIVATE_TRANSFER` data to `path`.
+            #[cfg(feature = "download")]
+            #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
+            #[inline]
+            pub fn private_transfer<P>(path: P) -> anyhow::Result<()>
+            where
+                P: AsRef<Path>,
+            {
+                github::download(
+                    github::DEFAULT_BRANCH,
+                    "data/pay/testnet/proving/private-transfer.dat",
+                    path,
+                )
+            }
+
             /// Private Transfer Proving Context Checksum
             pub const PRIVATE_TRANSFER_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
                 env!("OUT_DIR"),
                 "/data/pay/testnet/proving/private-transfer.checksum",
             ));
+
+            /// Downloads the `RECLAIM` data to `path`.
+            #[cfg(feature = "download")]
+            #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
+            #[inline]
+            pub fn reclaim<P>(path: P) -> anyhow::Result<()>
+            where
+                P: AsRef<Path>,
+            {
+                github::download(
+                    github::DEFAULT_BRANCH,
+                    "data/pay/testnet/proving/reclaim.dat",
+                    path,
+                )
+            }
 
             /// Reclaim Proving Context Checksum
             pub const RECLAIM_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
