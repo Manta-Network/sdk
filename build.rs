@@ -16,6 +16,8 @@
 
 //! Manta SDK Build Script
 
+// FIXME: Build should fail if the checksums don't match the checkfile.
+
 use anyhow::{anyhow, bail, ensure, Result};
 use convert_case::{Case, Casing};
 use core::fmt::{self, Write as _};
