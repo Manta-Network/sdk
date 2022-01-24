@@ -27,16 +27,20 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "std")]
+extern crate std;
+
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "download")]
-use std::{fs, path::Path};
+use {anyhow::Result, std::path::Path};
 
 /// GitHub Data File Downloading
 #[cfg(feature = "download")]
 #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
 pub mod github {
     use super::*;
+    use std::fs::{File, OpenOptions};
 
     /// GitHub Organization
     pub const ORGANIZATION: &str = "manta-network";
@@ -47,20 +51,38 @@ pub mod github {
     /// Default GitHub Branch
     pub const DEFAULT_BRANCH: &str = "add-sdk-library";
 
-    /// Downloads data from `data_path` relative to the given `branch` to a file at `path`.
-    #[cfg(feature = "download")]
-    #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
+    /// Returns the Git-LFS URL for GitHub content at the given `branch` and `data_path`.
     #[inline]
-    pub fn download<P>(branch: &str, data_path: &str, path: P) -> anyhow::Result<()>
+    pub fn lfs_url(branch: &str, data_path: &str) -> String {
+        alloc::format!(
+            "https://media.githubusercontent.com/media/{ORGANIZATION}/{REPO}/{branch}/{data_path}"
+        )
+    }
+
+    /// Returns the raw file storage URL for GitHub content at the given `branch` and `data_path`.
+    #[inline]
+    pub fn raw_url(branch: &str, data_path: &str) -> String {
+        alloc::format!(
+            "https://raw.githubusercontent.com/{ORGANIZATION}/{REPO}/{branch}/{data_path}"
+        )
+    }
+
+    /// Downloads the data from `url` to `file` returning the number of bytes read.
+    #[inline]
+    fn download_from(url: String, file: &mut File) -> Result<u64> {
+        Ok(attohttpc::get(url).send()?.write_to(file)?)
+    }
+
+    /// Downloads data from `data_path` relative to the given `branch` to a file at `path`.
+    #[inline]
+    pub fn download<P>(branch: &str, data_path: &str, path: P) -> Result<()>
     where
         P: AsRef<Path>,
     {
-        let data = attohttpc::get(alloc::format!(
-            "https://media.githubusercontent.com/media/{ORGANIZATION}/{REPO}/{branch}/{data_path}"
-        ))
-        .send()?
-        .text()?;
-        fs::write(path, data)?;
+        let mut file = OpenOptions::new().create(true).write(true).open(path)?;
+        if download_from(lfs_url(branch, data_path), &mut file)? == 0 {
+            download_from(raw_url(branch, data_path), &mut file)?;
+        }
         Ok(())
     }
 }
@@ -154,7 +176,7 @@ pub mod pay {
             #[cfg(feature = "download")]
             #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
             #[inline]
-            pub fn mint<P>(path: P) -> anyhow::Result<()>
+            pub fn mint<P>(path: P) -> Result<()>
             where
                 P: AsRef<Path>,
             {
@@ -175,7 +197,7 @@ pub mod pay {
             #[cfg(feature = "download")]
             #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
             #[inline]
-            pub fn private_transfer<P>(path: P) -> anyhow::Result<()>
+            pub fn private_transfer<P>(path: P) -> Result<()>
             where
                 P: AsRef<Path>,
             {
@@ -196,7 +218,7 @@ pub mod pay {
             #[cfg(feature = "download")]
             #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
             #[inline]
-            pub fn reclaim<P>(path: P) -> anyhow::Result<()>
+            pub fn reclaim<P>(path: P) -> Result<()>
             where
                 P: AsRef<Path>,
             {
@@ -252,5 +274,56 @@ pub mod pay {
                 "/data/pay/testnet/verifying/reclaim.checksum",
             ));
         }
+    }
+}
+
+/// Testing Suite
+#[cfg(test)]
+mod test {
+    use super::*;
+    use anyhow::Result;
+    use std::{
+        fs::{self, File},
+        io::Read,
+    };
+
+    /// Checks if two files `lhs` and `rhs` have equal content.
+    #[inline]
+    fn equal_files(lhs: &mut File, rhs: &mut File) -> Result<bool> {
+        let mut lhs_buffer = [0; 2048];
+        let mut rhs_buffer = [0; 2048];
+        loop {
+            let lhs_len = lhs.read(&mut lhs_buffer)?;
+            let rhs_len = rhs.read(&mut rhs_buffer)?;
+            if (lhs_len != rhs_len) || (lhs_buffer[..lhs_len] != rhs_buffer[..rhs_len]) {
+                return Ok(false);
+            }
+            if lhs_len == 0 {
+                return Ok(true);
+            }
+        }
+    }
+
+    /// Downloads all data from GitHub and checks if they are the same as the data known locally to
+    /// this Rust crate.
+    #[test]
+    fn download_all_data() -> Result<()> {
+        let directory = tempfile::tempdir().expect("Unable to generate temporary test directory.");
+        println!("[INFO] Temporary Directory: {:?}", directory);
+        let directory_path = directory.path();
+        for file in walkdir::WalkDir::new("data") {
+            let file = file?;
+            let path = file.path();
+            if !path.is_dir() {
+                let target = directory_path.join(path);
+                fs::create_dir_all(target.parent().unwrap())?;
+                github::download(github::DEFAULT_BRANCH, path.to_str().unwrap(), &target)?;
+                assert!(equal_files(
+                    &mut File::open(path)?,
+                    &mut File::open(target)?
+                )?);
+            }
+        }
+        Ok(())
     }
 }
