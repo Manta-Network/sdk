@@ -315,6 +315,7 @@ mod test {
             let file = file?;
             let path = file.path();
             if !path.is_dir() {
+                println!("[INFO] Checking path: {:?}", path);
                 let target = directory_path.join(path);
                 fs::create_dir_all(target.parent().unwrap())?;
                 github::download(github::DEFAULT_BRANCH, path.to_str().unwrap(), &target)?;
