@@ -79,7 +79,7 @@ where
     checksums
         .get(path)
         .ok_or_else(|| anyhow!("Unable to get checksum for path: {:?}", path))
-        .copied()
+        .map(move |c| *c)
 }
 
 /// Writes the `checksum` to `path` returning an error if the write failed.
