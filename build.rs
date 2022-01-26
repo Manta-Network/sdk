@@ -339,6 +339,7 @@ fn compile_dat(source: &Path, out_dir: &Path, checksums: &ChecksumMap) -> Result
 /// Loads all the files from `data` into the `OUT_DIR` directory for inclusion into the library.
 #[inline]
 fn main() -> Result<()> {
+    println!("cargo:rerun-if-changed=data");
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let checksums = parse_checkfile("data.checkfile")?;
     let mut json_directories = HashSet::new();
