@@ -143,6 +143,16 @@ macro_rules! define {
             pub fn verify() -> bool {
                 crate::verify(Self::DATA, Self::CHECKSUM)
             }
+
+            /// Gets the underlying binary data after verifying against [`Self::CHECKSUM`].
+            #[inline]
+            pub fn get() -> Option<&'static [u8]> {
+                if Self::verify() {
+                    Some(Self::DATA)
+                } else {
+                    None
+                }
+            }
         }
     };
 }

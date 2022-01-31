@@ -96,7 +96,7 @@ fn compile_dat(source: &Path, out_dir: &Path, checksums: &ChecksumMap) -> Result
         expected_checksum == checksum,
         "Checksum did not match. Expected: {:?} Found: {:?}",
         expected_checksum,
-        checksum
+        hex::encode(checksum),
     );
     let target = out_dir.join(source);
     fs::create_dir_all(parent(&target)?)?;
