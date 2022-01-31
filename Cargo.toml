@@ -11,7 +11,7 @@ documentation = "https://github.com/Manta-Network/sdk"
 categories = [""]
 keywords = [""]
 description = "Manta Network SDK"
-include = ["LICENSE", "README.md", "src/lib.rs"]
+include = ["LICENSE", "README.md", "data", "src/lib.rs"]
 publish = false
 
 [package.metadata.docs.rs]
