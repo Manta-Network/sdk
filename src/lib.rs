@@ -18,6 +18,7 @@
 
 // TODO: Check checksums when decoding or maybe also when downloading.
 // TODO: Use more code-generation to reduce duplication here.
+// TODO: Have a method of downloading all data from each category.
 
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![cfg_attr(doc_cfg, feature(doc_cfg))]
@@ -29,8 +30,6 @@ extern crate alloc;
 
 #[cfg(feature = "std")]
 extern crate std;
-
-use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "download")]
 use {anyhow::Result, std::path::Path};
@@ -73,9 +72,14 @@ pub mod github {
         Ok(attohttpc::get(url).send()?.write_to(file)?)
     }
 
-    /// Downloads data from `data_path` relative to the given `branch` to a file at `path`.
+    /// Downloads data from `data_path` relative to the given `branch` to a file at `path` without
+    /// checking any checksums.
+    ///
+    /// # Safety
+    ///
+    /// Prefer the [`download`] method which checks the data against a given checksum.
     #[inline]
-    pub fn download<P>(branch: &str, data_path: &str, path: P) -> Result<()>
+    pub fn download_unchecked<P>(branch: &str, data_path: &str, path: P) -> Result<()>
     where
         P: AsRef<Path>,
     {
@@ -85,86 +89,133 @@ pub mod github {
         }
         Ok(())
     }
+
+    /// Downloads data from `data_path` relative to the given `branch` to a file at `path` verifying
+    /// that the data matches the `checksum`.
+    #[inline]
+    pub fn download<P>(branch: &str, data_path: &str, path: P, checksum: &[u8; 32]) -> Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let path = path.as_ref();
+        download_unchecked(branch, data_path, &path)?;
+        anyhow::ensure!(verify_file(path, checksum)?, "Checksum did not match.");
+        Ok(())
+    }
+}
+
+/// Verifies the `data` against the `checksum`.
+#[inline]
+pub fn verify(data: &[u8], checksum: &[u8; 32]) -> bool {
+    &blake3::hash(data) == checksum
+}
+
+/// Verifies the data in the file located at `path` against the `checksum`.
+#[cfg(feature = "std")]
+#[cfg_attr(doc_cfg, doc(cfg(feature = "std")))]
+#[inline]
+pub fn verify_file<P>(path: P, checksum: &[u8; 32]) -> std::io::Result<bool>
+where
+    P: AsRef<Path>,
+{
+    Ok(verify(&std::fs::read(path)?, checksum))
+}
+
+/// Defines a data marker type loading its raw data and checksum from disk.
+macro_rules! define {
+    ($name:tt, $doc:expr, $path:expr $(,)?) => {
+        #[doc = $doc]
+        #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+        pub struct $name;
+
+        impl $name {
+            #[doc = $doc]
+            #[doc = "Data Bytes"]
+            pub const DATA: &'static [u8] = include_bytes!(concat!(env!("OUT_DIR"), $path, ".dat"));
+
+            #[doc = $doc]
+            #[doc = "Data Checksum"]
+            pub const CHECKSUM: &'static [u8; 32] =
+                include_bytes!(concat!(env!("OUT_DIR"), $path, ".checksum"));
+
+            /// Verifies that [`Self::DATA`] is consistent against [`Self::CHECKSUM`].
+            #[inline]
+            pub fn verify() -> bool {
+                crate::verify(Self::DATA, Self::CHECKSUM)
+            }
+        }
+    };
+}
+
+/// Defines the data marker type for download-required data and checksum from disk.
+macro_rules! define_download {
+    ($name:tt, $doc:expr, $path:expr $(,)?) => {
+        #[doc = $doc]
+        #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+        pub struct $name;
+
+        impl $name {
+            #[doc = $doc]
+            #[doc = "Data Checksum"]
+            pub const CHECKSUM: &'static [u8; 32] =
+                include_bytes!(concat!(env!("OUT_DIR"), $path, ".checksum"));
+
+            #[doc = "Downloads the data for the"]
+            #[doc = $doc]
+            #[doc = r"from GitHub. This method automatically verifies the checksum when downloading.
+                      See [`github::download`](crate::github::download) for more."]
+            #[cfg(feature = "download")]
+            #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
+            #[inline]
+            pub fn download<P>(path: P) -> Result<()>
+            where
+                P: AsRef<Path>,
+            {
+                github::download(
+                    github::DEFAULT_BRANCH,
+                    concat!($path, ".dat"),
+                    path,
+                    Self::CHECKSUM,
+                )
+            }
+        }
+    };
 }
 
 /// Manta Pay
 ///
 /// See [`manta-pay`](https://github.com/manta-network/manta-rs) for the definitions.
 pub mod pay {
+    #[cfg(feature = "download")]
     use super::*;
 
     /// Testnet Data
     pub mod testnet {
+        #[cfg(feature = "download")]
         use super::*;
-
-        /// Asset Definitions
-        pub mod asset {
-            use super::*;
-
-            include!(concat!(env!("OUT_DIR"), "/data/pay/testnet/asset/map.rs"));
-
-            /// Asset Map JSON File Checksum
-            pub const MAP_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/asset/map.checksum",
-            ));
-
-            /// Asset Map JSON Schema File Checksum
-            pub const MAP_SCHEMA_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/asset/map.schema.checksum",
-            ));
-        }
 
         /// Parameters
         pub mod parameters {
-            /// Key Agreement Scheme Parameters
-            pub const KEY_AGREEMENT: &[u8] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/parameters/key-agreement.dat",
-            ));
-
-            /// Key Agreement Scheme Parameters Checksum
-            pub const KEY_AGREEMENT_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/parameters/key-agreement.checksum",
-            ));
-
-            /// UTXO Commitment Scheme Parameters
-            pub const UTXO_COMMITMENT_SCHEME: &[u8] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/parameters/utxo-commitment-scheme.dat",
-            ));
-
-            /// UTXO Commitment Scheme Parameters Checksum
-            pub const UTXO_COMMITMENT_SCHEME_CHECKSUM: &[u8] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/parameters/utxo-commitment-scheme.checksum",
-            ));
-
-            /// Void Number Hash Function Parameters
-            pub const VOID_NUMBER_HASH_FUNCTION: &[u8] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/parameters/void-number-hash-function.dat",
-            ));
-
-            /// Void Number Hash Function Parameters Checksum
-            pub const VOID_NUMBER_HASH_FUNCTION_CHECKSUM: &[u8] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/parameters/void-number-hash-function.checksum",
-            ));
-
-            /// UTXO Set Parameters
-            pub const UTXO_SET_PARAMETERS: &[u8] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/parameters/utxo-set-parameters.dat",
-            ));
-
-            /// UTXO Set Parameters Checksum
-            pub const UTXO_SET_PARAMETERS_CHECKSUM: &[u8] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/parameters/utxo-set-parameters.checksum",
-            ));
+            define!(
+                KeyAgreement,
+                "Key Agreement Scheme Parameters",
+                "/data/pay/testnet/parameters/key-agreement",
+            );
+            define!(
+                UtxoCommitmentScheme,
+                "UTXO Commitment Scheme Parameters",
+                "/data/pay/testnet/parameters/utxo-commitment-scheme",
+            );
+            define!(
+                VoidNumberHashFunction,
+                "Void Number Hash Function Parameters",
+                "/data/pay/testnet/parameters/void-number-hash-function",
+            );
+            define!(
+                UtxoSetParameters,
+                "UTXO Set Parameters",
+                "/data/pay/testnet/parameters/utxo-set-parameters",
+            );
         }
 
         /// Zero-Knowledge Proof System Proving Data
@@ -172,107 +223,40 @@ pub mod pay {
             #[cfg(feature = "download")]
             use super::*;
 
-            /// Downloads the `MINT` data to `path`.
-            #[cfg(feature = "download")]
-            #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
-            #[inline]
-            pub fn mint<P>(path: P) -> Result<()>
-            where
-                P: AsRef<Path>,
-            {
-                github::download(
-                    github::DEFAULT_BRANCH,
-                    "data/pay/testnet/proving/mint.dat",
-                    path,
-                )
-            }
-
-            /// Mint Proving Context Checksum
-            pub const MINT_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/proving/mint.checksum",
-            ));
-
-            /// Downloads the `PRIVATE_TRANSFER` data to `path`.
-            #[cfg(feature = "download")]
-            #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
-            #[inline]
-            pub fn private_transfer<P>(path: P) -> Result<()>
-            where
-                P: AsRef<Path>,
-            {
-                github::download(
-                    github::DEFAULT_BRANCH,
-                    "data/pay/testnet/proving/private-transfer.dat",
-                    path,
-                )
-            }
-
-            /// Private Transfer Proving Context Checksum
-            pub const PRIVATE_TRANSFER_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/proving/private-transfer.checksum",
-            ));
-
-            /// Downloads the `RECLAIM` data to `path`.
-            #[cfg(feature = "download")]
-            #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
-            #[inline]
-            pub fn reclaim<P>(path: P) -> Result<()>
-            where
-                P: AsRef<Path>,
-            {
-                github::download(
-                    github::DEFAULT_BRANCH,
-                    "data/pay/testnet/proving/reclaim.dat",
-                    path,
-                )
-            }
-
-            /// Reclaim Proving Context Checksum
-            pub const RECLAIM_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/proving/reclaim.checksum",
-            ));
+            define_download!(
+                Mint,
+                "Mint Proving Context",
+                "/data/pay/testnet/proving/mint",
+            );
+            define_download!(
+                PrivateTransfer,
+                "Private Transfer Proving Context",
+                "/data/pay/testnet/proving/private-transfer",
+            );
+            define_download!(
+                Reclaim,
+                "Reclaim Proving Context",
+                "/data/pay/testnet/proving/reclaim",
+            );
         }
 
         /// Zero-Knowledge Proof System Verifying Data
         pub mod verifying {
-            /// Mint Verifying Context
-            pub const MINT: &[u8] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/verifying/mint.dat",
-            ));
-
-            /// Mint Verifying Context Checksum
-            pub const MINT_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/verifying/mint.checksum",
-            ));
-
-            /// Private Transfer Verifying Context
-            pub const PRIVATE_TRANSFER: &[u8] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/verifying/private-transfer.dat",
-            ));
-
-            /// Private Transfer Verifying Context Checksum
-            pub const PRIVATE_TRANSFER_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/verifying/private-transfer.checksum",
-            ));
-
-            /// Reclaim Verifying Context
-            pub const RECLAIM: &[u8] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/verifying/reclaim.dat",
-            ));
-
-            /// Reclaim Verifying Context Checksum
-            pub const RECLAIM_CHECKSUM: &[u8; 32] = include_bytes!(concat!(
-                env!("OUT_DIR"),
-                "/data/pay/testnet/verifying/reclaim.checksum",
-            ));
+            define!(
+                Mint,
+                "Mint Verifying Context",
+                "/data/pay/testnet/verifying/mint"
+            );
+            define!(
+                PrivateTransfer,
+                "Private Transfer Verifying Context",
+                "/data/pay/testnet/verifying/private-transfer"
+            );
+            define!(
+                Reclaim,
+                "Reclaim Verifying Context",
+                "/data/pay/testnet/verifying/reclaim"
+            );
         }
     }
 }
@@ -281,10 +265,13 @@ pub mod pay {
 #[cfg(test)]
 mod test {
     use super::*;
-    use anyhow::Result;
+    use anyhow::{anyhow, bail, Result};
+    use hex::FromHex;
     use std::{
-        fs::{self, File},
-        io::Read,
+        collections::HashMap,
+        fs::{self, File, OpenOptions},
+        io::{BufRead, BufReader, Read},
+        path::PathBuf,
     };
 
     /// Checks if two files `lhs` and `rhs` have equal content.
@@ -304,12 +291,54 @@ mod test {
         }
     }
 
+    /// Checksum
+    type Checksum = [u8; 32];
+
+    /// Checksum Map
+    type ChecksumMap = HashMap<PathBuf, Checksum>;
+
+    /// Parses the checkfile at `path` producing a [`ChecksumMap`] for all the files in the data
+    /// directory.
+    #[inline]
+    fn parse_checkfile<P>(path: P) -> Result<ChecksumMap>
+    where
+        P: AsRef<Path>,
+    {
+        let file = OpenOptions::new().read(true).open(path)?;
+        let mut checksums = ChecksumMap::new();
+        for line in BufReader::new(file).lines() {
+            let line = line?;
+            let mut iter = line.split("  ");
+            match (iter.next(), iter.next(), iter.next()) {
+                (Some(checksum), Some(path), None) => {
+                    checksums.insert(path.into(), Checksum::from_hex(checksum)?);
+                }
+                _ => bail!("Invalid checkfile line: {:?}", line),
+            }
+        }
+        Ok(checksums)
+    }
+
+    /// Gets the checksum from the `checksums` map for `path` returning an error if it was not found.
+    #[inline]
+    fn get_checksum<P>(checksums: &ChecksumMap, path: P) -> Result<Checksum>
+    where
+        P: AsRef<Path>,
+    {
+        let path = path.as_ref();
+        checksums
+            .get(path)
+            .ok_or_else(|| anyhow!("Unable to get checksum for path: {:?}", path))
+            .map(move |c| *c)
+    }
+
     /// Downloads all data from GitHub and checks if they are the same as the data known locally to
     /// this Rust crate.
     #[test]
     fn download_all_data() -> Result<()> {
         let directory = tempfile::tempdir().expect("Unable to generate temporary test directory.");
         println!("[INFO] Temporary Directory: {:?}", directory);
+        let checksums = parse_checkfile("data.checkfile")?;
         let directory_path = directory.path();
         for file in walkdir::WalkDir::new("data") {
             let file = file?;
@@ -318,7 +347,12 @@ mod test {
                 println!("[INFO] Checking path: {:?}", path);
                 let target = directory_path.join(path);
                 fs::create_dir_all(target.parent().unwrap())?;
-                github::download(github::DEFAULT_BRANCH, path.to_str().unwrap(), &target)?;
+                github::download(
+                    github::DEFAULT_BRANCH,
+                    path.to_str().unwrap(),
+                    &target,
+                    &get_checksum(&checksums, path)?,
+                )?;
                 assert!(equal_files(
                     &mut File::open(path)?,
                     &mut File::open(target)?
