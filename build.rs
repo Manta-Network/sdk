@@ -91,12 +91,13 @@ where
 #[inline]
 fn compile_dat(source: &Path, out_dir: &Path, checksums: &ChecksumMap) -> Result<()> {
     let checksum = get_checksum(checksums, source)?;
-    let expected_checksum = blake3::hash(&fs::read(source)?);
+    let found_checksum = blake3::hash(&fs::read(source)?);
     ensure!(
-        expected_checksum == checksum,
-        "Checksum did not match. Expected: {:?} Found: {:?}",
-        expected_checksum,
+        found_checksum == checksum,
+        "Checksum did not match for {:?}. Expected: {:?} Found: {:?}",
+        source,
         hex::encode(checksum),
+        found_checksum,
     );
     let target = out_dir.join(source);
     fs::create_dir_all(parent(&target)?)?;
