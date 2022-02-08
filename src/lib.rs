@@ -48,7 +48,7 @@ pub mod github {
     pub const REPO: &str = "sdk";
 
     /// Default GitHub Branch
-    pub const DEFAULT_BRANCH: &str = "add-sdk-library";
+    pub const DEFAULT_BRANCH: &str = "main";
 
     /// Returns the Git-LFS URL for GitHub content at the given `branch` and `data_path`.
     #[inline]
