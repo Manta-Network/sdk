@@ -188,6 +188,24 @@ macro_rules! define_download {
                     Self::CHECKSUM,
                 )
             }
+
+            #[doc = "Checks if the data for the"]
+            #[doc = $doc]
+            #[doc = r"matches the checksum and if not downloads it from GitHub. This method
+                      automatically verifies the checksum when downloading.
+                      See [`github::download`](crate::github::download) for more."]
+            #[cfg(feature = "download")]
+            #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
+            #[inline]
+            pub fn download_if_invalid<P>(path: P) -> Result<()>
+            where
+                P: AsRef<Path>,
+            {
+                if !matches!(verify_file(&path, Self::CHECKSUM), Ok(true)) {
+                    Self::download(path)?;
+                }
+                Ok(())
+            }
         }
     };
 }
