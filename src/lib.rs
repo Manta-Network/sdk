@@ -201,10 +201,10 @@ macro_rules! define_download {
             where
                 P: AsRef<Path>,
             {
-                if !matches!(verify_file(&path, Self::CHECKSUM), Ok(true)) {
-                    Self::download(path)?;
+                match verify_file(&path, Self::CHECKSUM) {
+                    Ok(true) => Ok(()),
+                    _ => Self::download(path),
                 }
-                Ok(())
             }
         }
     };
