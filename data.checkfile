@@ -1,6 +1,6 @@
 df87563f5a6366a341f4dd1796ecd7eec85354e0e8e0bb9e2a8cdb33be3a31e9  data/pay/testnet/parameters/key-agreement.dat
 348d7e0072ffdb56fd19d6115c89a3c9172639c5167e8a7e905dc8a575e4f17d  data/pay/testnet/parameters/utxo-commitment-scheme.dat
-05e6b3b6a0d6d6debe458b6f7ddaefa51a4d38608024a98fc4dedf5ee8b68e99  data/pay/testnet/parameters/utxo-set-parameters.dat
+05e6b3b6a0d6d6debe458b6f7ddaefa51a4d38608024a98fc4dedf5ee8b68e99  data/pay/testnet/parameters/utxo-accumulator-model.dat
 9dcf5d51f6ffbcda46eaaab64e7350095465f8cc774f8276b46889c46479a2e4  data/pay/testnet/parameters/void-number-hash-function.dat
 9748336897c8c98764e5701717871e39a5794e61bbc9e150c613a0ed7024986a  data/pay/testnet/proving/mint.dat
 d5d73fd62ff0f7bf8945f34e27b1471c0445e9835313ebb689be80a8ea3e7cee  data/pay/testnet/proving/private-transfer.dat

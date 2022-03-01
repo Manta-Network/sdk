@@ -240,9 +240,9 @@ pub mod pay {
                 "/data/pay/testnet/parameters/void-number-hash-function",
             );
             define!(
-                UtxoSetParameters,
-                "UTXO Set Parameters",
-                "/data/pay/testnet/parameters/utxo-set-parameters",
+                UtxoAccumulatorModel,
+                "UTXO Accumulator Model",
+                "/data/pay/testnet/parameters/utxo-accumulator-model",
             );
         }
 
