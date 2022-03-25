@@ -1,0 +1,74 @@
+{
+  "name": "manta-typegen",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Manta types augment for @polkadot/api",
+  "author": "Manta",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/PureStake/moonbeam/tree/master/typescript-api#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PureStake/moonbeam.git",
+    "directory": "typescript-api"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "generate": "npm run load:meta && npm run generate:defs && npm run generate:meta",
+    "postgenerate": "npm run pretty",
+    "load:meta": "npm run load:meta:dolphin",
+    "load:meta:dolphin": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' http://localhost:9970 > metadata-dolphin.json",
+    "generate:defs": "npm run generate:defs:dolphin",
+    "generate:defs:dolphin": "ts-node --skip-project node_modules/.bin/polkadot-types-from-defs --package @moonbeam/api-augment/dolphin/interfaces --input ./src/dolphin/interfaces --endpoint ./metadata-dolphin.json",
+    "generate:meta": "npm run generate:meta:dolphin",
+    "generate:meta:dolphin": "ts-node --skip-project node_modules/.bin/polkadot-types-from-chain --endpoint ./metadata-dolphin.json --output ./src/dolphin/interfaces",
+    "prebuild": "rimraf build",
+    "build": "tsc -b --verbose",
+    "postbuild": "node ./scripts/postbuild.js",
+    "publish": "cd build && npm publish",
+    "deploy": "npm run generate && npm run build && npm run publish",
+    "pretty": "prettier --write --ignore-unknown --plugin prettier-plugin-jsdoc 'src/**/*' 'scripts/**/*'"
+  },
+  "main": "./index.cjs",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.cjs",
+      "default": "./index.js"
+    },
+    "./dolphin": {
+      "types": "./dolphin/index.d.ts",
+      "require": "./dolphin/index.cjs",
+      "default": "./dolphin/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "dolphin": [
+        "dolphin/index.d.ts"
+      ]
+    }
+  },
+  "keywords": [
+    "dolphin",
+    "types",
+    "polkadot",
+    "api"
+  ],
+  "prettier": {
+    "jsdocPrintWidth": 80,
+    "jsdocSingleLineComment": false
+  },
+  "devDependencies": {
+    "@polkadot/api": "^7.12.1",
+    "@polkadot/typegen": "^7.9.1",
+    "prettier": "^2.5.1",
+    "prettier-plugin-jsdoc": "^0.3.30",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.5.0",
+    "typescript": "^4.5.5"
+  }
+}

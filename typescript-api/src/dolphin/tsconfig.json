@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "../../build/dolphin",
+    "paths": {
+      "@moonbeam/api-augment/dolphin/*": ["src/dolphin/*"],
+      "@polkadot/api/augment": ["src/dolphin/interfaces/augment-api.ts"],
+      "@polkadot/types/augment": ["src/dolphin/interfaces/augment-types.ts"],
+      "@polkadot/types/lookup": ["src/dolphin/interfaces/types-lookup.ts"]
+    }
+  }
+}
