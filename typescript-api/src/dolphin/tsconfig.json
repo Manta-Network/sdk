@@ -8,6 +8,8 @@
       "@polkadot/api/augment": ["src/dolphin/interfaces/augment-api.ts"],
       "@polkadot/types/augment": ["src/dolphin/interfaces/augment-types.ts"],
       "@polkadot/types/lookup": ["src/dolphin/interfaces/types-lookup.ts"]
-    }
-  }
+    },
+    "esModuleInterop": true,
+  },
+  "module": "es2015",
 }

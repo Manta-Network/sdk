@@ -60,7 +60,7 @@ import type {
   MantaCollatorSelectionError,
   MantaCollatorSelectionEvent,
   MantaPrimitivesAssetsAssetLocation,
-  MantaPrimitivesAssetsAssetRegistarMetadata,
+  MantaPrimitivesAssetsAssetRegistrarMetadata,
   OrmlXtokensModuleCall,
   OrmlXtokensModuleError,
   OrmlXtokensModuleEvent,
@@ -278,7 +278,7 @@ declare module "@polkadot/types/types/registry" {
     MantaCollatorSelectionError: MantaCollatorSelectionError;
     MantaCollatorSelectionEvent: MantaCollatorSelectionEvent;
     MantaPrimitivesAssetsAssetLocation: MantaPrimitivesAssetsAssetLocation;
-    MantaPrimitivesAssetsAssetRegistarMetadata: MantaPrimitivesAssetsAssetRegistarMetadata;
+    MantaPrimitivesAssetsAssetRegistrarMetadata: MantaPrimitivesAssetsAssetRegistrarMetadata;
     OrmlXtokensModuleCall: OrmlXtokensModuleCall;
     OrmlXtokensModuleError: OrmlXtokensModuleError;
     OrmlXtokensModuleEvent: OrmlXtokensModuleEvent;

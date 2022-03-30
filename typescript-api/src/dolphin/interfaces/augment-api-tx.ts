@@ -31,7 +31,7 @@ import type {
   DolphinRuntimeOriginCaller,
   FrameSupportScheduleMaybeHashed,
   MantaPrimitivesAssetsAssetLocation,
-  MantaPrimitivesAssetsAssetRegistarMetadata,
+  MantaPrimitivesAssetsAssetRegistrarMetadata,
   PalletDemocracyConviction,
   PalletDemocracyVoteAccountVote,
   PalletMantaPayTransferPost,
@@ -75,7 +75,7 @@ declare module "@polkadot/api-base/types/submittable" {
             | string
             | Uint8Array,
           metadata:
-            | MantaPrimitivesAssetsAssetRegistarMetadata
+            | MantaPrimitivesAssetsAssetRegistrarMetadata
             | {
                 name?: any;
                 symbol?: any;
@@ -90,7 +90,7 @@ declare module "@polkadot/api-base/types/submittable" {
         ) => SubmittableExtrinsic<ApiType>,
         [
           MantaPrimitivesAssetsAssetLocation,
-          MantaPrimitivesAssetsAssetRegistarMetadata
+          MantaPrimitivesAssetsAssetRegistrarMetadata
         ]
       >;
       /**
@@ -152,7 +152,7 @@ declare module "@polkadot/api-base/types/submittable" {
         (
           assetId: Compact<u32> | AnyNumber | Uint8Array,
           metadata:
-            | MantaPrimitivesAssetsAssetRegistarMetadata
+            | MantaPrimitivesAssetsAssetRegistrarMetadata
             | {
                 name?: any;
                 symbol?: any;
@@ -165,7 +165,7 @@ declare module "@polkadot/api-base/types/submittable" {
             | string
             | Uint8Array
         ) => SubmittableExtrinsic<ApiType>,
-        [Compact<u32>, MantaPrimitivesAssetsAssetRegistarMetadata]
+        [Compact<u32>, MantaPrimitivesAssetsAssetRegistrarMetadata]
       >;
       /**
        * Generic tx
@@ -308,7 +308,6 @@ declare module "@polkadot/api-base/types/submittable" {
        *   `T::DustRemoval::on_unbalanced`.
        * - `transfer_keep_alive` works the same way as `transfer`, but has an
        *   additional check that the transfer will not kill the origin account.
-       *
        * - Origin account is already in memory, so no DB operations for them.
        *
        * # </weight>
@@ -444,6 +443,28 @@ declare module "@polkadot/api-base/types/submittable" {
       setDesiredCandidates: AugmentedSubmittable<
         (max: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
         [u32]
+      >;
+      /**
+       * Set the collator performance percentile used as baseline for eviction
+       *
+       * `percentile`: x-th percentile of collator performance to use as eviction baseline
+       */
+      setEvictionBaseline: AugmentedSubmittable<
+        (
+          percentile: u8 | AnyNumber | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [u8]
+      >;
+      /**
+       * Set the tolerated underperformance percentage before evicting
+       *
+       * `percentage`: x% of missed blocks under eviction_baseline to tolerate
+       */
+      setEvictionTolerance: AugmentedSubmittable<
+        (
+          percentage: u8 | AnyNumber | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [u8]
       >;
       /**
        * Set candidate collator as invulnerable.
@@ -1290,26 +1311,6 @@ declare module "@polkadot/api-base/types/submittable" {
     };
     mantaPay: {
       /**
-       * Mints some assets encoded in `post` to the `origin` account.
-       */
-      mint: AugmentedSubmittable<
-        (
-          post:
-            | PalletMantaPayTransferPost
-            | {
-                assetId?: any;
-                sources?: any;
-                senderPosts?: any;
-                receiverPosts?: any;
-                sinks?: any;
-                validityProof?: any;
-              }
-            | string
-            | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [PalletMantaPayTransferPost]
-      >;
-      /**
        * Transfers private assets encoded in `post`.
        *
        * # Note
@@ -1335,10 +1336,33 @@ declare module "@polkadot/api-base/types/submittable" {
         [PalletMantaPayTransferPost]
       >;
       /**
+       * Convert the asset encoded in `post` to private asset.
+       *
+       * `origin`: the owner of the public asset. `origin` will pay the gas fee
+       * for the conversion as well. `post`: encoded asset to be converted.
+       */
+      toPrivate: AugmentedSubmittable<
+        (
+          post:
+            | PalletMantaPayTransferPost
+            | {
+                assetId?: any;
+                sources?: any;
+                senderPosts?: any;
+                receiverPosts?: any;
+                sinks?: any;
+                validityProof?: any;
+              }
+            | string
+            | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [PalletMantaPayTransferPost]
+      >;
+      /**
        * Transforms some private assets into public ones using `post`, sending
        * the public assets to the `origin` account.
        */
-      reclaim: AugmentedSubmittable<
+      toPublic: AugmentedSubmittable<
         (
           post:
             | PalletMantaPayTransferPost
@@ -1397,7 +1421,6 @@ declare module "@polkadot/api-base/types/submittable" {
        * - One event.
        * - Storage: inserts one item, value size bounded by `MaxSignatories`, with
        *   a deposit taken for its lifetime of `DepositBase + threshold * DepositFactor`.
-       *
        * - DB Weight:
        * - Read: Multisig Storage, [Caller Account]
        * - Write: Multisig Storage, [Caller Account]
@@ -1467,7 +1490,6 @@ declare module "@polkadot/api-base/types/submittable" {
        * - The weight of the `call`.
        * - Storage: inserts one item, value size bounded by `MaxSignatories`, with
        *   a deposit taken for its lifetime of `DepositBase + threshold * DepositFactor`.
-       *
        * - DB Weight:
        * - Reads: Multisig Storage, [Caller Account], Calls (if `store_call`)
        * - Writes: Multisig Storage, [Caller Account], Calls (if `store_call`)
@@ -1555,7 +1577,6 @@ declare module "@polkadot/api-base/types/submittable" {
        * - One event.
        * - I/O: 1 read `O(S)`, one remove.
        * - Storage: removes one item.
-       *
        * - DB Weight:
        * - Read: Multisig Storage, [Caller Account], Refund Account, Calls
        * - Write: Multisig Storage, [Caller Account], Refund Account, Calls

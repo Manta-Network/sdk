@@ -23,7 +23,7 @@ import type {
   FrameSupportTokensMiscBalanceStatus,
   FrameSupportWeightsDispatchInfo,
   MantaPrimitivesAssetsAssetLocation,
-  MantaPrimitivesAssetsAssetRegistarMetadata,
+  MantaPrimitivesAssetsAssetRegistrarMetadata,
   PalletDemocracyVoteAccountVote,
   PalletDemocracyVoteThreshold,
   PalletMantaPayAsset,
@@ -55,7 +55,7 @@ declare module "@polkadot/api-base/types/events" {
        */
       AssetMetadataUpdated: AugmentedEvent<
         ApiType,
-        [u32, MantaPrimitivesAssetsAssetRegistarMetadata]
+        [u32, MantaPrimitivesAssetsAssetRegistrarMetadata]
       >;
       /**
        * A new asset registered.
@@ -65,7 +65,7 @@ declare module "@polkadot/api-base/types/events" {
         [
           u32,
           MantaPrimitivesAssetsAssetLocation,
-          MantaPrimitivesAssetsAssetRegistarMetadata
+          MantaPrimitivesAssetsAssetRegistrarMetadata
         ]
       >;
       /**
@@ -227,6 +227,8 @@ declare module "@polkadot/api-base/types/events" {
       CandidateRemoved: AugmentedEvent<ApiType, [AccountId32]>;
       NewCandidacyBond: AugmentedEvent<ApiType, [u128]>;
       NewDesiredCandidates: AugmentedEvent<ApiType, [u32]>;
+      NewEvictionBaseline: AugmentedEvent<ApiType, [u8]>;
+      NewEvictionTolerance: AugmentedEvent<ApiType, [u8]>;
       NewInvulnerables: AugmentedEvent<ApiType, [Vec<AccountId32>]>;
       /**
        * Generic event
@@ -450,24 +452,17 @@ declare module "@polkadot/api-base/types/events" {
     };
     mantaPay: {
       /**
-       * Mint Event
-       */
-      Mint: AugmentedEvent<ApiType, [PalletMantaPayAsset, AccountId32]>;
-      /**
        * Private Transfer Event
        */
       PrivateTransfer: AugmentedEvent<ApiType, [AccountId32]>;
       /**
+       * Mint Event
+       */
+      ToPrivate: AugmentedEvent<ApiType, [PalletMantaPayAsset, AccountId32]>;
+      /**
        * Reclaim Event
        */
-      Reclaim: AugmentedEvent<ApiType, [PalletMantaPayAsset, AccountId32]>;
-      /**
-       * Transfer Event
-       */
-      Transfer: AugmentedEvent<
-        ApiType,
-        [PalletMantaPayAsset, AccountId32, AccountId32]
-      >;
+      ToPublic: AugmentedEvent<ApiType, [PalletMantaPayAsset, AccountId32]>;
       /**
        * Generic event
        */

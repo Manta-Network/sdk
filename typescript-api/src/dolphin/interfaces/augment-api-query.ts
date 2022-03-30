@@ -22,6 +22,7 @@ import type {
   AccountId32,
   Call,
   H256,
+  Percent,
 } from "@polkadot/types/interfaces/runtime";
 import type {
   CumulusPalletDmpQueueConfigData,
@@ -38,7 +39,7 @@ import type {
   FrameSystemPhase,
   MantaCollatorSelectionCandidateInfo,
   MantaPrimitivesAssetsAssetLocation,
-  MantaPrimitivesAssetsAssetRegistarMetadata,
+  MantaPrimitivesAssetsAssetRegistrarMetadata,
   PalletAssetsApproval,
   PalletAssetsAssetAccount,
   PalletAssetsAssetDetails,
@@ -96,7 +97,7 @@ declare module "@polkadot/api-base/types/storage" {
         ApiType,
         (
           arg: u32 | AnyNumber | Uint8Array
-        ) => Observable<Option<MantaPrimitivesAssetsAssetRegistarMetadata>>,
+        ) => Observable<Option<MantaPrimitivesAssetsAssetRegistrarMetadata>>,
         [u32]
       > &
         QueryableStorageEntry<ApiType, [u32]>;
@@ -322,6 +323,12 @@ declare module "@polkadot/api-base/types/storage" {
       [key: string]: QueryableStorageEntry<ApiType>;
     };
     collatorSelection: {
+      blocksPerCollatorThisSession: AugmentedQuery<
+        ApiType,
+        (arg: AccountId32 | string | Uint8Array) => Observable<u32>,
+        [AccountId32]
+      > &
+        QueryableStorageEntry<ApiType, [AccountId32]>;
       /**
        * Fixed deposit bond for each candidate.
        */
@@ -345,6 +352,23 @@ declare module "@polkadot/api-base/types/storage" {
       desiredCandidates: AugmentedQuery<ApiType, () => Observable<u32>, []> &
         QueryableStorageEntry<ApiType, []>;
       /**
+       * Performance percentile to use as baseline for collator eviction
+       */
+      evictionBaseline: AugmentedQuery<ApiType, () => Observable<Percent>, []> &
+        QueryableStorageEntry<ApiType, []>;
+      /**
+       * Percentage of underperformance to _tolerate_ before evicting a collator
+       *
+       * I.e. A collator gets evicted if it produced _less_ than x% fewer blocks
+       * than the collator at EvictionBaseline
+       */
+      evictionTolerance: AugmentedQuery<
+        ApiType,
+        () => Observable<Percent>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /**
        * The invulnerable, fixed collators.
        */
       invulnerables: AugmentedQuery<
@@ -353,15 +377,6 @@ declare module "@polkadot/api-base/types/storage" {
         []
       > &
         QueryableStorageEntry<ApiType, []>;
-      /**
-       * Last block authored by collator.
-       */
-      lastAuthoredBlock: AugmentedQuery<
-        ApiType,
-        (arg: AccountId32 | string | Uint8Array) => Observable<u32>,
-        [AccountId32]
-      > &
-        QueryableStorageEntry<ApiType, [AccountId32]>;
       /**
        * Generic query
        */
@@ -639,7 +654,7 @@ declare module "@polkadot/api-base/types/storage" {
     };
     mantaPay: {
       /**
-       * Shards of the merkle tree
+       * Shards of the merkle tree of UTXOs
        */
       shards: AugmentedQuery<
         ApiType,
@@ -651,7 +666,7 @@ declare module "@polkadot/api-base/types/storage" {
       > &
         QueryableStorageEntry<ApiType, [u8, u64]>;
       /**
-       * Shard trees
+       * Shard merkle trees
        */
       shardTrees: AugmentedQuery<
         ApiType,
@@ -671,7 +686,7 @@ declare module "@polkadot/api-base/types/storage" {
       > &
         QueryableStorageEntry<ApiType, [Bytes]>;
       /**
-       * Utxo set
+       * Utxo set of MantaPay protocol
        */
       utxoSet: AugmentedQuery<
         ApiType,
@@ -689,7 +704,8 @@ declare module "@polkadot/api-base/types/storage" {
       > &
         QueryableStorageEntry<ApiType, [Bytes]>;
       /**
-       * Void number set insertion order
+       * Void number set insertion order Each element of the key is an `u64`
+       * insertion order number of void number.
        */
       voidNumberSetInsertionOrder: AugmentedQuery<
         ApiType,
@@ -698,7 +714,7 @@ declare module "@polkadot/api-base/types/storage" {
       > &
         QueryableStorageEntry<ApiType, [u64]>;
       /**
-       * Void number set size
+       * The size of Void Number Set FIXME: this should be removed.
        */
       voidNumberSetSize: AugmentedQuery<ApiType, () => Observable<u64>, []> &
         QueryableStorageEntry<ApiType, []>;
