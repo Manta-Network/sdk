@@ -80,13 +80,13 @@ fn write_checksum<P>(path: P, checksum: Checksum) -> Result<()>
 where
     P: AsRef<Path>,
 {
-    Ok(fs::write(
-        path.as_ref().with_extension("checksum"),
-        checksum,
-    )?)
+    let path = path.as_ref();
+    fs::create_dir_all(parent(path)?)?;
+    Ok(fs::write(path.with_extension("checksum"), checksum)?)
 }
 
-/// Compiles raw data files by copying them to the `out_dir` directory to be interpreted as blobs.
+/// Compiles a raw binary file by checking its BLAKE3 checksum with the `checksums` map and copying
+/// the data and checksum to the `out_dir`.
 #[inline]
 fn compile_dat(source: &Path, out_dir: &Path, checksums: &ChecksumMap) -> Result<()> {
     let checksum = get_checksum(checksums, source)?;
@@ -101,10 +101,15 @@ fn compile_dat(source: &Path, out_dir: &Path, checksums: &ChecksumMap) -> Result
         data,
     );
     let target = out_dir.join(source);
-    fs::create_dir_all(parent(&target)?)?;
-    fs::copy(source, &target)?;
-    write_checksum(target, checksum)?;
+    write_checksum(&target, checksum)?;
+    fs::copy(source, target)?;
     Ok(())
+}
+
+/// Compiles a Git LFS file by writing its checksum to the `out_dir`.
+#[inline]
+fn compile_lfs(source: &Path, out_dir: &Path, checksums: &ChecksumMap) -> Result<()> {
+    write_checksum(out_dir.join(source), get_checksum(checksums, source)?)
 }
 
 /// Loads all the files from `data` into the `OUT_DIR` directory for inclusion into the library.
@@ -119,7 +124,8 @@ fn main() -> Result<()> {
         if !path.is_dir() {
             match path.extension() {
                 Some(extension) => match extension.to_str() {
-                    Some("dat") | Some("lfs") => compile_dat(path, &out_dir, &checksums)?,
+                    Some("dat") => compile_dat(path, &out_dir, &checksums)?,
+                    Some("lfs") => compile_lfs(path, &out_dir, &checksums)?,
                     _ => bail!("Unsupported data file extension."),
                 },
                 _ => bail!("All data files must have an extension."),

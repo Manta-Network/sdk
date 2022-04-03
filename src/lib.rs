@@ -117,7 +117,7 @@ where
 }
 
 /// Defines a data marker type loading its raw data and checksum from disk.
-macro_rules! define {
+macro_rules! define_dat {
     ($name:tt, $doc:expr, $path:expr $(,)?) => {
         #[doc = $doc]
         #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -152,8 +152,8 @@ macro_rules! define {
     };
 }
 
-/// Defines the data marker type for download-required data and checksum from disk.
-macro_rules! define_download {
+/// Defines a data marker type for download-required data from GitHub LFS and checksum from disk.
+macro_rules! define_lfs {
     ($name:tt, $doc:expr, $path:expr $(,)?) => {
         #[doc = $doc]
         #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -225,22 +225,22 @@ pub mod pay {
 
         /// Parameters
         pub mod parameters {
-            define!(
+            define_dat!(
                 KeyAgreement,
                 "Key Agreement Scheme Parameters",
                 "/data/pay/testnet/parameters/key-agreement",
             );
-            define!(
+            define_dat!(
                 UtxoCommitmentScheme,
                 "UTXO Commitment Scheme Parameters",
                 "/data/pay/testnet/parameters/utxo-commitment-scheme",
             );
-            define!(
+            define_dat!(
                 VoidNumberHashFunction,
                 "Void Number Hash Function Parameters",
                 "/data/pay/testnet/parameters/void-number-hash-function",
             );
-            define!(
+            define_dat!(
                 UtxoAccumulatorModel,
                 "UTXO Accumulator Model",
                 "/data/pay/testnet/parameters/utxo-accumulator-model",
@@ -252,17 +252,17 @@ pub mod pay {
             #[cfg(feature = "download")]
             use super::*;
 
-            define_download!(
+            define_lfs!(
                 Mint,
                 "Mint Proving Context",
                 "/data/pay/testnet/proving/mint",
             );
-            define_download!(
+            define_lfs!(
                 PrivateTransfer,
                 "Private Transfer Proving Context",
                 "/data/pay/testnet/proving/private-transfer",
             );
-            define_download!(
+            define_lfs!(
                 Reclaim,
                 "Reclaim Proving Context",
                 "/data/pay/testnet/proving/reclaim",
@@ -271,17 +271,17 @@ pub mod pay {
 
         /// Zero-Knowledge Proof System Verifying Data
         pub mod verifying {
-            define!(
+            define_dat!(
                 Mint,
                 "Mint Verifying Context",
                 "/data/pay/testnet/verifying/mint"
             );
-            define!(
+            define_dat!(
                 PrivateTransfer,
                 "Private Transfer Verifying Context",
                 "/data/pay/testnet/verifying/private-transfer"
             );
-            define!(
+            define_dat!(
                 Reclaim,
                 "Reclaim Verifying Context",
                 "/data/pay/testnet/verifying/reclaim"
