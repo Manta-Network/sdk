@@ -25,3 +25,13 @@ To check that the checkfile is up-to-date use the following command:
 ```sh
 b3sum --check data.checkfile
 ```
+
+## Validating the Dataset
+
+To check that the dataset in the [`data`](./data) directory matches the data exported by the `manta-sdk` crate, run 
+
+```sh
+cargo test --release -- --nocapture
+```
+
+which will download all the files on the GitHub source repository for the current branch and check that all the files match the known checksums.

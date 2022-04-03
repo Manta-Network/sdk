@@ -8,23 +8,6 @@ env:
   RUSTFLAGS: -D warnings
   RUST_BACKTRACE: full
 jobs:
-  test:
-    name: Test (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
-        channel:
-          - stable
-          - nightly
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - run: rustup update ${{ matrix.channel }} --no-self-update && rustup default ${{ matrix.channel }}
-      - run: cargo test --all-features --workspace --release
   lint:
     name: Lint (${{ matrix.os }})
     strategy:
