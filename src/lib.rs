@@ -16,11 +16,7 @@
 
 //! Manta SDK
 
-// TODO: Check checksums when decoding or maybe also when downloading.
-// TODO: Use more code-generation to reduce duplication here.
-// TODO: Have a method of downloading all data from each category.
-
-#![cfg_attr(not(any(feature = "std", test)), no_std)]
+#![no_std]
 #![cfg_attr(doc_cfg, feature(doc_cfg))]
 #![forbid(rustdoc::broken_intra_doc_links)]
 #![forbid(missing_docs)]
@@ -36,7 +32,10 @@ use {anyhow::Result, std::path::Path};
 #[cfg_attr(doc_cfg, doc(cfg(feature = "download")))]
 pub mod github {
     use super::*;
-    use std::fs::{File, OpenOptions};
+    use std::{
+        fs::{File, OpenOptions},
+        string::String,
+    };
 
     /// GitHub Organization
     pub const ORGANIZATION: &str = "manta-network";
@@ -298,10 +297,13 @@ mod test {
     use git2::Repository;
     use hex::FromHex;
     use std::{
+        borrow::ToOwned,
         collections::HashMap,
         fs::{self, File, OpenOptions},
         io::{BufRead, BufReader, Read},
         path::PathBuf,
+        println,
+        string::String,
     };
 
     /// Checks if two files `lhs` and `rhs` have equal content.
