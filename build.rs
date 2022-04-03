@@ -120,7 +120,7 @@ fn main() -> Result<()> {
         if !path.is_dir() {
             match path.extension() {
                 Some(extension) => match extension.to_str() {
-                    Some("dat") => compile_dat(path, &out_dir, &checksums)?,
+                    Some("dat") | Some("lfs") => compile_dat(path, &out_dir, &checksums)?,
                     _ => bail!("Unsupported data file extension."),
                 },
                 _ => bail!("All data files must have an extension."),

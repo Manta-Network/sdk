@@ -183,7 +183,7 @@ macro_rules! define_download {
             {
                 github::download(
                     github::DEFAULT_BRANCH,
-                    concat!($path, ".dat"),
+                    concat!($path, ".lfs"),
                     path,
                     Self::CHECKSUM,
                 )
@@ -211,7 +211,10 @@ macro_rules! define_download {
 }
 
 /// Trusted Setup
-pub mod trusted_setup {}
+pub mod trusted_setup {
+    /// Trusted Setup for the BLS12-381 Curve
+    pub mod bls12_381 {}
+}
 
 /// Manta Pay
 ///
