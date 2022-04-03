@@ -8,3 +8,5 @@ d5d73fd62ff0f7bf8945f34e27b1471c0445e9835313ebb689be80a8ea3e7cee  data/pay/testn
 2624fa19b9193eec55d83f72b090cd08623c351382c02add861e0626ac59de5f  data/pay/testnet/verifying/mint.dat
 c90cd08e2ed765b35888e6dc93c963919ed4cbf66db891c1b45d3eb5ec594d29  data/pay/testnet/verifying/private-transfer.dat
 69726f8db5b9bf9c5c4592d473c741fff08a909bdfa4c8fc0508c207c9a4ad3d  data/pay/testnet/verifying/reclaim.dat
+b0afebeb04bbaafb503393b84003edb1ec515d5bdc822e3df9559285ff23dda3  data/trusted-setup/bls12-381/powers-of-tau-g1.lfs
+3add4e890bb3e82f8346e31b0b4bad3c77da38f0605b4af33ba17eab2dd0e56e  data/trusted-setup/bls12-381/powers-of-tau-g2.lfs
