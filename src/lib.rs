@@ -295,6 +295,7 @@ pub mod pay {
 mod test {
     use super::*;
     use anyhow::{anyhow, bail, Result};
+    use git2::Repository;
     use hex::FromHex;
     use std::{
         collections::HashMap,
@@ -361,26 +362,27 @@ mod test {
             .map(move |c| *c)
     }
 
+    /// Returns the name of the current branch of this crate as a Git repository.
+    #[inline]
+    fn get_current_branch() -> Result<String> {
+        let repo = Repository::discover(".")?;
+        let head = repo.head()?;
+        if head.is_branch() {
+            Ok(head
+                .shorthand()
+                .ok_or_else(|| anyhow!("Unable to generate shorthand for branch name."))?
+                .to_owned())
+        } else {
+            bail!("Current Git HEAD reference is not at a branch.")
+        }
+    }
+
     /// Downloads all data from GitHub and checks if they are the same as the data known locally to
     /// this Rust crate.
     #[test]
     fn download_all_data() -> Result<()> {
-        let current_branch = {
-            let repo = git2::Repository::discover(".")?;
-            // println!("REPO: {:?}", repo);
-            let head = repo.head()?;
-            // println!("HEAD: {:?}", head);
-            if head.is_branch() {
-                head.shorthand().ok_or_else(|| anyhow!(""))?.to_owned()
-            } else {
-                bail!("")
-            }
-        };
-
-        println!("CURRENT BRANCH: {:?}", current_branch);
-        panic!("DONE");
-
-        let directory = tempfile::tempdir().expect("Unable to generate temporary test directory.");
+        let current_branch = get_current_branch()?;
+        let directory = tempfile::tempdir()?;
         println!("[INFO] Temporary Directory: {:?}", directory);
         let checksums = parse_checkfile("data.checkfile")?;
         let directory_path = directory.path();
