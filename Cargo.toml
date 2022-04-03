@@ -1,7 +1,7 @@
 [package]
 name = "manta-sdk"
 edition = "2021"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Manta Network <contact@manta.network>"]
 readme = "README.md"
 license-file = "LICENSE"
@@ -26,27 +26,25 @@ is-it-maintained-open-issues = { repository = "Manta-Network/sdk" }
 maintenance = { status = "actively-developed" }
 
 [features]
-# Enable Allocation
-alloc = []
-
 # Enable Standard Library
-std = ["alloc"]
+std = []
 
 # Download Data from GitHub
 download = ["anyhow/std", "attohttpc", "std"]
 
 [dependencies]
-anyhow = { version = "1.0.55", default-features = false, optional = true }
+anyhow = { version = "1.0.56", optional = true, default-features = false }
 attohttpc = { version = "0.18.0", optional = true }
 blake3 = { version = "1.3.1", default-features = false }
 
 [dev-dependencies]
+git2 = { version = "0.14.2", default-features = false }
 hex = { version = "0.4.3", default-features = false, features = ["std"] }
 tempfile = { version = "3.3.0", default-features = false }
 walkdir = { version = "2.3.2", default-features = false }
 
 [build-dependencies]
-anyhow = { version = "1.0.55", default-features = false, features = ["std"] }
+anyhow = { version = "1.0.56", default-features = false, features = ["std"] }
 blake3 = { version = "1.3.1", default-features = false, features = ["std"] }
 hex = { version = "0.4.3", default-features = false, features = ["std"] }
 walkdir = { version = "2.3.2", default-features = false }

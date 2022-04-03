@@ -29,9 +29,8 @@ use std::{
 /// Returns the parent of `path` which should exist relative to `OUT_DIR`.
 #[inline]
 fn parent(path: &Path) -> Result<&Path> {
-    path.parent().ok_or(anyhow!(
-        "The parent should be in the subtree of the `OUT_DIR` directory."
-    ))
+    path.parent()
+        .ok_or_else(|| anyhow!("The parent should be in the subtree of the `OUT_DIR` directory."))
 }
 
 /// Checksum

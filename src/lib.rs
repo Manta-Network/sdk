@@ -25,9 +25,6 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 #![forbid(missing_docs)]
 
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
 #[cfg(feature = "std")]
 extern crate std;
 
@@ -53,7 +50,7 @@ pub mod github {
     /// Returns the Git-LFS URL for GitHub content at the given `branch` and `data_path`.
     #[inline]
     pub fn lfs_url(branch: &str, data_path: &str) -> String {
-        alloc::format!(
+        std::format!(
             "https://media.githubusercontent.com/media/{ORGANIZATION}/{REPO}/{branch}/{data_path}"
         )
     }
@@ -61,9 +58,7 @@ pub mod github {
     /// Returns the raw file storage URL for GitHub content at the given `branch` and `data_path`.
     #[inline]
     pub fn raw_url(branch: &str, data_path: &str) -> String {
-        alloc::format!(
-            "https://raw.githubusercontent.com/{ORGANIZATION}/{REPO}/{branch}/{data_path}"
-        )
+        std::format!("https://raw.githubusercontent.com/{ORGANIZATION}/{REPO}/{branch}/{data_path}")
     }
 
     /// Downloads the data from `url` to `file` returning the number of bytes read.
@@ -370,6 +365,21 @@ mod test {
     /// this Rust crate.
     #[test]
     fn download_all_data() -> Result<()> {
+        let current_branch = {
+            let repo = git2::Repository::discover(".")?;
+            // println!("REPO: {:?}", repo);
+            let head = repo.head()?;
+            // println!("HEAD: {:?}", head);
+            if head.is_branch() {
+                head.shorthand().ok_or_else(|| anyhow!(""))?.to_owned()
+            } else {
+                bail!("")
+            }
+        };
+
+        println!("CURRENT BRANCH: {:?}", current_branch);
+        panic!("DONE");
+
         let directory = tempfile::tempdir().expect("Unable to generate temporary test directory.");
         println!("[INFO] Temporary Directory: {:?}", directory);
         let checksums = parse_checkfile("data.checkfile")?;
@@ -382,7 +392,7 @@ mod test {
                 let target = directory_path.join(path);
                 fs::create_dir_all(target.parent().unwrap())?;
                 github::download(
-                    github::DEFAULT_BRANCH,
+                    &current_branch,
                     path.to_str().unwrap(),
                     &target,
                     &get_checksum(&checksums, path)?,
