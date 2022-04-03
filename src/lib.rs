@@ -210,6 +210,9 @@ macro_rules! define_download {
     };
 }
 
+/// Trusted Setup
+pub mod trusted_setup {}
+
 /// Manta Pay
 ///
 /// See [`manta-pay`](https://github.com/manta-network/manta-rs) for the definitions.
