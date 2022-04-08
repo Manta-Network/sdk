@@ -236,9 +236,9 @@ pub mod pay {
         /// Parameters
         pub mod parameters {
             define_dat!(
-                KeyAgreement,
-                "Key Agreement Scheme Parameters",
-                "/data/pay/testnet/parameters/key-agreement",
+                NoteEncryptionScheme,
+                "Note Encryption Scheme Parameters",
+                "/data/pay/testnet/parameters/note-encryption-scheme",
             );
             define_dat!(
                 UtxoCommitmentScheme,
@@ -246,9 +246,9 @@ pub mod pay {
                 "/data/pay/testnet/parameters/utxo-commitment-scheme",
             );
             define_dat!(
-                VoidNumberHashFunction,
-                "Void Number Hash Function Parameters",
-                "/data/pay/testnet/parameters/void-number-hash-function",
+                VoidNumberCommitmentScheme,
+                "Void Number Commitment Scheme Parameters",
+                "/data/pay/testnet/parameters/void-number-commitment-scheme",
             );
             define_dat!(
                 UtxoAccumulatorModel,
