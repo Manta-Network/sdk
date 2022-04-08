@@ -93,7 +93,11 @@ pub mod github {
     {
         let path = path.as_ref();
         download_unchecked(branch, data_path, &path)?;
-        anyhow::ensure!(verify_file(path, checksum)?, "Checksum did not match.");
+        anyhow::ensure!(
+            verify_file(path, checksum)?,
+            "Checksum did not match. Expected: {:?}",
+            checksum
+        );
         Ok(())
     }
 }
