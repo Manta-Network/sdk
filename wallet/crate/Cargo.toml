@@ -1,0 +1,23 @@
+[package]
+name = "wallet"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+console_error_panic_hook = { version = "0.1.7" }
+futures = { version = "0.3.21", default-features = false, features = ["executor"] }
+js-sys = { version = "0.3.56" }
+manta-accounting = { path = "../../../manta-rs/manta-accounting", default-features = false, features = ["serde"] }
+manta-crypto = { path = "../../../manta-rs/manta-crypto", default-features = false, features = ["serde"] }
+manta-pay = { path = "../../../manta-rs/manta-pay", default-features = false, features = ["groth16", "http", "serde"] }
+manta-util = { path = "../../../manta-rs/manta-util", default-features = false, features = ["serde"] }
+serde_json = { version = "1.0.79", default-features = false, features = ["alloc", "arbitrary_precision"] }
+wasm-bindgen = { version = "0.2.79", default-features = false, features = ["serde-serialize", "std"] }
+wasm-bindgen-futures = { version = "0.4.29" }
+
+[profile.release]
+debug = true
