@@ -33,8 +33,8 @@ export default class Api {
   // Constructs an API from a polkadot-js API.
   constructor(api, externalAccountSigner) {
     this.api = api;
-    this.externalAccountSigner = externalAccountSigner
-    this.txResHandler = null
+    this.externalAccountSigner = externalAccountSigner;
+    this.txResHandler = null;
   }
 
   setTxResHandler = (txResHandler) => {
@@ -42,12 +42,11 @@ export default class Api {
   }
 
   async _pull_senders(checkpoint, new_checkpoint) {
-    const RECEIVER_PAGE_SIZE = 100;
     const sender_index = checkpoint.sender_index;
-    const entries = await this.api.query.mantaPay.voidNumberSetInsertionOrder.entriesPaged({ args: [], pageSize: RECEIVER_PAGE_SIZE, startKey: sender_index })
+    const entries = await this.api.query.mantaPay.voidNumberSetInsertionOrder.entries();
     const voidNumbers = entries
       .map((storageItem) => Array.from(storageItem[1].toU8a()))
-      .slice(sender_index, sender_index + RECEIVER_PAGE_SIZE)
+      .slice(sender_index);
 
     new_checkpoint.sender_index = sender_index + voidNumbers.length;
 
@@ -65,15 +64,12 @@ export default class Api {
 
   async _pull_receivers_single_shard(shard_index, checkpoint, new_checkpoint) {
     let new_receivers = [];
-    const RECEIVER_PAGE_SIZE = 100;
     let receivers = [];
-    do {
-      const start_key = checkpoint.receiver_index[shard_index]
-      const shard = await api.query.mantaPay.shards.entriesPaged({ args: [shard_index], pageSize: RECEIVER_PAGE_SIZE, startKey: checkpoint.receiver_index[shard_index] })
-      receivers = shard.map((entry) => [Array.from(entry[1][0].toU8a()), this._encrypted_note_to_json(entry[1][1])]);
-      new_receivers = [...receivers, ...new_receivers]
-      new_checkpoint.receiver_index[shard_index] = start_key + receivers.length;
-    } while (receivers.length === RECEIVER_PAGE_SIZE);
+    const receiver_index = checkpoint.receiver_index[shard_index];
+    const shard = await api.query.mantaPay.shards.entries(shard_index);
+    receivers = shard.slice(receiver_index).map((entry) => [Array.from(entry[1][0].toU8a()), this._encrypted_note_to_json(entry[1][1])]);
+    new_receivers = [...receivers, ...new_receivers];
+    new_checkpoint.receiver_index[shard_index] = receiver_index + receivers.length;
     return new_receivers;
   }
 
