@@ -1,7 +1,22 @@
+// Copyright 2019-2022 Manta Network.
+// This file is part of manta-wallet.
+//
+// manta-wallet is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// manta-wallet is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with manta-wallet. If not, see <http://www.gnu.org/licenses/>.
+
 //! Manta Pay Wallet
 
 #![no_std]
-#![allow(clippy::unused_unit)]
 
 extern crate alloc;
 extern crate console_error_panic_hook;
@@ -35,12 +50,9 @@ use manta_util::{
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
 
-#[wasm_bindgen(module = "/api.js")]
+#[wasm_bindgen]
 extern "C" {
     pub type Api;
-
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
 
     #[wasm_bindgen(structural, method)]
     async fn pull(this: &Api, checkpoint: JsValue) -> JsValue;
@@ -162,15 +174,20 @@ impl_js_compatible!(
 );
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 
-///
+/// Asset Type
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
-pub struct AssetType {
-    ///
-    pub id: asset::AssetId,
+struct AssetType {
+    /// Asset Id
+    id: asset::AssetId,
 
+    /// Asset Value
     ///
-    pub value: String,
+    /// This is meant to represent a value of type [`asset::AssetValue`] which is too big to fit
+    /// into a Javascript integer. Because we don't have access to the Big Number APIs from Rust,
+    /// we just send a `String` back and forth and have Javascript convert it into a numeric
+    /// representation.
+    value: String,
 }
 
 impl From<Asset> for asset::Asset {
@@ -189,10 +206,20 @@ impl From<Asset> for asset::Asset {
     }
 }
 
+impl From<asset::Asset> for Asset {
+    #[inline]
+    fn from(asset: asset::Asset) -> Asset {
+        Self(AssetType {
+            id: asset.id,
+            value: asset.value.0.to_string(),
+        })
+    }
+}
+
 /// Transaction Types
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
-pub enum TransactionType {
+enum TransactionType {
     /// Mint
     Mint(Asset),
 
@@ -297,10 +324,7 @@ impl PolkadotJsLedger {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(crate = "manta_util::serde")]
 #[wasm_bindgen]
-pub enum LedgerError {
-    /// Base Error
-    Base,
-}
+pub struct LedgerError;
 
 impl ledger::Connection<Config> for PolkadotJsLedger {
     type Checkpoint = Checkpoint;
@@ -440,7 +464,7 @@ impl Wallet {
             f(&mut this.borrow_mut())
                 .await
                 .map(into_js)
-                .map_err(|err| into_js(format!("{:?}", err)))
+                .map_err(|err| into_js(format!("Error during asynchronous call: {:?}", err)))
         })
     }
 
@@ -506,15 +530,12 @@ impl Wallet {
     /// implementations to perform checks elsewhere.
     #[inline]
     pub fn check(&self, transaction: &Transaction) -> Result<TransactionKind, Asset> {
-        let _ = transaction;
-        /* TODO:
+        // FIXME: Use a better API so we can remove the `clone`.
         self.0
             .borrow()
-            .check(transaction.as_ref())
+            .check(&transaction.clone().into())
             .map(Into::into)
             .map_err(Into::into)
-        */
-        todo!()
     }
 
     /// Posts a transaction to the ledger, returning `true` if the `transaction` was successfully

@@ -1,12 +1,17 @@
+# Manta Wallet JS-Binding
+
+These packages implement a Javascript binding for the Manta Wallet API. See [`manta-rs`](https://github.com/manta-network/manta-rs) for more on this API.
+
 ## Installation
-```
+
+```sh
 yarn install manta-wasm-wallet
 yarn install manta-wasm-wallet-api
 ```
 
 ## Usage
-```js
 
+```javascript
 import Api from 'manta-wasm-wallet-api';
 
 const example = async () => {
@@ -25,24 +30,22 @@ const example = async () => {
     const ledger = new PolkadotJsLedger(wasmApi);
     let wallet = new Wallet(ledger, signer);
 
-    const handleTxRes = ({ status, events }) => {
+    wasmApi.setTxResHandler(({ status, events }) => {
         if (status.isFinalized) {
             for (const event of events) {
                 if (api.events.utility.BatchInterrupted.is(event.event)) {
-                console.log('failure')
-                // handle failed tx here
+                    console.log('failure')
+                    // handle failed tx here
                 } else if (api.events.utility.BatchCompleted.is(event.event)) {
-                console.log('success')
-                // handle successful tx here
+                    console.log('success')
+                    // handle successful tx here
                 }
             }
         }
-    }
-    wasmApi.setTxResHandler(txResHandler);
+    });
     
     const txJson = `{ "Mint": { "id": 8, "value": "111" }}`;
     const transaction = wasm.Transaction.from_string(txJson);
     wallet.post(transaction, null);
 }
-
 ```
