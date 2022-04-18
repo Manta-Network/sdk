@@ -31,7 +31,6 @@
     "pretty": "prettier --write --ignore-unknown --plugin prettier-plugin-jsdoc 'src/**/*' 'scripts/**/*'"
   },
   "main": "./index.cjs",
-  "type": "module",
   "module": "./index.js",
   "types": "./index.d.ts",
   "exports": {
