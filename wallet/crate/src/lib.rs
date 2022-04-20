@@ -415,8 +415,8 @@ impl Wallet {
 
     /// Returns the current balance associated with this `id`.
     #[inline]
-    pub fn balance(&self, id: AssetId) -> JsValue {
-        into_js(self.0.borrow().balance(id.into()))
+    pub fn balance(&self, id: AssetId) -> String {
+        self.0.borrow().balance(id.into()).to_string()
     }
 
     /// Returns true if `self` contains at least `asset.value` of the asset of kind `asset.id`.
