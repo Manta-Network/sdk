@@ -326,10 +326,13 @@ impl PolkadotJsLedger {
 #[wasm_bindgen]
 pub struct LedgerError;
 
-impl ledger::Connection<Config> for PolkadotJsLedger {
+impl ledger::PullConfiguration<Config> for PolkadotJsLedger {
     type Checkpoint = Checkpoint;
     type ReceiverChunk = Vec<(Utxo, EncryptedNote)>;
     type SenderChunk = Vec<VoidNumber>;
+}
+
+impl ledger::Connection<Config> for PolkadotJsLedger {
     type PushResponse = String;
     type Error = LedgerError;
 
@@ -338,7 +341,8 @@ impl ledger::Connection<Config> for PolkadotJsLedger {
         &'s mut self,
         checkpoint: &'s Self::Checkpoint,
     ) -> LocalBoxFutureResult<'s, PullResponse<Config, Self>, Self::Error> {
-        Box::pin(async { from_js(self.0.pull(borrow_js(checkpoint)).await) })
+        // TODO: Box::pin(async { from_js(self.0.pull(borrow_js(checkpoint)).await) })
+        todo!()
     }
 
     #[inline]
@@ -415,8 +419,8 @@ impl Wallet {
 
     /// Returns the current balance associated with this `id`.
     #[inline]
-    pub fn balance(&self, id: AssetId) -> JsValue {
-        into_js(self.0.borrow().balance(id.into()))
+    pub fn balance(&self, id: AssetId) -> String {
+        self.0.borrow().balance(id.into()).to_string()
     }
 
     /// Returns true if `self` contains at least `asset.value` of the asset of kind `asset.id`.

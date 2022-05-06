@@ -14,6 +14,7 @@ export default class Api {
     this.txResHandler = txResHandler;
   }
 
+  /*
   // Pulls sender data starting from `checkpoint`.
   async _pull_senders(checkpoint, new_checkpoint) {
     const sender_index = checkpoint.sender_index;
@@ -56,6 +57,42 @@ export default class Api {
         ciphertext: Array.from(encrypted_note.ciphertext.toU8a()),
     }
   }
+  */
+
+  // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
+  async pull(checkpoint) {
+    await this.api.isReady;
+
+    /*
+    const new_checkpoint = { receiver_index: {}, sender_index: null };
+    
+    // NOTE: The receiver indices represent the indices into the sharded utxo set. The utxos and
+    //       encrypted notes should be pulled from the `Shards` storage structure. For each
+    //       index in this array, we start the pull from that index and proceed forward until we
+    //       reach the end of that particular shard.
+    const receivers = await this._pull_receivers(checkpoint, new_checkpoint);
+    
+    // NOTE: The sender index represents the index into the void number set. The void numbers
+    //       should be pulled from the `VoidNumberSetInsertionOrder` storage structure starting
+    //       from this index.
+    const senders = await this._pull_senders(checkpoint, new_checkpoint);
+
+    new_checkpoint.receiver_index = Object.values(new_checkpoint.receiver_index);
+    return {
+      Ok: {
+        should_continue: false,
+        checkpoint: new_checkpoint,
+        receivers,
+        senders,
+      }
+    };
+    */
+
+    console.log(checkpoint);
+    let result = await this.api.rpc.mantaPayPull(checkpoint);
+    console.log(result);
+    result
+  }
 
   // Maps a transfer post object to its corresponding MantaPay extrinsic.
   async _map_post_to_transaction(post) {
@@ -81,34 +118,7 @@ export default class Api {
     }
   }
 
-  // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
-  async pull(checkpoint) {
-    await this.api.isReady;
-    const new_checkpoint = { receiver_index: {}, sender_index: null };
-    
-    // NOTE: The receiver indices represent the indices into the sharded utxo set. The utxos and
-    //       encrypted notes should be pulled from the `Shards` storage structure. For each
-    //       index in this array, we start the pull from that index and proceed forward until we
-    //       reach the end of that particular shard.
-    const receivers = await this._pull_receivers(checkpoint, new_checkpoint);
-    
-    // NOTE: The sender index represents the index into the void number set. The void numbers
-    //       should be pulled from the `VoidNumberSetInsertionOrder` storage structure starting
-    //       from this index.
-    const senders = await this._pull_senders(checkpoint, new_checkpoint);
-
-    new_checkpoint.receiver_index = Object.values(new_checkpoint.receiver_index);
-    return {
-      Ok: {
-        should_continue: false,
-        checkpoint: new_checkpoint,
-        receivers,
-        senders,
-      }
-    };
-  }
-
-  // Sends a set of transfer posts (i.e. "transactions") to the ledger (preferably batched).
+  // Sends a set of transfer posts (i.e. "transactions") to the ledger.
   async push(posts) {
     await this.api.isReady;
     const transactions = [];
@@ -116,8 +126,17 @@ export default class Api {
       const transaction = await this._map_post_to_transaction(post);
       transactions.push(transaction);
     }
-    const batchTx = await this.api.tx.utility.batch(transactions);
-    await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler);
-    return { Ok: "" };
+    try {
+      const batchTx = await this.api.tx.utility.batch(transactions);
+      console.log("[INFO] Batch Transaction:", batchTx);
+      console.log("[INFO] Result:", await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler));
+      return { Ok: SUCCESS };
+    } catch(err) {
+      console.error(err);
+      return { Ok: FAILURE }
+    }
   }
 }
+
+export const SUCCESS = "success";
+export const FAILURE = "failure";
