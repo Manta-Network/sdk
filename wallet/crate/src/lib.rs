@@ -46,6 +46,7 @@ use manta_util::{
     future::LocalBoxFutureResult,
     ops,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
+    serde_with,
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
@@ -332,6 +333,89 @@ impl ledger::PullConfiguration<Config> for PolkadotJsLedger {
     type SenderChunk = Vec<VoidNumber>;
 }
 
+/// Decodes the `bytes` array of the given length `N` into the SCALE decodable type `T` returning a
+/// blanket error if decoding fails.
+#[inline]
+pub(crate) fn decode<T, const N: usize>(bytes: [u8; N]) -> Result<T, scale_codec::Error>
+where
+    T: scale_codec::Decode,
+{
+    T::decode(&mut bytes.as_slice())
+}
+
+/// Raw UTXO Type
+pub type RawUtxo = [u8; 32];
+
+/// Raw Void Number Type
+pub type RawVoidNumber = [u8; 32];
+
+/// Raw Encrypted Note
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde")]
+pub struct RawEncryptedNote {
+    /// Ephemeral Public Key
+    pub ephemeral_public_key: [u8; 32],
+
+    /// Ciphertext
+    #[serde(with = "serde_with::As::<[serde_with::Same; 68]>")]
+    pub ciphertext: [u8; 68],
+}
+
+impl TryFrom<RawEncryptedNote> for EncryptedNote {
+    type Error = scale_codec::Error;
+
+    #[inline]
+    fn try_from(encrypted_note: RawEncryptedNote) -> Result<Self, Self::Error> {
+        Ok(Self {
+            ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
+            ciphertext: encrypted_note.ciphertext.into(),
+        })
+    }
+}
+
+/// Raw Pull Response
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde")]
+pub struct RawPullResponse {
+    /// Should Continue Flag
+    pub should_continue: bool,
+
+    /// Latest Checkpoint
+    pub checkpoint: Checkpoint,
+
+    /// Receiver Data
+    pub receivers: Vec<(RawUtxo, RawEncryptedNote)>,
+
+    /// Sender Data
+    pub senders: Vec<RawVoidNumber>,
+}
+
+impl TryFrom<RawPullResponse> for PullResponse<Config, PolkadotJsLedger> {
+    type Error = ();
+
+    #[inline]
+    fn try_from(response: RawPullResponse) -> Result<Self, Self::Error> {
+        Ok(Self {
+            should_continue: response.should_continue,
+            checkpoint: response.checkpoint,
+            receivers: response
+                .receivers
+                .into_iter()
+                .map(|(utxo, encrypted_note)| {
+                    decode(utxo).and_then(|u| encrypted_note.try_into().map(|n| (u, n)))
+                })
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|_| ())?,
+            senders: response
+                .senders
+                .into_iter()
+                .map(decode)
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|_| ())?,
+        })
+    }
+}
+
 impl ledger::Connection<Config> for PolkadotJsLedger {
     type PushResponse = String;
     type Error = LedgerError;
@@ -341,8 +425,13 @@ impl ledger::Connection<Config> for PolkadotJsLedger {
         &'s mut self,
         checkpoint: &'s Self::Checkpoint,
     ) -> LocalBoxFutureResult<'s, PullResponse<Config, Self>, Self::Error> {
-        // TODO: Box::pin(async { from_js(self.0.pull(borrow_js(checkpoint)).await) })
-        todo!()
+        Box::pin(async {
+            Ok(
+                from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
+                    .try_into()
+                    .expect(""),
+            )
+        })
     }
 
     #[inline]
