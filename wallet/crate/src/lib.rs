@@ -35,11 +35,12 @@ use manta_accounting::{
     transfer::canonical,
     wallet::{
         self,
-        ledger::{self, PullResponse},
+        ledger::{self, ReadResponse},
+        signer::SyncData,
     },
 };
 use manta_pay::{
-    config::{self, Config, EncryptedNote, Utxo, VoidNumber},
+    config::{self, Config},
     signer::{self, Checkpoint},
 };
 use manta_util::{
@@ -326,26 +327,31 @@ impl PolkadotJsLedger {
 #[wasm_bindgen]
 pub struct LedgerError;
 
-impl ledger::Connection<Config> for PolkadotJsLedger {
-    type Checkpoint = Checkpoint;
-    type ReceiverChunk = Vec<(Utxo, EncryptedNote)>;
-    type SenderChunk = Vec<VoidNumber>;
-    type PushResponse = String;
+impl ledger::Connection for PolkadotJsLedger {
     type Error = LedgerError;
+}
+
+impl ledger::Read<SyncData<Config>> for PolkadotJsLedger {
+    type Checkpoint = Checkpoint;
 
     #[inline]
-    fn pull<'s>(
+    fn read<'s>(
         &'s mut self,
         checkpoint: &'s Self::Checkpoint,
-    ) -> LocalBoxFutureResult<'s, PullResponse<Config, Self>, Self::Error> {
+    ) -> LocalBoxFutureResult<'s, ReadResponse<Self::Checkpoint, SyncData<Config>>, Self::Error>
+    {
         Box::pin(async { from_js(self.0.pull(borrow_js(checkpoint)).await) })
     }
+}
+
+impl ledger::Write<Vec<config::TransferPost>> for PolkadotJsLedger {
+    type Response = String;
 
     #[inline]
-    fn push(
+    fn write(
         &mut self,
         posts: Vec<config::TransferPost>,
-    ) -> LocalBoxFutureResult<Self::PushResponse, Self::Error> {
+    ) -> LocalBoxFutureResult<Self::Response, Self::Error> {
         Box::pin(async {
             from_js(
                 self.0
@@ -538,22 +544,38 @@ impl Wallet {
             .map_err(Into::into)
     }
 
-    /// Posts a transaction to the ledger, returning `true` if the `transaction` was successfully
-    /// saved onto the ledger. This method automatically synchronizes with the ledger before
-    /// posting, _but not after_. To amortize the cost of future calls to [`post`](Self::post), the
-    /// [`sync`](Self::sync) method can be used to synchronize with the ledger.
+    /// Signs the `transaction` using the signer connection, sending `metadata` for context. This
+    /// method _does not_ automatically sychronize with the ledger. To do this, call the
+    /// [`sync`](Self::sync) method separately.
+    #[inline]
+    pub fn sign(&self, transaction: Transaction, metadata: Option<AssetMetadata>) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.sign(transaction.into(), metadata.map(Into::into))
+                    .await
+            })
+        })
+    }
+
+    /// Posts a transaction to the ledger, returning a success [`Response`] if the `transaction`
+    /// was successfully posted to the ledger. This method automatically synchronizes with the
+    /// ledger before posting, _but not after_. To amortize the cost of future calls to [`post`],
+    /// the [`sync`] method can be used to synchronize with the ledger.
     ///
     /// # Failure Conditions
     ///
-    /// This method returns `false` when there were no errors in producing transfer data and
+    /// This method returns a [`Response`] when there were no errors in producing transfer data and
     /// sending and receiving from the ledger, but instead the ledger just did not accept the
-    /// transaction as is. This could be caused by an external update to the ledger while the
-    /// signer was building the transaction that caused the wallet and the ledger to get out of
-    /// sync. In this case, [`post`](Self::post) can safely be called again, to retry the
-    /// transaction.
+    /// transaction as is. This could be caused by an external update to the ledger while the signer
+    /// was building the transaction that caused the wallet and the ledger to get out of sync. In
+    /// this case, [`post`] can safely be called again, to retry the transaction.
     ///
     /// This method returns an error in any other case. The internal state of the wallet is kept
     /// consistent between calls and recoverable errors are returned for the caller to handle.
+    ///
+    /// [`Response`]: ledger::Write::Response
+    /// [`post`]: Self::post
+    /// [`sync`]: Self::sync
     #[inline]
     pub fn post(&self, transaction: Transaction, metadata: Option<AssetMetadata>) -> Promise {
         self.with_async(|this| {

@@ -106,11 +106,24 @@ export default class Api {
     return {
       Ok: {
         should_continue: false,
-        checkpoint: new_checkpoint,
-        receivers,
-        senders,
+        next_checkpoint: new_checkpoint,
+        data: { receivers, senders },
       }
     };
+  }
+
+  //
+  async _push_batch(batch) {
+    console.log("[INFO] Batch: ", batch);
+    try {
+      const batchTx = await this.api.tx.utility.batch(batch);
+      console.log("[INFO] Batch Transaction: ", batchTx);
+      await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler);
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
   }
 
   // Sends a set of transfer posts (i.e. "transactions") to the ledger (preferably batched).
@@ -121,8 +134,13 @@ export default class Api {
       const transaction = await this._map_post_to_transaction(post);
       transactions.push(transaction);
     }
-    const batchTx = await this.api.tx.utility.batch(transactions);
-    await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler);
-    return { Ok: "" };
+    if (this._push_batch(transactions)) {
+      return { Ok: SUCCESS };
+    } else {
+      return { Ok: FAILURE };
+    }
   }
 }
+
+export const SUCCESS = "success";
+export const FAILURE = "failure";

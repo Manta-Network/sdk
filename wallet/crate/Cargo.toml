@@ -31,10 +31,10 @@ crate-type = ["cdylib"]
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", default-features = false }
 js-sys = { version = "0.3.56", default-features = false }
-manta-accounting = { git = "https://github.com/manta-network/manta-rs.git", default-features = false, features = ["serde"] }
-manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", default-features = false, features = ["serde"] }
-manta-pay = { git = "https://github.com/manta-network/manta-rs.git", default-features = false, features = ["groth16", "http", "serde"] }
-manta-util = { git = "https://github.com/manta-network/manta-rs.git", default-features = false, features = ["serde"] }
+manta-accounting = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/improve-sync", default-features = false, features = ["serde"] }
+manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/improve-sync", default-features = false, features = ["serde"] }
+manta-pay = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/improve-sync", default-features = false, features = ["groth16", "http", "serde"] }
+manta-util = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/improve-sync", default-features = false, features = ["serde"] }
 serde_json = { version = "1.0.79", default-features = false, features = ["alloc", "arbitrary_precision"] }
 wasm-bindgen = { version = "0.2.79", default-features = false, features = ["serde-serialize", "std"] }
 wasm-bindgen-futures = { version = "0.4.29", default-features = false }
