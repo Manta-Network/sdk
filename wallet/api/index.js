@@ -134,7 +134,8 @@ export default class Api {
       const transaction = await this._map_post_to_transaction(post);
       transactions.push(transaction);
     }
-    if (this._push_batch(transactions)) {
+    const success = await this._push_batch(transactions)
+    if (success) {
       return { Ok: SUCCESS };
     } else {
       return { Ok: FAILURE };
