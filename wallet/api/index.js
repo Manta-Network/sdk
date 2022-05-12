@@ -18,11 +18,12 @@ export default class Api {
   async _pull_senders(checkpoint, new_checkpoint) {
     const sender_index = checkpoint.sender_index;
     const entries = await this.api.query.mantaPay.voidNumberSetInsertionOrder.entries();
-    const senders = entries
-      .map((entry) => Array.from(entry[1].toU8a()))
-      .slice(sender_index);
-    new_checkpoint.sender_index = sender_index + senders.length;
-    return senders;
+    const number_of_new_senders = entries.length - sender_index;
+    const sender_indices = Array.from(new Array(number_of_new_senders), (_, i) => i + sender_index);
+    const new_senders_raw = await api.query.mantaPay.voidNumberSetInsertionOrder.multi(sender_indices);
+    const new_senders = new_senders_raw.map(sender => Array.from(sender.toU8a()))
+    new_checkpoint.sender_index = sender_index + new_senders.length;
+    return new_senders;
   }
 
   // Pulls receiver data starting from `checkpoint`.
