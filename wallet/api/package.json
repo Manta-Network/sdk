@@ -1,6 +1,6 @@
 {
     "name": "manta-wasm-wallet-api",
-    "version": "1.1.0-dev2",
+    "version": "1.1.0-dev3",
     "main": "./index.js",
     "private": false
 }
