@@ -14,22 +14,38 @@ export default class Api {
     this.txResHandler = txResHandler;
   }
 
+  _sort_senders = (a, b) => {
+    return parseInt(a[0].toHuman()) > parseInt(b[0].toHuman()) ? 1 : -1
+  }
+
   // Pulls sender data starting from `checkpoint`.
   async _pull_senders(checkpoint, new_checkpoint) {
     const sender_index = checkpoint.sender_index;
     const entries = await this.api.query.mantaPay.voidNumberSetInsertionOrder.entries();
     const senders = entries
+      .sort(this._sort_senders)
       .map((entry) => Array.from(entry[1].toU8a()))
       .slice(sender_index);
     new_checkpoint.sender_index = sender_index + senders.length;
     return senders;
   }
 
+  _sort_receivers = (a, b) => {
+    const [a_shard_index, a_receiver_index] = a[0].toHuman().map(num => parseInt(num));
+    const [b_shard_index, b_receiver_index] = b[0].toHuman().map(num => parseInt(num));
+    if (a_shard_index > b_shard_index) {
+      return 1
+    } else if (a_shard_index === b_shard_index && a_receiver_index > b_receiver_index) {
+      return 1
+    }
+    return -1
+  }
+
   // Pulls receiver data starting from `checkpoint`.
   async _pull_receivers(checkpoint, new_checkpoint) {
     const new_receivers = []
-
     let entries_raw = await this.api.query.mantaPay.shards.entries()
+    entries_raw.sort(this._sort_receivers);
     const entries = entries_raw.map(([storage_key, receiver_raw]) => {
       let map_keys = storage_key.args.map((k) => k.toHuman())
       let shard_index = parseInt(map_keys[0]);
