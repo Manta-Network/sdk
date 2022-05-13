@@ -553,6 +553,13 @@ impl Wallet {
             Box::pin(async {
                 this.sign(transaction.into(), metadata.map(Into::into))
                     .await
+                    .map(|response| {
+                        response
+                            .posts
+                            .into_iter()
+                            .map(TransferPost::from)
+                            .collect::<Vec<_>>()
+                    })
             })
         })
     }
