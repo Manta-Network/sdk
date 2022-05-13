@@ -128,7 +128,7 @@ export default class Api {
     };
   }
 
-  //
+  // Sign and send a single batch
   async _push_batch(batch) {
     console.log("[INFO] Batch: ", batch);
     try {
