@@ -19,9 +19,9 @@ export default class Api {
   }
 
   // Pulls sender data starting from `checkpoint`.
-  async _pull_senders(checkpoint, new_checkpoint, blockHash) {
+  async _pull_senders(checkpoint, new_checkpoint, block_hash) {
     const sender_index = checkpoint.sender_index;
-    const entries = await this.api.query.mantaPay.voidNumberSetInsertionOrder.entriesAt(blockHash);
+    const entries = await this.api.query.mantaPay.voidNumberSetInsertionOrder.entriesAt(block_hash);
     const senders = entries
       .sort(this._sort_senders)
       .map((entry) => Array.from(entry[1].toU8a()))
@@ -42,9 +42,9 @@ export default class Api {
   }
 
   // Pulls receiver data starting from `checkpoint`.
-  async _pull_receivers(checkpoint, new_checkpoint, blockHash) {
+  async _pull_receivers(checkpoint, new_checkpoint, block_hash) {
     const new_receivers = []
-    let entries_raw = await this.api.query.mantaPay.shards.entriesAt(blockHash)
+    let entries_raw = await this.api.query.mantaPay.shards.entriesAt(block_hash)
     entries_raw.sort(this._sort_receivers);
     const entries = entries_raw.map(([storage_key, receiver_raw]) => {
       let map_keys = storage_key.args.map((k) => k.toHuman())
@@ -106,18 +106,18 @@ export default class Api {
     await this.api.isReady;
     const new_checkpoint = JSON.parse(JSON.stringify(checkpoint))
 
-    const blockHash = await api.rpc.chain.getBlockHash()
+    const block_hash = await api.rpc.chain.getBlockHash()
 
     // NOTE: The receiver indices represent the indices into the sharded utxo set. The utxos and
     //       encrypted notes should be pulled from the `Shards` storage structure. For each
     //       index in this array, we start the pull from that index and proceed forward until we
     //       reach the end of that particular shard.
-    const receivers = await this._pull_receivers(checkpoint, new_checkpoint, blockHash);
+    const receivers = await this._pull_receivers(checkpoint, new_checkpoint, block_hash);
 
     // NOTE: The sender index represents the index into the void number set. The void numbers
     //       should be pulled from the `VoidNumberSetInsertionOrder` storage structure starting
     //       from this index.
-    const senders = await this._pull_senders(checkpoint, new_checkpoint, blockHash);
+    const senders = await this._pull_senders(checkpoint, new_checkpoint, block_hash);
 
     new_checkpoint.receiver_index = Object.values(new_checkpoint.receiver_index);
 
