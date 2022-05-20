@@ -106,7 +106,7 @@ export default class Api {
     await this.api.isReady;
     const new_checkpoint = JSON.parse(JSON.stringify(checkpoint))
 
-    const block_hash = await api.rpc.chain.getBlockHash()
+    const block_hash = await this.api.rpc.chain.getBlockHash()
 
     // NOTE: The receiver indices represent the indices into the sharded utxo set. The utxos and
     //       encrypted notes should be pulled from the `Shards` storage structure. For each
