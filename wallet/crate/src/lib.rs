@@ -40,7 +40,7 @@ use manta_accounting::{
     },
 };
 use manta_pay::{
-    config::{self, Config},
+    config::{self, Config, EncryptedNote},
     signer::{self, Checkpoint},
 };
 use manta_util::{
@@ -328,12 +328,6 @@ impl PolkadotJsLedger {
 #[wasm_bindgen]
 pub struct LedgerError;
 
-impl ledger::PullConfiguration<Config> for PolkadotJsLedger {
-    type Checkpoint = Checkpoint;
-    type ReceiverChunk = Vec<(Utxo, EncryptedNote)>;
-    type SenderChunk = Vec<VoidNumber>;
-}
-
 /// Decodes the `bytes` array of the given length `N` into the SCALE decodable type `T` returning a
 /// blanket error if decoding fails.
 #[inline]
@@ -391,34 +385,35 @@ pub struct RawPullResponse {
     pub senders: Vec<RawVoidNumber>,
 }
 
-impl TryFrom<RawPullResponse> for PullResponse<Config, PolkadotJsLedger> {
+impl TryFrom<RawPullResponse> for ReadResponse<Checkpoint, SyncData<Config>> {
     type Error = ();
 
     #[inline]
     fn try_from(response: RawPullResponse) -> Result<Self, Self::Error> {
         Ok(Self {
             should_continue: response.should_continue,
-            checkpoint: response.checkpoint,
-            receivers: response
-                .receivers
-                .into_iter()
-                .map(|(utxo, encrypted_note)| {
-                    decode(utxo).and_then(|u| encrypted_note.try_into().map(|n| (u, n)))
-                })
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|_| ())?,
-            senders: response
-                .senders
-                .into_iter()
-                .map(decode)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|_| ())?,
+            next_checkpoint: response.checkpoint,
+            data: SyncData {
+                receivers: response
+                    .receivers
+                    .into_iter()
+                    .map(|(utxo, encrypted_note)| {
+                        decode(utxo).and_then(|u| encrypted_note.try_into().map(|n| (u, n)))
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| ())?,
+                senders: response
+                    .senders
+                    .into_iter()
+                    .map(decode)
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| ())?,
+            },
         })
     }
 }
 
-impl ledger::Connection<Config> for PolkadotJsLedger {
-    type PushResponse = String;
+impl ledger::Connection for PolkadotJsLedger {
     type Error = LedgerError;
 }
 
@@ -429,7 +424,8 @@ impl ledger::Read<SyncData<Config>> for PolkadotJsLedger {
     fn read<'s>(
         &'s mut self,
         checkpoint: &'s Self::Checkpoint,
-    ) -> LocalBoxFutureResult<'s, PullResponse<Config, Self>, Self::Error> {
+    ) -> LocalBoxFutureResult<'s, ReadResponse<Self::Checkpoint, SyncData<Config>>, Self::Error>
+    {
         Box::pin(async {
             Ok(
                 from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
