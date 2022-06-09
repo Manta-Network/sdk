@@ -18,9 +18,9 @@ export default class Api {
   async pull(checkpoint) {
     await this.api.isReady;
     console.log(checkpoint);
-    let result = await this.api.rpc.mantaPay.pull(checkpoint);
+    let result = await this.api.rpc.mantaPay.pull_ledger_diff(checkpoint);
     console.log(result);
-    result
+    return result;
   }
 
   // Maps a transfer post object to its corresponding MantaPay extrinsic.
