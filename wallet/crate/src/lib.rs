@@ -423,10 +423,6 @@ impl ledger::Read<SyncData<Config>> for PolkadotJsLedger {
     ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<Config>>, Self::Error>
     {
         Box::pin(async {
-            // let debug1 = self.0.pull(borrow_js(checkpoint)).await;
-            // panic!("debug1: {:?}, {:?}", debug1, debug1.as_string());
-            // let debug2 = from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await);
-            // panic!("debug2: {:?}", debug2);
             Ok(
                 from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
                     .try_into()
