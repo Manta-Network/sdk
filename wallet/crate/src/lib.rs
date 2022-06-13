@@ -375,9 +375,6 @@ pub struct RawPullResponse {
     /// Should Continue Flag
     pub should_continue: bool,
 
-    /// Latest Checkpoint
-    pub checkpoint: Checkpoint,
-
     /// Receiver Data
     pub receivers: Vec<(RawUtxo, RawEncryptedNote)>,
 
@@ -385,14 +382,13 @@ pub struct RawPullResponse {
     pub senders: Vec<RawVoidNumber>,
 }
 
-impl TryFrom<RawPullResponse> for ReadResponse<Checkpoint, SyncData<Config>> {
+impl TryFrom<RawPullResponse> for ReadResponse<SyncData<Config>> {
     type Error = ();
 
     #[inline]
     fn try_from(response: RawPullResponse) -> Result<Self, Self::Error> {
         Ok(Self {
             should_continue: response.should_continue,
-            next_checkpoint: response.checkpoint,
             data: SyncData {
                 receivers: response
                     .receivers
@@ -424,9 +420,13 @@ impl ledger::Read<SyncData<Config>> for PolkadotJsLedger {
     fn read<'s>(
         &'s mut self,
         checkpoint: &'s Self::Checkpoint,
-    ) -> LocalBoxFutureResult<'s, ReadResponse<Self::Checkpoint, SyncData<Config>>, Self::Error>
+    ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<Config>>, Self::Error>
     {
         Box::pin(async {
+            // let debug1 = self.0.pull(borrow_js(checkpoint)).await;
+            // panic!("debug1: {:?}, {:?}", debug1, debug1.as_string());
+            // let debug2 = from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await);
+            // panic!("debug2: {:?}", debug2);
             Ok(
                 from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
                     .try_into()
@@ -535,7 +535,7 @@ impl Wallet {
     pub fn checkpoint(&self) -> JsValue {
         borrow_js(self.0.borrow().checkpoint())
     }
-
+/*
     /// Resets `self` to the default checkpoint and no balance. A call to this method should be
     /// followed by a call to [`sync`](Self::sync) to retrieve the correct checkpoint and balance.
     ///
@@ -547,7 +547,7 @@ impl Wallet {
     pub fn reset(&mut self) {
         self.0.borrow_mut().reset()
     }
-
+*/
     /// Calls `f` on a mutably borrowed value of `self` converting the future into a JS [`Promise`].
     #[allow(clippy::await_holding_refcell_ref)] // NOTE: JS is single-threaded so we can't panic.
     #[inline]
@@ -578,8 +578,8 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn recover(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.recover().await }))
+    pub fn restart(&self) -> Promise {
+        self.with_async(|this| Box::pin(async { this.restart().await }))
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
