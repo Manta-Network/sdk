@@ -40,13 +40,14 @@ use manta_accounting::{
     },
 };
 use manta_pay::{
-    config::{self, Config},
+    config::{self, Config, EncryptedNote},
     signer::{self, Checkpoint},
 };
 use manta_util::{
     future::LocalBoxFutureResult,
     ops,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
+    serde_with,
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
@@ -327,6 +328,87 @@ impl PolkadotJsLedger {
 #[wasm_bindgen]
 pub struct LedgerError;
 
+/// Decodes the `bytes` array of the given length `N` into the SCALE decodable type `T` returning a
+/// blanket error if decoding fails.
+#[inline]
+pub(crate) fn decode<T, const N: usize>(bytes: [u8; N]) -> Result<T, scale_codec::Error>
+where
+    T: scale_codec::Decode,
+{
+    T::decode(&mut bytes.as_slice())
+}
+
+/// Raw UTXO Type
+pub type RawUtxo = [u8; 32];
+
+/// Raw Void Number Type
+pub type RawVoidNumber = [u8; 32];
+
+/// Raw Encrypted Note
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde")]
+pub struct RawEncryptedNote {
+    /// Ephemeral Public Key
+    pub ephemeral_public_key: [u8; 32],
+
+    /// Ciphertext
+    #[serde(with = "serde_with::As::<[serde_with::Same; 68]>")]
+    pub ciphertext: [u8; 68],
+}
+
+impl TryFrom<RawEncryptedNote> for EncryptedNote {
+    type Error = scale_codec::Error;
+
+    #[inline]
+    fn try_from(encrypted_note: RawEncryptedNote) -> Result<Self, Self::Error> {
+        Ok(Self {
+            ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
+            ciphertext: encrypted_note.ciphertext.into(),
+        })
+    }
+}
+
+/// Raw Pull Response
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde")]
+pub struct RawPullResponse {
+    /// Should Continue Flag
+    pub should_continue: bool,
+
+    /// Receiver Data
+    pub receivers: Vec<(RawUtxo, RawEncryptedNote)>,
+
+    /// Sender Data
+    pub senders: Vec<RawVoidNumber>,
+}
+
+impl TryFrom<RawPullResponse> for ReadResponse<SyncData<Config>> {
+    type Error = ();
+
+    #[inline]
+    fn try_from(response: RawPullResponse) -> Result<Self, Self::Error> {
+        Ok(Self {
+            should_continue: response.should_continue,
+            data: SyncData {
+                receivers: response
+                    .receivers
+                    .into_iter()
+                    .map(|(utxo, encrypted_note)| {
+                        decode(utxo).and_then(|u| encrypted_note.try_into().map(|n| (u, n)))
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| ())?,
+                senders: response
+                    .senders
+                    .into_iter()
+                    .map(decode)
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| ())?,
+            },
+        })
+    }
+}
+
 impl ledger::Connection for PolkadotJsLedger {
     type Error = LedgerError;
 }
@@ -338,9 +420,15 @@ impl ledger::Read<SyncData<Config>> for PolkadotJsLedger {
     fn read<'s>(
         &'s mut self,
         checkpoint: &'s Self::Checkpoint,
-    ) -> LocalBoxFutureResult<'s, ReadResponse<Self::Checkpoint, SyncData<Config>>, Self::Error>
+    ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<Config>>, Self::Error>
     {
-        Box::pin(async { from_js(self.0.pull(borrow_js(checkpoint)).await) })
+        Box::pin(async {
+            Ok(
+                from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
+                    .try_into()
+                    .expect("Conversion is not allowed to fail."),
+            )
+        })
     }
 }
 
@@ -444,18 +532,6 @@ impl Wallet {
         borrow_js(self.0.borrow().checkpoint())
     }
 
-    /// Resets `self` to the default checkpoint and no balance. A call to this method should be
-    /// followed by a call to [`sync`](Self::sync) to retrieve the correct checkpoint and balance.
-    ///
-    /// # Note
-    ///
-    /// This is not a "full wallet recovery" which would involve resetting the signer as well as
-    /// this wallet state. See the [`recover`](Self::recover) method for more.
-    #[inline]
-    pub fn reset(&mut self) {
-        self.0.borrow_mut().reset()
-    }
-
     /// Calls `f` on a mutably borrowed value of `self` converting the future into a JS [`Promise`].
     #[allow(clippy::await_holding_refcell_ref)] // NOTE: JS is single-threaded so we can't panic.
     #[inline]
@@ -486,8 +562,8 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn recover(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.recover().await }))
+    pub fn restart(&self) -> Promise {
+        self.with_async(|this| Box::pin(async { this.restart().await }))
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops

@@ -1,7 +1,7 @@
 [package]
 name = "manta-wasm-wallet"
 edition = "2021"
-version = "1.1.0"
+version = "1.2.0"
 authors = ["Manta Network <contact@manta.network>"]
 readme = "README.md"
 license-file = "LICENSE"
@@ -33,8 +33,9 @@ console_error_panic_hook = { version = "0.1.7", default-features = false }
 js-sys = { version = "0.3.56", default-features = false }
 manta-accounting = { git = "https://github.com/manta-network/manta-rs.git", default-features = false, features = ["serde"] }
 manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", default-features = false, features = ["serde"] }
-manta-pay = { git = "https://github.com/manta-network/manta-rs.git", default-features = false, features = ["groth16", "http", "serde"] }
+manta-pay = { git = "https://github.com/manta-network/manta-rs.git", default-features = false, features = ["groth16", "http", "scale", "serde"] }
 manta-util = { git = "https://github.com/manta-network/manta-rs.git", default-features = false, features = ["serde"] }
+scale-codec = { package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive", "max-encoded-len"] }
 serde_json = { version = "1.0.79", default-features = false, features = ["alloc", "arbitrary_precision"] }
 wasm-bindgen = { version = "0.2.79", default-features = false, features = ["serde-serialize", "std"] }
 wasm-bindgen-futures = { version = "0.4.29", default-features = false }
