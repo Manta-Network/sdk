@@ -531,19 +531,7 @@ impl Wallet {
     pub fn checkpoint(&self) -> JsValue {
         borrow_js(self.0.borrow().checkpoint())
     }
-/*
-    /// Resets `self` to the default checkpoint and no balance. A call to this method should be
-    /// followed by a call to [`sync`](Self::sync) to retrieve the correct checkpoint and balance.
-    ///
-    /// # Note
-    ///
-    /// This is not a "full wallet recovery" which would involve resetting the signer as well as
-    /// this wallet state. See the [`recover`](Self::recover) method for more.
-    #[inline]
-    pub fn reset(&mut self) {
-        self.0.borrow_mut().reset()
-    }
-*/
+
     /// Calls `f` on a mutably borrowed value of `self` converting the future into a JS [`Promise`].
     #[allow(clippy::await_holding_refcell_ref)] // NOTE: JS is single-threaded so we can't panic.
     #[inline]
