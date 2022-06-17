@@ -88,7 +88,7 @@ export default class Api {
   }
 
   storageKeyToInt = (key) => {
-    this.stringToInt(key.toHuman()[0])
+    return this.stringToInt(key.toHuman()[0])
   }
 
   _sort_senders = (a, b) => {
