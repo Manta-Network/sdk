@@ -83,8 +83,16 @@ export default class Api {
     }
   }
 
+  stringToInt = (str) => {
+    return parseInt(str.replace(',', ''))
+  }
+
+  storageKeyToInt = (key) => {
+    this.stringToInt(key.toHuman()[0])
+  }
+
   _sort_senders = (a, b) => {
-    return parseInt(a[0].toHuman()) > parseInt(b[0].toHuman()) ? 1 : -1
+    return this.storageKeyToInt(a[0]) > this.storageKeyToInt(b[0]) ? 1 : -1
   }
 
   // Pulls sender data starting from `checkpoint`.
@@ -100,8 +108,8 @@ export default class Api {
   }
 
   _sort_receivers = (a, b) => {
-    const [a_shard_index, a_receiver_index] = a[0].toHuman().map(num => parseInt(num));
-    const [b_shard_index, b_receiver_index] = b[0].toHuman().map(num => parseInt(num));
+    const [a_shard_index, a_receiver_index] = a[0].toHuman().map(string => this.stringToInt(string));
+    const [b_shard_index, b_receiver_index] = b[0].toHuman().map(string => this.stringToInt(string));
     if (a_shard_index > b_shard_index) {
       return 1
     } else if (a_shard_index === b_shard_index && a_receiver_index > b_receiver_index) {
@@ -148,7 +156,6 @@ export default class Api {
       new_checkpoint.receiver_index = Object.values(new_checkpoint.receiver_index);
       return {
           should_continue: false,
-          next_checkpoint: new_checkpoint,
           receivers: receivers,
           senders: senders
       };
