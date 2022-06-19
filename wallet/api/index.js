@@ -149,8 +149,8 @@ export default class Api {
     // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
     async pull(checkpoint) {
       await this.api.isReady;
-      const new_checkpoint = JSON.parse(JSON.stringify(checkpoint))
-      const block_hash = await this.api.rpc.chain.getBlockHash()
+      const new_checkpoint = JSON.parse(JSON.stringify(checkpoint));
+      const block_hash = await this.api.rpc.chain.getBlockHash();
       const receivers = await this._pull_receivers(checkpoint, new_checkpoint, block_hash);
       const senders = await this._pull_senders(checkpoint, new_checkpoint, block_hash);
       new_checkpoint.receiver_index = Object.values(new_checkpoint.receiver_index);
