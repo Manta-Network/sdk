@@ -14,8 +14,85 @@ export default class Api {
     this.txResHandler = txResHandler;
   }
 
+  // Converts an `encrypted_note` into a JSON object.
+  _encrypted_note_to_json(encrypted_note) {
+    return  {
+        ephemeral_public_key: Array.from(encrypted_note.ephemeralPublicKey.toU8a()),
+        ciphertext: Array.from(encrypted_note.ciphertext.toU8a()),
+    }
+  }
+
+
+  // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
+  // async pull(checkpoint) {
+  //   await this.api.isReady;
+  //   console.log('checkpoint', checkpoint);
+  //   let result = await this.api.rpc.mantaPay.pull_ledger_diff(checkpoint);
+  //   console.log('pull result', result);
+  //   const receivers = result.receivers.map(receiver_raw => {
+  //     return [
+  //     Array.from(receiver_raw[0].toU8a()),
+  //     this._encrypted_note_to_json(receiver_raw[1])
+  //   ]});
+  //   const senders = result.senders.map(sender_raw => {
+  //     return Array.from(sender_raw.toU8a());
+  //   });
+  //   return { should_continue: result.should_continue, receivers: receivers, senders: senders };
+  // }
+
+  // Maps a transfer post object to its corresponding MantaPay extrinsic.
+  async _map_post_to_transaction(post) {
+    let sources = post.sources.length;
+    let senders = post.sender_posts.length;
+    let receivers = post.receiver_posts.length;
+    let sinks = post.sinks.length;
+    if (sources == 1 && senders == 0 && receivers == 1 && sinks == 0) {
+      const mint_tx = await this.api.tx.mantaPay.toPrivate(post);
+      return mint_tx;
+    } else if (sources == 0 && senders == 2 && receivers == 2 && sinks == 0) {
+      const private_transfer_tx = await this.api.tx.mantaPay.privateTransfer(post);
+      return private_transfer_tx;
+    } else if (sources == 0 && senders == 2 && receivers == 1 && sinks == 1) {
+      const reclaim_tx = await this.api.tx.mantaPay.toPublic(post);
+      return reclaim_tx;
+    } else {
+      throw new Error(
+        'Invalid transaction shape; there is no extrinsic for a transaction'
+            + `with ${sources} sources, ${senders} senders, `
+            + ` ${receivers} receivers and ${sinks} sinks`
+      );
+    }
+  }
+
+  // Sends a set of transfer posts (i.e. "transactions") to the ledger.
+  async push(posts) {
+    await this.api.isReady;
+    const transactions = [];
+    for (let post of posts) {
+      const transaction = await this._map_post_to_transaction(post);
+      transactions.push(transaction);
+    }
+    try {
+      const batchTx = await this.api.tx.utility.batch(transactions);
+      console.log("[INFO] Batch Transaction:", batchTx);
+      console.log("[INFO] Result:", await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler));
+      return { Ok: SUCCESS };
+    } catch(err) {
+      console.error(err);
+      return { Ok: FAILURE }
+    }
+  }
+
+  stringToInt = (str) => {
+    return parseInt(str.replace(',', ''))
+  }
+
+  storageKeyToInt = (key) => {
+    return this.stringToInt(key.toHuman()[0])
+  }
+
   _sort_senders = (a, b) => {
-    return parseInt(a[0].toHuman()) > parseInt(b[0].toHuman()) ? 1 : -1
+    return this.storageKeyToInt(a[0]) > this.storageKeyToInt(b[0]) ? 1 : -1
   }
 
   // Pulls sender data starting from `checkpoint`.
@@ -31,8 +108,8 @@ export default class Api {
   }
 
   _sort_receivers = (a, b) => {
-    const [a_shard_index, a_receiver_index] = a[0].toHuman().map(num => parseInt(num));
-    const [b_shard_index, b_receiver_index] = b[0].toHuman().map(num => parseInt(num));
+    const [a_shard_index, a_receiver_index] = a[0].toHuman().map(string => this.stringToInt(string));
+    const [b_shard_index, b_receiver_index] = b[0].toHuman().map(string => this.stringToInt(string));
     if (a_shard_index > b_shard_index) {
       return 1
     } else if (a_shard_index === b_shard_index && a_receiver_index > b_receiver_index) {
@@ -69,96 +146,35 @@ export default class Api {
     return new_receivers;
   }
 
-  // Converts an `encrypted_note` into a JSON object.
-  _encrypted_note_to_json(encrypted_note) {
-    return  {
-        ephemeral_public_key: Array.from(encrypted_note.ephemeralPublicKey.toU8a()),
-        ciphertext: Array.from(encrypted_note.ciphertext.toU8a()),
+    // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
+    async pull(checkpoint) {
+      await this.api.isReady;
+      const new_checkpoint = JSON.parse(JSON.stringify(checkpoint))
+      const block_hash = await this.api.rpc.chain.getBlockHash()
+      const receivers = await this._pull_receivers(checkpoint, new_checkpoint, block_hash);
+      const senders = await this._pull_senders(checkpoint, new_checkpoint, block_hash);
+      new_checkpoint.receiver_index = Object.values(new_checkpoint.receiver_index);
+      return {
+          should_continue: false,
+          receivers: receivers,
+          senders: senders
+      };
     }
-  }
 
-  // Maps a transfer post object to its corresponding MantaPay extrinsic.
-  async _map_post_to_transaction(post) {
-    let sources = post.sources.length;
-    let senders = post.sender_posts.length;
-    let receivers = post.receiver_posts.length;
-    let sinks = post.sinks.length;
-    if (sources == 1 && senders == 0 && receivers == 1 && sinks == 0) {
-      const mint_tx = await this.api.tx.mantaPay.toPrivate(post);
-      return mint_tx;
-    } else if (sources == 0 && senders == 2 && receivers == 2 && sinks == 0) {
-      const private_transfer_tx = await this.api.tx.mantaPay.privateTransfer(post);
-      return private_transfer_tx;
-    } else if (sources == 0 && senders == 2 && receivers == 1 && sinks == 1) {
-      const reclaim_tx = await this.api.tx.mantaPay.toPublic(post);
-      return reclaim_tx;
-    } else {
-      throw new Error(
-        'Invalid transaction shape; there is no extrinsic for a transaction'
-            + `with ${sources} sources, ${senders} senders, `
-            + ` ${receivers} receivers and ${sinks} sinks`
-      );
-    }
-  }
-
-  // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
-  async pull(checkpoint) {
-    await this.api.isReady;
-    const new_checkpoint = JSON.parse(JSON.stringify(checkpoint))
-
-    const block_hash = await this.api.rpc.chain.getBlockHash()
-
-    // NOTE: The receiver indices represent the indices into the sharded utxo set. The utxos and
-    //       encrypted notes should be pulled from the `Shards` storage structure. For each
-    //       index in this array, we start the pull from that index and proceed forward until we
-    //       reach the end of that particular shard.
-    const receivers = await this._pull_receivers(checkpoint, new_checkpoint, block_hash);
-
-    // NOTE: The sender index represents the index into the void number set. The void numbers
-    //       should be pulled from the `VoidNumberSetInsertionOrder` storage structure starting
-    //       from this index.
-    const senders = await this._pull_senders(checkpoint, new_checkpoint, block_hash);
-
-    new_checkpoint.receiver_index = Object.values(new_checkpoint.receiver_index);
-
-    return {
-      Ok: {
-        should_continue: false,
-        next_checkpoint: new_checkpoint,
-        data: { receivers, senders },
+    // Sign and send a single batch
+    async _push_batch(batch) {
+      console.log("[INFO] Batch: ", batch);
+      try {
+        const batchTx = await this.api.tx.utility.batch(batch);
+        console.log("[INFO] Batch Transaction: ", batchTx);
+        await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler);
+        return true;
+      } catch (err) {
+        console.error(err);
+        return false;
       }
-    };
-  }
+    }
 
-  // Sign and send a single batch
-  async _push_batch(batch) {
-    console.log("[INFO] Batch: ", batch);
-    try {
-      const batchTx = await this.api.tx.utility.batch(batch);
-      console.log("[INFO] Batch Transaction: ", batchTx);
-      await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler);
-      return true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
-  }
-
-  // Sends a set of transfer posts (i.e. "transactions") to the ledger (preferably batched).
-  async push(posts) {
-    await this.api.isReady;
-    const transactions = [];
-    for (let post of posts) {
-      const transaction = await this._map_post_to_transaction(post);
-      transactions.push(transaction);
-    }
-    const success = await this._push_batch(transactions)
-    if (success) {
-      return { Ok: SUCCESS };
-    } else {
-      return { Ok: FAILURE };
-    }
-  }
 }
 
 export const SUCCESS = "success";
