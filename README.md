@@ -4,6 +4,8 @@ The SDK includes a data library for the concrete public parameters of the Manta 
 
 ## Data Library
 
+**Note: Data Library will be deprecated soon.**
+
 - [`data`](data)
 - [`data.checkfile`](data.checkfile)
 - [`src`](src/lib.rs)
