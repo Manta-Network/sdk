@@ -17,9 +17,9 @@ export default class Api {
   // Converts an `encrypted_note` into a JSON object.
   _encrypted_note_to_json(encrypted_note) {
     return  {
-        ephemeral_public_key: Array.from(encrypted_note.ephemeral_public_key.toU8a()),
-        ciphertext: Array.from(encrypted_note.ciphertext.toU8a()),
-    }
+      ephemeral_public_key: Array.from(encrypted_note.ephemeral_public_key.toU8a()),
+      ciphertext: Array.from(encrypted_note.ciphertext.toU8a()),
+    };
   }
 
 
@@ -31,9 +31,9 @@ export default class Api {
     console.log('pull result', result);
     const receivers = result.receivers.map(receiver_raw => {
       return [
-      Array.from(receiver_raw[0].toU8a()),
-      this._encrypted_note_to_json(receiver_raw[1])
-    ]});
+        Array.from(receiver_raw[0].toU8a()),
+        this._encrypted_note_to_json(receiver_raw[1])
+      ];});
     const senders = result.senders.map(sender_raw => {
       return Array.from(sender_raw.toU8a());
     });
@@ -74,17 +74,17 @@ export default class Api {
     }
     try {
       const batchTx = await this.api.tx.utility.batch(transactions);
-      console.log("[INFO] Batch Transaction:", batchTx);
-      console.log("[INFO] Result:", await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler));
+      console.log('[INFO] Batch Transaction:', batchTx);
+      console.log('[INFO] Result:', await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler));
       return { Ok: SUCCESS };
     } catch(err) {
       console.error(err);
-      return { Ok: FAILURE }
+      return { Ok: FAILURE };
     }
   }
 }
 
-const MAX_RECEIVERS = 32768;
-const MAX_SENDERS = 32768;
-export const SUCCESS = "success";
-export const FAILURE = "failure";
+const MAX_RECEIVERS = 4096;
+const MAX_SENDERS = 4096;
+export const SUCCESS = 'success';
+export const FAILURE = 'failure';
