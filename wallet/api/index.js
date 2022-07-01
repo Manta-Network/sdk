@@ -1,11 +1,24 @@
 // Polkadot-JS Ledger Integration
 
 // Polkadot-JS Ledger API
-export default class Api {
-  // Constructs an API from a polkadot-js API.
-  constructor(api, externalAccountSigner) {
+
+export class ApiConfig {
+  constructor(api, externalAccountSigner, maxReceiversPullSize, maxSendersPullSize) {
     this.api = api;
     this.externalAccountSigner = externalAccountSigner;
+    this.maxReceiversPullSize = maxReceiversPullSize;
+    this.maxSendersPullSize = maxSendersPullSize;
+  }
+}
+
+export default class Api {
+  // Constructs an API from a config
+  constructor(config) {
+    this.config = config;
+    this.api = this.config.api;
+    this.externalAccountSigner = this.config.externalAccountSigner;
+    this.maxReceiversPullSize = this.config.maxReceiversPullSize;
+    this.maxSendersPullSize = this.config.maxSendersPullSize;
     this.txResHandler = null;
   }
 
@@ -27,7 +40,11 @@ export default class Api {
   async pull(checkpoint) {
     await this.api.isReady;
     console.log('checkpoint', checkpoint);
-    let result = await this.api.rpc.mantaPay.pull_ledger_diff(checkpoint, MAX_RECEIVERS, MAX_SENDERS);
+    let result = await this.api.rpc.mantaPay.pull_ledger_diff(
+      checkpoint,
+      this.maxReceiversPullSize,
+      this.maxSendersPullSize
+    );
     console.log('pull result', result);
     const receivers = result.receivers.map(receiver_raw => {
       return [
@@ -84,7 +101,5 @@ export default class Api {
   }
 }
 
-const MAX_RECEIVERS = 4096;
-const MAX_SENDERS = 4096;
 export const SUCCESS = 'success';
 export const FAILURE = 'failure';
