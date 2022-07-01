@@ -1,11 +1,24 @@
 // Polkadot-JS Ledger Integration
 
 // Polkadot-JS Ledger API
-export default class Api {
-  // Constructs an API from a polkadot-js API.
-  constructor(api, externalAccountSigner) {
+
+export class ApiConfig {
+  constructor(api, externalAccountSigner, maxReceiversPullSize, maxSendersPullSize) {
     this.api = api;
     this.externalAccountSigner = externalAccountSigner;
+    this.maxReceiversPullSize = maxReceiversPullSize;
+    this.maxSendersPullSize = maxSendersPullSize;
+  }
+}
+
+export default class Api {
+  // Constructs an API from a config
+  constructor(config) {
+    this.config = config;
+    this.api = this.config.api;
+    this.externalAccountSigner = this.config.externalAccountSigner;
+    this.maxReceiversPullSize = this.config.maxReceiversPullSize;
+    this.maxSendersPullSize = this.config.maxSendersPullSize;
     this.txResHandler = null;
   }
 
@@ -17,9 +30,9 @@ export default class Api {
   // Converts an `encrypted_note` into a JSON object.
   _encrypted_note_to_json(encrypted_note) {
     return  {
-        ephemeral_public_key: Array.from(encrypted_note.ephemeral_public_key.toU8a()),
-        ciphertext: Array.from(encrypted_note.ciphertext.toU8a()),
-    }
+      ephemeral_public_key: Array.from(encrypted_note.ephemeral_public_key.toU8a()),
+      ciphertext: Array.from(encrypted_note.ciphertext.toU8a()),
+    };
   }
 
 
@@ -27,13 +40,17 @@ export default class Api {
   async pull(checkpoint) {
     await this.api.isReady;
     console.log('checkpoint', checkpoint);
-    let result = await this.api.rpc.mantaPay.pull_ledger_diff(checkpoint, MAX_RECEIVERS, MAX_SENDERS);
+    let result = await this.api.rpc.mantaPay.pull_ledger_diff(
+      checkpoint,
+      this.maxReceiversPullSize,
+      this.maxSendersPullSize
+    );
     console.log('pull result', result);
     const receivers = result.receivers.map(receiver_raw => {
       return [
-      Array.from(receiver_raw[0].toU8a()),
-      this._encrypted_note_to_json(receiver_raw[1])
-    ]});
+        Array.from(receiver_raw[0].toU8a()),
+        this._encrypted_note_to_json(receiver_raw[1])
+      ];});
     const senders = result.senders.map(sender_raw => {
       return Array.from(sender_raw.toU8a());
     });
@@ -74,17 +91,15 @@ export default class Api {
     }
     try {
       const batchTx = await this.api.tx.utility.batch(transactions);
-      console.log("[INFO] Batch Transaction:", batchTx);
-      console.log("[INFO] Result:", await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler));
+      console.log('[INFO] Batch Transaction:', batchTx);
+      console.log('[INFO] Result:', await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler));
       return { Ok: SUCCESS };
     } catch(err) {
       console.error(err);
-      return { Ok: FAILURE }
+      return { Ok: FAILURE };
     }
   }
 }
 
-const MAX_RECEIVERS = 32768;
-const MAX_SENDERS = 32768;
-export const SUCCESS = "success";
-export const FAILURE = "failure";
+export const SUCCESS = 'success';
+export const FAILURE = 'failure';
