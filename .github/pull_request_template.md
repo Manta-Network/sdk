@@ -23,6 +23,7 @@ write a little note why.
 - [ ] Updated relevant documentation in the code.
 - [ ] Re-reviewed `Files changed` in the Github PR explorer.
 - [ ] Update the version numbers properly:
+   * ./Cargo.toml
    * wallet/package.json
    * wallet/api/package.json
    * wallet/crate/Cargo.toml
