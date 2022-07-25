@@ -27,6 +27,7 @@ export default class Api {
     this.maxReceiversPullSize = this.config.maxReceiversPullSize;
     this.maxSendersPullSize = this.config.maxSendersPullSize;
     this.txResHandler = null;
+    this.pullCallback = this.config.pullCallback;
   }
 
   // Sets the transaction result handler to `txResHandler`.
@@ -63,7 +64,7 @@ export default class Api {
     const senders = result.senders.map((sender_raw) => {
       return Array.from(sender_raw.toU8a());
     });
-    this.pullCallback(receivers);
+    this.pullCallback(receivers, senders, checkpoint.sender_index);
     return {
       should_continue: result.should_continue,
       receivers: receivers,
