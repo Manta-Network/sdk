@@ -64,7 +64,12 @@ export default class Api {
     const senders = result.senders.map((sender_raw) => {
       return Array.from(sender_raw.toU8a());
     });
-    this.pullCallback(receivers, senders, checkpoint.sender_index);
+    this.pullCallback(
+      receivers,
+      senders,
+      checkpoint.sender_index,
+      result.senders_receivers_total
+    );
     return {
       should_continue: result.should_continue,
       receivers: receivers,
