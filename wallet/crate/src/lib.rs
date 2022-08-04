@@ -39,6 +39,7 @@ use manta_accounting::{
         signer::SyncData,
     },
 };
+use manta_crypto::encryption::hybrid;
 use manta_pay::{
     config::{self, Config, EncryptedNote},
     signer::{self, Checkpoint},
@@ -362,8 +363,11 @@ impl TryFrom<RawEncryptedNote> for EncryptedNote {
     #[inline]
     fn try_from(encrypted_note: RawEncryptedNote) -> Result<Self, Self::Error> {
         Ok(Self {
-            ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
-            ciphertext: encrypted_note.ciphertext.into(),
+            header: (),
+            ciphertext: hybrid::Ciphertext {
+                ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
+                ciphertext: encrypted_note.ciphertext.into(),
+            }
         })
     }
 }
