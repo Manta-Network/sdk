@@ -367,7 +367,7 @@ impl TryFrom<RawEncryptedNote> for EncryptedNote {
             ciphertext: hybrid::Ciphertext {
                 ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
                 ciphertext: encrypted_note.ciphertext.into(),
-            }
+            },
         })
     }
 }
@@ -424,8 +424,7 @@ impl ledger::Read<SyncData<Config>> for PolkadotJsLedger {
     fn read<'s>(
         &'s mut self,
         checkpoint: &'s Self::Checkpoint,
-    ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<Config>>, Self::Error>
-    {
+    ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<Config>>, Self::Error> {
         Box::pin(async {
             Ok(
                 from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
