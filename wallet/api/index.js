@@ -8,13 +8,15 @@ export class ApiConfig {
     externalAccountSigner,
     maxReceiversPullSize,
     maxSendersPullSize,
-    pullCallback
+    pullCallback,
+    errorCallback
   ) {
     this.api = api;
     this.externalAccountSigner = externalAccountSigner;
     this.maxReceiversPullSize = maxReceiversPullSize;
     this.maxSendersPullSize = maxSendersPullSize;
     this.pullCallback = pullCallback;
+    this.errorCallback = errorCallback;
   }
 }
 
@@ -28,6 +30,7 @@ export default class Api {
     this.maxSendersPullSize = this.config.maxSendersPullSize;
     this.txResHandler = null;
     this.pullCallback = this.config.pullCallback;
+    this.errorCallback = this.config.errorCallback;
   }
 
   // Sets the transaction result handler to `txResHandler`.
@@ -47,34 +50,38 @@ export default class Api {
 
   // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
   async pull(checkpoint) {
-    await this.api.isReady;
-    console.log('checkpoint', checkpoint);
-    let result = await this.api.rpc.mantaPay.pull_ledger_diff(
-      checkpoint,
-      this.maxReceiversPullSize,
-      this.maxSendersPullSize
-    );
-    console.log('pull result', result);
-    const receivers = result.receivers.map((receiver_raw) => {
-      return [
-        Array.from(receiver_raw[0].toU8a()),
-        this._encrypted_note_to_json(receiver_raw[1]),
-      ];
-    });
-    const senders = result.senders.map((sender_raw) => {
-      return Array.from(sender_raw.toU8a());
-    });
-    this.pullCallback(
-      receivers,
-      senders,
-      checkpoint.sender_index,
-      result.senders_receivers_total
-    );
-    return {
-      should_continue: result.should_continue,
-      receivers: receivers,
-      senders: senders,
-    };
+    try {
+      await this.api.isReady;
+      console.log('checkpoint', checkpoint);
+      let result = await this.api.rpc.mantaPay.pull_ledger_diff(
+        checkpoint,
+        this.maxReceiversPullSize,
+        this.maxSendersPullSize
+      );
+      console.log('pull result', result);
+      const receivers = result.receivers.map((receiver_raw) => {
+        return [
+          Array.from(receiver_raw[0].toU8a()),
+          this._encrypted_note_to_json(receiver_raw[1]),
+        ];
+      });
+      const senders = result.senders.map((sender_raw) => {
+        return Array.from(sender_raw.toU8a());
+      });
+      this.pullCallback(
+        receivers,
+        senders,
+        checkpoint.sender_index,
+        result.senders_receivers_total
+      );
+      return {
+        should_continue: result.should_continue,
+        receivers: receivers,
+        senders: senders,
+      };
+    } catch (err) {
+      this.errorCallback();
+    }
   }
 
   // Maps a transfer post object to its corresponding MantaPay extrinsic.
