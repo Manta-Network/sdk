@@ -8,8 +8,8 @@ export class ApiConfig {
     externalAccountSigner,
     maxReceiversPullSize,
     maxSendersPullSize,
-    pullCallback,
-    errorCallback
+    pullCallback = null,
+    errorCallback = null
   ) {
     this.api = api;
     this.externalAccountSigner = externalAccountSigner;
@@ -59,6 +59,8 @@ export default class Api {
         this.maxSendersPullSize
       );
 
+      console.log('pull result', result);
+
       const voidNumberSetSize = await api.query.mantaPay.voidNumberSetSize();
       let senders_receivers_total = voidNumberSetSize.toNumber();
       const shardTreeEntries = await api.query.mantaPay.shardTrees.entries();
@@ -68,7 +70,6 @@ export default class Api {
         })
       }
 
-      console.log('pull result', result);
       const receivers = result.receivers.map((receiver_raw) => {
         return [
           Array.from(receiver_raw[0].toU8a()),
@@ -78,19 +79,23 @@ export default class Api {
       const senders = result.senders.map((sender_raw) => {
         return Array.from(sender_raw.toU8a());
       });
-      this.pullCallback(
-        receivers,
-        senders,
-        checkpoint.sender_index,
-        senders_receivers_total
-      );
+      if (this.pullCallback) {
+        this.pullCallback(
+          receivers,
+          senders,
+          checkpoint.sender_index,
+          senders_receivers_total
+        );
+      }
       return {
         should_continue: result.should_continue,
         receivers: receivers,
         senders: senders,
       };
     } catch (err) {
-      this.errorCallback();
+      if (this.errorCallback) {
+        this.errorCallback();
+      }
     }
   }
 
