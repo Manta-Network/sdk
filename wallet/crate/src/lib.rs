@@ -36,7 +36,7 @@ use manta_accounting::{
     wallet::{
         self,
         ledger::{self, ReadResponse},
-        signer::SyncData,
+        signer::{SyncData,NetworkType},
     },
 };
 use manta_pay::{
@@ -623,10 +623,10 @@ impl Wallet {
     /// method _does not_ automatically sychronize with the ledger. To do this, call the
     /// [`sync`](Self::sync) method separately.
     #[inline]
-    pub fn sign(&self, transaction: Transaction, metadata: Option<AssetMetadata>) -> Promise {
+    pub fn sign(&self, transaction: Transaction, metadata: Option<AssetMetadata>, network: NetworkType) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.sign(transaction.into(), metadata.map(Into::into))
+                this.sign(transaction.into(), metadata.map(Into::into), network.into())
                     .await
                     .map(|response| {
                         response
