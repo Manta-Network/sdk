@@ -36,7 +36,7 @@ use manta_accounting::{
     wallet::{
         self,
         ledger::{self, ReadResponse},
-        signer::{SyncData,NetworkType},
+        signer::{SyncData, NetworkType as ActualNetworkType},
     },
 };
 use manta_pay::{
@@ -175,6 +175,7 @@ impl_js_compatible!(
     "Receiving Key Request"
 );
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
+impl_js_compatible!(NetworkType, ActualNetworkType, "Network Type");
 
 /// Asset Type
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
@@ -619,7 +620,7 @@ impl Wallet {
             .map_err(Into::into)
     }
 
-    /// Signs the `transaction` using the signer connection, sending `metadata` for context. This
+    /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for context. This
     /// method _does not_ automatically sychronize with the ledger. To do this, call the
     /// [`sync`](Self::sync) method separately.
     #[inline]
