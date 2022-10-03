@@ -663,7 +663,7 @@ impl Wallet {
     pub fn post(&self, transaction: Transaction, metadata: Option<AssetMetadata>, network: NetworkType) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.post(transaction.into(), metadata.map(Into::into), network)
+                this.post(transaction.into(), metadata.map(Into::into), network.into())
                     .await
             })
         })
