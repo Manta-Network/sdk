@@ -36,9 +36,10 @@ use manta_accounting::{
     wallet::{
         self,
         ledger::{self, ReadResponse},
-        signer::{SyncData, NetworkType as ActualNetworkType},
+        signer::{NetworkType as ActualNetworkType, SyncData},
     },
 };
+use manta_crypto::encryption::hybrid;
 use manta_pay::{
     config::{self, Config, EncryptedNote},
     signer::{self, Checkpoint},
@@ -363,8 +364,11 @@ impl TryFrom<RawEncryptedNote> for EncryptedNote {
     #[inline]
     fn try_from(encrypted_note: RawEncryptedNote) -> Result<Self, Self::Error> {
         Ok(Self {
-            ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
-            ciphertext: encrypted_note.ciphertext.into(),
+            header: (),
+            ciphertext: hybrid::Ciphertext {
+                ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
+                ciphertext: encrypted_note.ciphertext.into(),
+            },
         })
     }
 }
@@ -624,7 +628,12 @@ impl Wallet {
     /// method _does not_ automatically sychronize with the ledger. To do this, call the
     /// [`sync`](Self::sync) method separately.
     #[inline]
-    pub fn sign(&self, transaction: Transaction, metadata: Option<AssetMetadata>, network: NetworkType) -> Promise {
+    pub fn sign(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: NetworkType,
+    ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
                 this.sign(transaction.into(), metadata.map(Into::into), network.into())
@@ -660,7 +669,12 @@ impl Wallet {
     /// [`post`]: Self::post
     /// [`sync`]: Self::sync
     #[inline]
-    pub fn post(&self, transaction: Transaction, metadata: Option<AssetMetadata>, network: NetworkType) -> Promise {
+    pub fn post(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: NetworkType,
+    ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
                 this.post(transaction.into(), metadata.map(Into::into), network.into())
