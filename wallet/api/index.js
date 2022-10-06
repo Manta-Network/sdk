@@ -125,12 +125,24 @@ export default class Api {
     }
   }
 
+
+  convertToOldPost(post) {
+    // need to iterate over all receiverPosts and convert EncryptedNote from new
+    // format of EncryptedNote { header: (), Ciphertext {...} } to old format:
+    // EncryptedNote { ephermeral_public_key: [], ciphertext: [] }
+
+    let postCopy = JSON.parse(JSON.stringify(post));
+    postCopy.receiver_posts.map(x => {x.encrypted_note = x.encrypted_note.ciphertext});
+    return postCopy
+  }
+
   // Sends a set of transfer posts (i.e. "transactions") to the ledger.
   async push(posts) {
     await this.api.isReady;
     const transactions = [];
     for (let post of posts) {
-      const transaction = await this._map_post_to_transaction(post);
+      let convertedPost = this.convertToOldPost(post);
+      const transaction = await this._map_post_to_transaction(convertedPost);
       transactions.push(transaction);
     }
     try {
