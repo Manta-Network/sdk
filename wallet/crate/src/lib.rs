@@ -566,8 +566,8 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn restart(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.restart().await }))
+    pub fn restart(&self, network: NetworkType) -> Promise {
+        self.with_async(|this| Box::pin(async { this.restart(network.into()).await }))
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
@@ -584,8 +584,8 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn sync(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.sync().await }))
+    pub fn sync(&self, network: NetworkType) -> Promise {
+        self.with_async(|this| Box::pin(async { this.sync(network.into()).await }))
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
@@ -602,8 +602,8 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn sync_partial(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.sync_partial().await }))
+    pub fn sync_partial(&self, network: NetworkType) -> Promise {
+        self.with_async(|this| Box::pin(async { this.sync_partial(network.into()).await }))
     }
 
     /// Checks if `transaction` can be executed on the balance state of `self`, returning the
