@@ -61,15 +61,6 @@ export default class Api {
 
       console.log('pull result', result);
 
-      const voidNumberSetSize = await api.query.mantaPay.voidNumberSetSize();
-      let senders_receivers_total = voidNumberSetSize.toNumber();
-      const shardTreeEntries = await api.query.mantaPay.shardTrees.entries();
-      if (shardTreeEntries && shardTreeEntries.length > 0) {
-        shardTreeEntries.forEach(entry => {
-          senders_receivers_total += entry[1].current_path.leaf_index.toNumber();
-        })
-      }
-
       const receivers = result.receivers.map((receiver_raw) => {
         return [
           Array.from(receiver_raw[0].toU8a()),
@@ -84,7 +75,7 @@ export default class Api {
           receivers,
           senders,
           checkpoint.sender_index,
-          senders_receivers_total
+          result.senders_receivers_total.toNumber()
         );
       }
       return {
