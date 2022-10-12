@@ -37,7 +37,5 @@ manta-pay = { git = "https://github.com/manta-network/manta-rs.git", branch = "s
 manta-util = { git = "https://github.com/manta-network/manta-rs.git", branch = "signer_redesign", default-features = false, features = ["serde"] }
 scale-codec = { package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive", "max-encoded-len"] }
 serde_json = { version = "1.0.79", default-features = false, features = ["alloc", "arbitrary_precision"] }
-serde = { version = "1.0", features = ["derive"] }
-serde-wasm-bindgen = "0.4"
 wasm-bindgen = { version = "0.2.79", default-features = false, features = ["serde-serialize", "std"] }
 wasm-bindgen-futures = { version = "0.4.29", default-features = false }
