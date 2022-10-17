@@ -36,7 +36,7 @@ use manta_accounting::{
     wallet::{
         self,
         ledger::{self, ReadResponse},
-        signer::{NetworkType as ActualNetworkType, SyncData},
+        signer::{NetworkType as SignerNetworkType, SyncData},
     },
 };
 use manta_crypto::encryption::hybrid;
@@ -176,7 +176,7 @@ impl_js_compatible!(
     "Receiving Key Request"
 );
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
-impl_js_compatible!(NetworkType, ActualNetworkType, "Network Type");
+impl_js_compatible!(NetworkType, SignerNetworkType, "Network Type");
 
 /// Asset Type
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
