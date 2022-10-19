@@ -570,9 +570,11 @@ impl Wallet {
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
     pub fn restart(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async {             
+        self.with_async(|this| Box::pin(async {           
             this.signer().set_network(Some(network.into()));
-            this.restart().await
+            let response = this.restart().await;
+            this.signer().set_network(None);
+            response
         }))
     }
 
@@ -591,9 +593,11 @@ impl Wallet {
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
     pub fn sync(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async {             
+        self.with_async(|this| Box::pin(async {            
             this.signer().set_network(Some(network.into()));
-            this.sync().await
+            let response = this.sync().await;
+            this.signer().set_network(None);
+            response
         }))
     }
 
@@ -612,9 +616,11 @@ impl Wallet {
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
     pub fn sync_partial(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async {
+        self.with_async(|this| Box::pin(async {     
             this.signer().set_network(Some(network.into()));
-            this.sync_partial().await
+            let response = this.sync_partial().await;
+            this.signer().set_network(None);
+            response
         }))
     }
 
@@ -649,7 +655,7 @@ impl Wallet {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer().set_network(Some(network.into()));
-                this.sign(transaction.into(), metadata.map(Into::into))
+                let response = this.sign(transaction.into(), metadata.map(Into::into))
                     .await
                     .map(|response| {
                         response
@@ -657,7 +663,9 @@ impl Wallet {
                             .into_iter()
                             .map(TransferPost::from)
                             .collect::<Vec<_>>()
-                    })
+                    });
+                this.signer().set_network(None);
+                response
             })
         })
     }
@@ -691,7 +699,9 @@ impl Wallet {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer().set_network(Some(network.into()));
-                this.post(transaction.into(), metadata.map(Into::into)).await
+                let response = this.post(transaction.into(), metadata.map(Into::into)).await;
+                this.signer().set_network(None);
+                response
             })
         })
     }
@@ -702,9 +712,11 @@ impl Wallet {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer().set_network(Some(network.into()));
-                this.receiving_keys(request.into())
+                let response = this.receiving_keys(request.into())
                     .await
-                    .map(|keys| ReceivingKeyList(keys.into_iter().map(Into::into).collect()))
+                    .map(|keys| ReceivingKeyList(keys.into_iter().map(Into::into).collect()));
+                this.signer().set_network(None);
+                response
             })
         })
     }

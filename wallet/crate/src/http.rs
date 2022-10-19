@@ -58,7 +58,6 @@ impl signer::Connection<Config> for Client {
   ) -> LocalBoxFutureResult<Result<SyncResponse, SyncError>, Self::Error> {
       Box::pin(async move {
           let message = Self::wrap_request(self.1,request);
-          self.set_network(None);
           self.0.post("sync", &message).await
       })
   }
@@ -70,7 +69,6 @@ impl signer::Connection<Config> for Client {
   ) -> LocalBoxFutureResult<Result<SignResponse, SignError>, Self::Error> {
       Box::pin(async move {
           let message = Self::wrap_request(self.1,request);
-          self.set_network(None);
           self.0.post("sign", &message).await
       })
   }
@@ -82,7 +80,6 @@ impl signer::Connection<Config> for Client {
   ) -> LocalBoxFutureResult<Vec<ReceivingKey>, Self::Error> {
       Box::pin(async move {
         let message = Self::wrap_request(self.1,request); 
-        self.set_network(None);
         self.0.post("receivingKeys", &message).await
       })
   }
