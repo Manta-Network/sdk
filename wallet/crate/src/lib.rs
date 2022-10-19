@@ -21,6 +21,8 @@
 extern crate alloc;
 extern crate console_error_panic_hook;
 
+use crate::http;
+
 use alloc::{
     boxed::Box,
     format,
@@ -36,7 +38,7 @@ use manta_accounting::{
     wallet::{
         self,
         ledger::{self, ReadResponse},
-        signer::{NetworkType as SignerNetworkType, SyncData},
+        signer::SyncData
     },
 };
 use manta_crypto::encryption::hybrid;
@@ -44,6 +46,7 @@ use manta_pay::{
     config::{self, Config, EncryptedNote},
     signer::{self, Checkpoint},
 };
+use manta_signer::network;
 use manta_util::{
     future::LocalBoxFutureResult,
     ops,
@@ -176,7 +179,7 @@ impl_js_compatible!(
     "Receiving Key Request"
 );
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
-impl_js_compatible!(NetworkType, SignerNetworkType, "Network Type");
+impl_js_compatible!(Network, network::Network, "Network Type");
 
 /// Asset Type
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
@@ -486,7 +489,7 @@ impl Signer {
 pub struct WalletError(wallet::Error<Config, PolkadotJsLedger, SignerType>);
 
 /// Wallet Type
-type WalletType = signer::client::http::Wallet<PolkadotJsLedger>;
+type WalletType = http::Wallet<PolkadotJsLedger>;
 
 /// Wallet with Polkadot-JS API Connection
 #[wasm_bindgen]
@@ -566,8 +569,13 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn restart(&self, network: NetworkType) -> Promise {
-        self.with_async(|this| Box::pin(async { this.restart(network.into()).await }))
+    pub fn restart(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(async {             
+            this.signer.set_network(Some(network.into()));
+            let response = this.restart().await;
+            this.signer.set_network(None);
+            response
+        }))
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
@@ -584,8 +592,13 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn sync(&self, network: NetworkType) -> Promise {
-        self.with_async(|this| Box::pin(async { this.sync(network.into()).await }))
+    pub fn sync(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(async {             
+            this.signer.set_network(Some(network.into()));
+            let response = this.sync().await;
+            this.signer.set_network(None);
+            response
+        }))
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
@@ -602,8 +615,13 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn sync_partial(&self, network: NetworkType) -> Promise {
-        self.with_async(|this| Box::pin(async { this.sync_partial(network.into()).await }))
+    pub fn sync_partial(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(async {
+            this.signer.set_network(Some(network.into()));
+            let response = this.sync_partial().await;
+            this.signer.set_network(None);
+            response
+        }))
     }
 
     /// Checks if `transaction` can be executed on the balance state of `self`, returning the
@@ -632,11 +650,12 @@ impl Wallet {
         &self,
         transaction: Transaction,
         metadata: Option<AssetMetadata>,
-        network: NetworkType,
+        network: Network,
     ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.sign(transaction.into(), metadata.map(Into::into), network.into())
+                this.signer.set_network(Some(network.into()));
+                let response = this.sign(transaction.into(), metadata.map(Into::into))
                     .await
                     .map(|response| {
                         response
@@ -644,7 +663,9 @@ impl Wallet {
                             .into_iter()
                             .map(TransferPost::from)
                             .collect::<Vec<_>>()
-                    })
+                    });
+                this.signer.set_network(None);
+                response
             })
         })
     }
@@ -673,12 +694,14 @@ impl Wallet {
         &self,
         transaction: Transaction,
         metadata: Option<AssetMetadata>,
-        network: NetworkType,
+        network: Network,
     ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.post(transaction.into(), metadata.map(Into::into), network.into())
-                    .await
+                this.signer.set_network(Some(network.into()));
+                let response = this.post(transaction.into(), metadata.map(Into::into)).await;
+                this.signer.set_network(None);
+                response
             })
         })
     }
