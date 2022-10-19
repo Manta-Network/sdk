@@ -21,7 +21,7 @@
 extern crate alloc;
 extern crate console_error_panic_hook;
 
-use crate::http;
+pub mod http;
 
 use alloc::{
     boxed::Box,
@@ -464,10 +464,10 @@ impl ledger::Write<Vec<config::TransferPost>> for PolkadotJsLedger {
 
 /// Signer Error
 #[wasm_bindgen]
-pub struct SignerError(signer::client::http::Error);
+pub struct SignerError(http::Error);
 
 /// Signer Type
-type SignerType = signer::client::http::Client;
+type SignerType = http::Client;
 
 /// Signer Client
 #[wasm_bindgen]
@@ -571,10 +571,8 @@ impl Wallet {
     #[inline]
     pub fn restart(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async {             
-            this.signer.set_network(Some(network.into()));
-            let response = this.restart().await;
-            this.signer.set_network(None);
-            response
+            this.signer().set_network(Some(network.into()));
+            this.restart().await
         }))
     }
 
@@ -594,10 +592,8 @@ impl Wallet {
     #[inline]
     pub fn sync(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async {             
-            this.signer.set_network(Some(network.into()));
-            let response = this.sync().await;
-            this.signer.set_network(None);
-            response
+            this.signer().set_network(Some(network.into()));
+            this.sync().await
         }))
     }
 
@@ -617,10 +613,8 @@ impl Wallet {
     #[inline]
     pub fn sync_partial(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async {
-            this.signer.set_network(Some(network.into()));
-            let response = this.sync_partial().await;
-            this.signer.set_network(None);
-            response
+            this.signer().set_network(Some(network.into()));
+            this.sync_partial().await
         }))
     }
 
@@ -654,8 +648,8 @@ impl Wallet {
     ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer.set_network(Some(network.into()));
-                let response = this.sign(transaction.into(), metadata.map(Into::into))
+                this.signer().set_network(Some(network.into()));
+                this.sign(transaction.into(), metadata.map(Into::into))
                     .await
                     .map(|response| {
                         response
@@ -663,9 +657,7 @@ impl Wallet {
                             .into_iter()
                             .map(TransferPost::from)
                             .collect::<Vec<_>>()
-                    });
-                this.signer.set_network(None);
-                response
+                    })
             })
         })
     }
@@ -698,10 +690,8 @@ impl Wallet {
     ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer.set_network(Some(network.into()));
-                let response = this.post(transaction.into(), metadata.map(Into::into)).await;
-                this.signer.set_network(None);
-                response
+                this.signer().set_network(Some(network.into()));
+                this.post(transaction.into(), metadata.map(Into::into)).await
             })
         })
     }

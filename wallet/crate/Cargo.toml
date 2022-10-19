@@ -34,7 +34,7 @@ js-sys = { version = "0.3.56", default-features = false }
 manta-accounting = { git = "https://github.com/manta-network/manta-rs.git", branch = "signer_redesign", default-features = false, features = ["serde"] }
 manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", branch = "signer_redesign", default-features = false, features = ["serde"] }
 manta-pay = { git = "https://github.com/manta-network/manta-rs.git", branch = "signer_redesign", default-features = false, features = ["groth16", "http", "scale", "serde"] }
-manta-signer = { git = "https://github.com/manta-network/manta-signer.git", branch = "redesign", default-features = false }
+manta-signer = { git = "https://github.com/manta-network/manta-signer.git", branch = "redesign", default-features = false, features = ["network", "networkdeps"] }
 manta-util = { git = "https://github.com/manta-network/manta-rs.git", branch = "signer_redesign", default-features = false, features = ["serde"] }
 scale-codec = { package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive", "max-encoded-len"] }
 serde_json = { version = "1.0.79", default-features = false, features = ["alloc", "arbitrary_precision"] }

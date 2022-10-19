@@ -31,19 +31,19 @@ impl Client {
   where
       U: IntoUrl,
   {
-      Ok(Self(KnownUrlClient::new(server_url)?))
+      Ok(Self(KnownUrlClient::new(server_url)?, None))
   }
 
   /// Sets the network that will be used to wrap HTTP requests.
   #[inline]
-  pub fn set_network(self,network:Option<Network>) {
-      self.1 = network;
+  pub fn set_network(&mut self, network:Option<Network>) {
+      self.1 = network
   }
 
   /// Wraps the current outgoing Request with a network.
   #[inline]
-  pub fn wrap_request<T>(self,request:T) -> Message<T> {
-      Message {network: self.1, message:request}
+  pub fn wrap_request<T>(network:Option<Network>, request:T) -> Message<T> {
+    Message {network: network.expect("Unable to wrap request, missing network."), message:request}
   }
 }
 
@@ -57,7 +57,8 @@ impl signer::Connection<Config> for Client {
       request: SyncRequest,
   ) -> LocalBoxFutureResult<Result<SyncResponse, SyncError>, Self::Error> {
       Box::pin(async move {
-          let message = self.wrap_request(request);
+          let message = Self::wrap_request(self.1,request);
+          self.set_network(None);
           self.0.post("sync", &message).await
       })
   }
@@ -68,7 +69,8 @@ impl signer::Connection<Config> for Client {
       request: SignRequest
   ) -> LocalBoxFutureResult<Result<SignResponse, SignError>, Self::Error> {
       Box::pin(async move {
-          let message = self.wrap_request(request);
+          let message = Self::wrap_request(self.1,request);
+          self.set_network(None);
           self.0.post("sign", &message).await
       })
   }
