@@ -698,9 +698,10 @@ impl Wallet {
 
     /// Returns public receiving keys according to the `request`.
     #[inline]
-    pub fn receiving_keys(&self, request: ReceivingKeyRequest) -> Promise {
+    pub fn receiving_keys(&self, request: ReceivingKeyRequest, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
+                this.signer().set_network(Some(network.into()));
                 this.receiving_keys(request.into())
                     .await
                     .map(|keys| ReceivingKeyList(keys.into_iter().map(Into::into).collect()))

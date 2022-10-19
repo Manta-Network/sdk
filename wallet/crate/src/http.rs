@@ -80,6 +80,10 @@ impl signer::Connection<Config> for Client {
       &mut self,
       request: ReceivingKeyRequest,
   ) -> LocalBoxFutureResult<Vec<ReceivingKey>, Self::Error> {
-      Box::pin(async move { self.0.post("receivingKeys", &request).await })
+      Box::pin(async move {
+        let message = Self::wrap_request(self.1,request); 
+        self.set_network(None);
+        self.0.post("receivingKeys", &message).await
+      })
   }
 }
