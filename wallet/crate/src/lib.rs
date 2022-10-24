@@ -549,12 +549,14 @@ impl Wallet {
         F: 'static + for<'w> FnOnce(&'w mut WalletType) -> LocalBoxFutureResult<'w, T, E>,
     {
         let this = self.0.clone();
-        future_to_promise(async move {
+        let response = future_to_promise(async move {
             f(&mut this.borrow_mut())
                 .await
                 .map(into_js)
                 .map_err(|err| into_js(format!("Error during asynchronous call: {:?}", err)))
-        })
+        });
+        self.0.clone().signer().set_network(None);
+        response
     }
 
     /// Performs full wallet recovery.
