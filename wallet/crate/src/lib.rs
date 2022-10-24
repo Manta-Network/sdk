@@ -555,7 +555,7 @@ impl Wallet {
                 .map(into_js)
                 .map_err(|err| into_js(format!("Error during asynchronous call: {:?}", err)))
         });
-        self.0.clone().signer().set_network(None);
+        self.0.clone().borrow_mut().signer().set_network(None);
         response
     }
 
