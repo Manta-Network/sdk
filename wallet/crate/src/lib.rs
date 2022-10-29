@@ -38,7 +38,7 @@ use manta_accounting::{
     wallet::{
         self,
         ledger::{self, ReadResponse},
-        signer::SyncData
+        signer::SyncData,
     },
 };
 use manta_crypto::encryption::hybrid;
@@ -73,7 +73,7 @@ fn borrow_js<T>(value: &T) -> JsValue
 where
     T: Serialize,
 {
-    JsValue::from_serde(value).expect("Serialization is not allowed to fail.")
+    serde_wasm_bindgen::to_value(value).expect("Serialization is not allowed to fail.")
 }
 
 /// Serialize the owned `value` as a Javascript object.
@@ -91,9 +91,7 @@ fn from_js<T>(value: JsValue) -> T
 where
     T: DeserializeOwned,
 {
-    value
-        .into_serde()
-        .expect("Deserialization is not allowed to fail.")
+    serde_wasm_bindgen::from_value(value).expect("Deserialization is not allowed to fail.")
 }
 
 /// Implements a JS-compatible wrapper for the given `$type`.
@@ -553,7 +551,7 @@ impl Wallet {
             f(&mut this.borrow_mut())
                 .await
                 .map(into_js)
-                .map_err(|err| into_js(format!("Error during asynchronous call: {:?}", err)))
+                .map_err(|err| into_js(format!("Error during asynchronous call: {err:?}")))
         });
         self.0.clone().borrow_mut().signer().set_network(None);
         response
@@ -572,12 +570,14 @@ impl Wallet {
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
     pub fn restart(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async {           
-            this.signer().set_network(Some(network.into()));
-            let response = this.restart().await;
-            this.signer().set_network(None);
-            response
-        }))
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer().set_network(Some(network.into()));
+                let response = this.restart().await;
+                this.signer().set_network(None);
+                response
+            })
+        })
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
@@ -595,12 +595,14 @@ impl Wallet {
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
     pub fn sync(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async {            
-            this.signer().set_network(Some(network.into()));
-            let response = this.sync().await;
-            this.signer().set_network(None);
-            response
-        }))
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer().set_network(Some(network.into()));
+                let response = this.sync().await;
+                this.signer().set_network(None);
+                response
+            })
+        })
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
@@ -618,12 +620,14 @@ impl Wallet {
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
     pub fn sync_partial(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async {     
-            this.signer().set_network(Some(network.into()));
-            let response = this.sync_partial().await;
-            this.signer().set_network(None);
-            response
-        }))
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer().set_network(Some(network.into()));
+                let response = this.sync_partial().await;
+                this.signer().set_network(None);
+                response
+            })
+        })
     }
 
     /// Checks if `transaction` can be executed on the balance state of `self`, returning the
@@ -657,7 +661,8 @@ impl Wallet {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer().set_network(Some(network.into()));
-                let response = this.sign(transaction.into(), metadata.map(Into::into))
+                let response = this
+                    .sign(transaction.into(), metadata.map(Into::into))
                     .await
                     .map(|response| {
                         response
@@ -701,7 +706,9 @@ impl Wallet {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer().set_network(Some(network.into()));
-                let response = this.post(transaction.into(), metadata.map(Into::into)).await;
+                let response = this
+                    .post(transaction.into(), metadata.map(Into::into))
+                    .await;
                 this.signer().set_network(None);
                 response
             })
@@ -714,7 +721,8 @@ impl Wallet {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer().set_network(Some(network.into()));
-                let response = this.receiving_keys(request.into())
+                let response = this
+                    .receiving_keys(request.into())
                     .await
                     .map(|keys| ReceivingKeyList(keys.into_iter().map(Into::into).collect()));
                 this.signer().set_network(None);
