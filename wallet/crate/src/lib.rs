@@ -75,7 +75,7 @@ fn borrow_js<T>(value: &T) -> JsValue
 where
     T: Serialize,
 {
-    serde_wasm_bindgen::to_value(value).expect("Serialization is not allowed to fail.")
+    JsValue::from_serde(value).expect("Serialization is not allowed to fail.")
 }
 
 /// Serialize the owned `value` as a Javascript object.
@@ -93,7 +93,9 @@ fn from_js<T>(value: JsValue) -> T
 where
     T: DeserializeOwned,
 {
-    serde_wasm_bindgen::from_value(value).expect("Deserialization is not allowed to fail.")
+    value
+        .into_serde()
+        .expect("Deserialization is not allowed to fail.")
 }
 
 /// Implements a JS-compatible wrapper for the given `$type`.
