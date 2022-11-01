@@ -44,9 +44,11 @@ use manta_accounting::{
 use manta_crypto::encryption::hybrid;
 use manta_pay::{
     config::{self, Config, EncryptedNote},
-    signer::{self, Checkpoint},
+    signer::{
+        self,
+        Checkpoint
+}
 };
-use manta_signer::network;
 use manta_util::{
     future::LocalBoxFutureResult,
     ops,
@@ -179,7 +181,7 @@ impl_js_compatible!(
     "Receiving Key Request"
 );
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
-impl_js_compatible!(Network, network::Network, "Network Type");
+impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
 
 /// Asset Type
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
@@ -555,7 +557,7 @@ impl Wallet {
                 .map(into_js)
                 .map_err(|err| into_js(format!("Error during asynchronous call: {:?}", err)))
         });
-        self.0.clone().borrow_mut().signer().set_network(None);
+        self.0.clone().borrow_mut().signer.set_network(None);
         response
     }
 
@@ -573,9 +575,9 @@ impl Wallet {
     #[inline]
     pub fn restart(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async {           
-            this.signer().set_network(Some(network.into()));
+            this.signer.set_network(Some(network.into()));
             let response = this.restart().await;
-            this.signer().set_network(None);
+            this.signer.set_network(None);
             response
         }))
     }
@@ -596,9 +598,9 @@ impl Wallet {
     #[inline]
     pub fn sync(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async {            
-            this.signer().set_network(Some(network.into()));
+            this.signer.set_network(Some(network.into()));
             let response = this.sync().await;
-            this.signer().set_network(None);
+            this.signer.set_network(None);
             response
         }))
     }
@@ -619,9 +621,9 @@ impl Wallet {
     #[inline]
     pub fn sync_partial(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async {     
-            this.signer().set_network(Some(network.into()));
+            this.signer.set_network(Some(network.into()));
             let response = this.sync_partial().await;
-            this.signer().set_network(None);
+            this.signer.set_network(None);
             response
         }))
     }
@@ -656,7 +658,7 @@ impl Wallet {
     ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer().set_network(Some(network.into()));
+                this.signer.set_network(Some(network.into()));
                 let response = this.sign(transaction.into(), metadata.map(Into::into))
                     .await
                     .map(|response| {
@@ -666,7 +668,7 @@ impl Wallet {
                             .map(TransferPost::from)
                             .collect::<Vec<_>>()
                     });
-                this.signer().set_network(None);
+                this.signer.set_network(None);
                 response
             })
         })
@@ -700,9 +702,9 @@ impl Wallet {
     ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer().set_network(Some(network.into()));
+                this.signer.set_network(Some(network.into()));
                 let response = this.post(transaction.into(), metadata.map(Into::into)).await;
-                this.signer().set_network(None);
+                this.signer.set_network(None);
                 response
             })
         })
@@ -713,11 +715,11 @@ impl Wallet {
     pub fn receiving_keys(&self, request: ReceivingKeyRequest, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer().set_network(Some(network.into()));
+                this.signer.set_network(Some(network.into()));
                 let response = this.receiving_keys(request.into())
                     .await
                     .map(|keys| ReceivingKeyList(keys.into_iter().map(Into::into).collect()));
-                this.signer().set_network(None);
+                this.signer.set_network(None);
                 response
             })
         })

@@ -3,13 +3,13 @@
 use manta_pay::{
   config::{Config, ReceivingKey},
   signer::{
+    client::network::{Network,Message},
     Checkpoint, ReceivingKeyRequest, SignError, SignRequest, SignResponse, SyncError,
     SyncRequest, SyncResponse,
 },
 };
 use alloc::{boxed::Box, vec::Vec};
 use manta_accounting::wallet::{self, signer};
-use manta_signer::network::{Network,Message};
 use manta_util::{
   future::LocalBoxFutureResult,
   http::reqwest::{self, IntoUrl, KnownUrlClient},
