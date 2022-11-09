@@ -38,16 +38,27 @@ use manta_accounting::{
         ledger::{self, ReadResponse},
         signer::SyncData,
     },
+    derive_more::{Add, AddAssign, Display, From, Sub, SubAssign, Sum},
+    transfer::utxo::v2 as protocol,
+};
+use manta_crypto::{
+    encryption::hybrid,
+    rand::{Rand, RngCore, Sample},
 };
 use manta_pay::{
-    config::{self, Config, EncryptedNote},
-    signer::{self, Checkpoint},
+    config::{
+    self,
+    utxo::v2::{self as protocol_pay}
+    },
+    signer,
 };
 use manta_util::{
     future::LocalBoxFutureResult,
     ops,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     serde_with,
+    http::reqwest,
+    SizeLimit,
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
@@ -155,37 +166,170 @@ macro_rules! impl_js_compatible {
     };
 }
 
-impl_js_compatible!(AssetId, asset::AssetId, "Asset Id");
-impl_js_compatible!(AssetValue, asset::AssetValue, "Asset Value");
 impl_js_compatible!(Asset, AssetType, "Asset");
 impl_js_compatible!(AssetMetadata, asset::AssetMetadata, "Asset Metadata");
 impl_js_compatible!(Transaction, TransactionType, "Transaction");
 impl_js_compatible!(
     TransactionKind,
-    canonical::TransactionKind,
+    canonical::TransactionKind<'_, protocol_pay::Config>,
     "Transaction Kind"
 );
 impl_js_compatible!(SenderPost, config::SenderPost, "Sender Post");
 impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
-impl_js_compatible!(ReceivingKey, config::ReceivingKey, "Receiving Key");
-impl_js_compatible!(ReceivingKeyList, Vec<ReceivingKey>, "Receiving Key List");
-impl_js_compatible!(
-    ReceivingKeyRequest,
-    signer::ReceivingKeyRequest,
-    "Receiving Key Request"
-);
+
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
+impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
+
+
+/// [`AssetIdType`] Base Type
+pub type AssetIdType = u32;
+
+/// [`AssetValue`] Base Type
+pub type AssetValueType = u128;
+
+/// Asset Value Type
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde", deny_unknown_fields)]
+pub struct AssetValue(
+    /// [`Asset`] Value
+    pub AssetValueType,
+);
+
+impl AssetValue {
+    /// The size of this type in bits.
+    pub const BITS: u32 = AssetValueType::BITS;
+
+    /// The size of this type in bytes.
+    pub const SIZE: usize = (Self::BITS / 8) as usize;
+
+    /// Constructs a new [`Asset`] with `self` as the [`AssetValue`] and `id` as the [`AssetId`].
+    #[inline]
+    pub const fn with(self, id: AssetIdType) -> Asset {
+        Asset::new(id, self)
+    }
+
+    /// Constructs a new [`Asset`] with `self` as the [`AssetValue`] and `id` as the [`AssetId`].
+    #[inline]
+    pub const fn id(self, id: AssetIdType) -> Asset {
+        self.with(id)
+    }
+
+    /// Converts a byte array into `self`.
+    #[inline]
+    pub const fn from_bytes(bytes: [u8; Self::SIZE]) -> Self {
+        Self(AssetValueType::from_le_bytes(bytes))
+    }
+
+    /// Converts `self` into a byte array.
+    #[inline]
+    pub const fn into_bytes(self) -> [u8; Self::SIZE] {
+        self.0.to_le_bytes()
+    }
+
+    /// Checked integer addition. Computes `self + rhs`, returning `None` if overflow occurred.
+    #[inline]
+    pub const fn checked_add(self, rhs: Self) -> Option<Self> {
+        match self.0.checked_add(rhs.0) {
+            Some(result) => Some(Self(result)),
+            _ => None,
+        }
+    }
+
+    /// Checked integer subtraction. Computes `self - rhs`, returning `None` if overflow occurred.
+    #[inline]
+    pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
+        match self.0.checked_sub(rhs.0) {
+            Some(result) => Some(Self(result)),
+            _ => None,
+        }
+    }
+}
+
+impl Add<AssetValueType> for AssetValue {
+    type Output = Self;
+
+    #[inline]
+    fn add(mut self, rhs: AssetValueType) -> Self {
+        self.add_assign(rhs);
+        self
+    }
+}
+
+impl AddAssign<AssetValueType> for AssetValue {
+    #[inline]
+    fn add_assign(&mut self, rhs: AssetValueType) {
+        self.0 += rhs;
+    }
+}
+
+impl From<AssetValue> for [u8; AssetValue::SIZE] {
+    #[inline]
+    fn from(value: AssetValue) -> Self {
+        value.into_bytes()
+    }
+}
+
+impl PartialEq<AssetValueType> for AssetValue {
+    #[inline]
+    fn eq(&self, rhs: &AssetValueType) -> bool {
+        self.0 == *rhs
+    }
+}
+
+impl<D> Sample<D> for AssetValue
+where
+    AssetValueType: Sample<D>,
+{
+    #[inline]
+    fn sample<R>(distribution: D, rng: &mut R) -> Self
+    where
+        R: RngCore + ?Sized,
+    {
+        Self(rng.sample(distribution))
+    }
+}
+
+impl SizeLimit for AssetValue {
+    const SIZE: usize = Self::SIZE;
+}
+
+impl Sub<AssetValueType> for AssetValue {
+    type Output = Self;
+
+    #[inline]
+    fn sub(mut self, rhs: AssetValueType) -> Self {
+        self.sub_assign(rhs);
+        self
+    }
+}
+
+impl SubAssign<AssetValueType> for AssetValue {
+    #[inline]
+    fn sub_assign(&mut self, rhs: AssetValueType) {
+        self.0 -= rhs;
+    }
+}
+
+impl<'a> Sum<&'a AssetValue> for AssetValue {
+    #[inline]
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = &'a AssetValue>,
+    {
+        iter.copied().sum()
+    }
+}
 
 /// Asset Type
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
 struct AssetType {
-    /// Asset Id
-    id: asset::AssetId,
+    /// AssetID removed now, was used as AssetIdType = u32 (check manta-rs v0.5.2)
+    id: AssetIdType,
 
     /// Asset Value
     ///
-    /// This is meant to represent a value of type [`asset::AssetValue`] which is too big to fit
+    /// This is meant to represent a value of type [`AssetValue] which is too big to fit
     /// into a Javascript integer. Because we don't have access to the Big Number APIs from Rust,
     /// we just send a `String` back and forth and have Javascript convert it into a numeric
     /// representation.
@@ -197,7 +341,7 @@ impl From<Asset> for asset::Asset {
     fn from(asset: Asset) -> Self {
         Self {
             id: asset.0.id,
-            value: asset::AssetValue(
+            value: AssetValue(
                 asset
                     .0
                     .value
@@ -226,7 +370,7 @@ enum TransactionType {
     Mint(Asset),
 
     /// Private Transfer
-    PrivateTransfer(Asset, config::ReceivingKey),
+    PrivateTransfer(Asset, protocol::Address<protocol_pay::Config>),
 
     /// Reclaim
     Reclaim(Asset),
@@ -251,7 +395,7 @@ impl From<Transaction> for config::Transaction {
 #[wasm_bindgen]
 pub struct TransferPost {
     /// Asset Id
-    asset_id: Option<asset::AssetId>,
+    asset_id: Option<AssetIdType>,
 
     /// Sources
     sources: Vec<String>,
@@ -275,7 +419,7 @@ impl TransferPost {
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
-        asset_id: Option<AssetId>,
+        asset_id: Option<AssetIdType>,
         sources: Vec<JsString>,
         sender_posts: Vec<JsValue>,
         receiver_posts: Vec<JsValue>,
@@ -356,14 +500,17 @@ pub struct RawEncryptedNote {
     pub ciphertext: [u8; 68],
 }
 
-impl TryFrom<RawEncryptedNote> for EncryptedNote {
+impl TryFrom<RawEncryptedNote> for protocol::LightIncomingNote {
     type Error = scale_codec::Error;
 
     #[inline]
     fn try_from(encrypted_note: RawEncryptedNote) -> Result<Self, Self::Error> {
         Ok(Self {
-            ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
-            ciphertext: encrypted_note.ciphertext.into(),
+            header: (),
+            ciphertext: hybrid::Ciphertext {
+                ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
+                ciphertext: encrypted_note.ciphertext.into(),
+            },
         })
     }
 }
@@ -414,7 +561,7 @@ impl ledger::Connection for PolkadotJsLedger {
 }
 
 impl ledger::Read<SyncData<Config>> for PolkadotJsLedger {
-    type Checkpoint = Checkpoint;
+    type Checkpoint = protocol_pay::Checkpoint;
 
     #[inline]
     fn read<'s>(
@@ -456,7 +603,7 @@ impl ledger::Write<Vec<config::TransferPost>> for PolkadotJsLedger {
 
 /// Signer Error
 #[wasm_bindgen]
-pub struct SignerError(signer::client::http::Error);
+pub struct SignerError(reqwest::Error);
 
 /// Signer Type
 type SignerType = signer::client::http::Client;
@@ -481,7 +628,7 @@ impl Signer {
 pub struct WalletError(wallet::Error<Config, PolkadotJsLedger, SignerType>);
 
 /// Wallet Type
-type WalletType = signer::client::http::Wallet<PolkadotJsLedger>;
+type WalletType = wallet::client::http::Wallet<PolkadotJsLedger>;
 
 /// Wallet with Polkadot-JS API Connection
 #[wasm_bindgen]
@@ -508,7 +655,7 @@ impl Wallet {
 
     /// Returns the current balance associated with this `id`.
     #[inline]
-    pub fn balance(&self, id: AssetId) -> String {
+    pub fn balance(&self, id: AssetIdType) -> String {
         self.0.borrow().balance(id.into()).to_string()
     }
 
@@ -541,12 +688,14 @@ impl Wallet {
         F: 'static + for<'w> FnOnce(&'w mut WalletType) -> LocalBoxFutureResult<'w, T, E>,
     {
         let this = self.0.clone();
-        future_to_promise(async move {
+        let response = future_to_promise(async move {
             f(&mut this.borrow_mut())
                 .await
                 .map(into_js)
-                .map_err(|err| into_js(format!("Error during asynchronous call: {:?}", err)))
-        })
+                .map_err(|err| into_js(format!("Error during asynchronous call: {err:?}")))
+        });
+        self.0.clone().borrow_mut().signer.set_network(None);
+        response
     }
 
     /// Performs full wallet recovery.
@@ -561,8 +710,13 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn restart(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.restart().await }))
+    pub fn restart(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(async {
+            this.signer.set_network(Some(network.into()));
+            let response = this.restart().await;
+            this.signer.set_network(None);
+            response
+        }))
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
@@ -579,8 +733,13 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn sync(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.sync().await }))
+    pub fn sync(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(async {
+            this.signer.set_network(Some(network.into()));
+            let response = this.sync().await;
+            this.signer.set_network(None);
+            response
+        }))
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
@@ -597,8 +756,13 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn sync_partial(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.sync_partial().await }))
+    pub fn sync_partial(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(async {
+            this.signer.set_network(Some(network.into()));
+            let response = this.sync_partial().await;
+            this.signer.set_network(None);
+            response
+        }))
     }
 
     /// Checks if `transaction` can be executed on the balance state of `self`, returning the
@@ -619,14 +783,20 @@ impl Wallet {
             .map_err(Into::into)
     }
 
-    /// Signs the `transaction` using the signer connection, sending `metadata` for context. This
+    /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for context. This
     /// method _does not_ automatically sychronize with the ledger. To do this, call the
     /// [`sync`](Self::sync) method separately.
     #[inline]
-    pub fn sign(&self, transaction: Transaction, metadata: Option<AssetMetadata>) -> Promise {
+    pub fn sign(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: Network,
+    ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.sign(transaction.into(), metadata.map(Into::into))
+                this.signer.set_network(Some(network.into()));
+                let response = this.sign(transaction.into(), metadata.map(Into::into))
                     .await
                     .map(|response| {
                         response
@@ -634,7 +804,9 @@ impl Wallet {
                             .into_iter()
                             .map(TransferPost::from)
                             .collect::<Vec<_>>()
-                    })
+                    });
+                this.signer.set_network(None);
+                response
             })
         })
     }
@@ -659,23 +831,31 @@ impl Wallet {
     /// [`post`]: Self::post
     /// [`sync`]: Self::sync
     #[inline]
-    pub fn post(&self, transaction: Transaction, metadata: Option<AssetMetadata>) -> Promise {
+    pub fn post(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: Network,
+    ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.post(transaction.into(), metadata.map(Into::into))
-                    .await
+                this.signer.set_network(Some(network.into()));
+                let response = this.post(transaction.into(), metadata.map(Into::into)).await;
+                this.signer.set_network(None);
+                response
             })
         })
     }
 
     /// Returns public receiving keys according to the `request`.
     #[inline]
-    pub fn receiving_keys(&self, request: ReceivingKeyRequest) -> Promise {
+    pub fn receiving_keys(&self, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.receiving_keys(request.into())
-                    .await
-                    .map(|keys| ReceivingKeyList(keys.into_iter().map(Into::into).collect()))
+                this.signer.set_network(Some(network.into()));
+                let response = this.address().await;
+                this.signer.set_network(None);
+                response
             })
         })
     }
