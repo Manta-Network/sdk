@@ -38,7 +38,6 @@ use manta_accounting::{
         ledger::{self, ReadResponse},
         signer::SyncData,
     },
-    derive_more::{Add, AddAssign, Display, From, Sub, SubAssign, Sum},
     transfer::utxo::v2 as protocol,
 };
 use manta_crypto::{
@@ -48,7 +47,7 @@ use manta_crypto::{
 use manta_pay::{
     config::{
     self,
-    utxo::v2::{self as protocol_pay}
+    utxo::v2::{self as protocol_pay, Config}
     },
     signer,
 };
@@ -58,7 +57,6 @@ use manta_util::{
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     serde_with,
     http::reqwest,
-    SizeLimit,
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
@@ -166,12 +164,12 @@ macro_rules! impl_js_compatible {
     };
 }
 
-impl_js_compatible!(Asset, AssetType, "Asset");
+impl_js_compatible!(Asset, asset::Asset<u32, String>, "Asset");
 impl_js_compatible!(AssetMetadata, asset::AssetMetadata, "Asset Metadata");
-impl_js_compatible!(Transaction, TransactionType, "Transaction");
+impl_js_compatible!(Transaction, canonical::Transaction<config::Config>, "Transaction");
 impl_js_compatible!(
     TransactionKind,
-    canonical::TransactionKind<'_, protocol_pay::Config>,
+    canonical::TransactionKind<'static, config::Config>,
     "Transaction Kind"
 );
 impl_js_compatible!(SenderPost, config::SenderPost, "Sender Post");
@@ -181,221 +179,13 @@ impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
 
 
-/// [`AssetIdType`] Base Type
-pub type AssetIdType = u32;
-
-/// [`AssetValue`] Base Type
-pub type AssetValueType = u128;
-
-/// Asset Value Type
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde", deny_unknown_fields)]
-pub struct AssetValue(
-    /// [`Asset`] Value
-    pub AssetValueType,
-);
-
-impl AssetValue {
-    /// The size of this type in bits.
-    pub const BITS: u32 = AssetValueType::BITS;
-
-    /// The size of this type in bytes.
-    pub const SIZE: usize = (Self::BITS / 8) as usize;
-
-    /// Constructs a new [`Asset`] with `self` as the [`AssetValue`] and `id` as the [`AssetId`].
-    #[inline]
-    pub const fn with(self, id: AssetIdType) -> Asset {
-        Asset::new(id, self)
-    }
-
-    /// Constructs a new [`Asset`] with `self` as the [`AssetValue`] and `id` as the [`AssetId`].
-    #[inline]
-    pub const fn id(self, id: AssetIdType) -> Asset {
-        self.with(id)
-    }
-
-    /// Converts a byte array into `self`.
-    #[inline]
-    pub const fn from_bytes(bytes: [u8; Self::SIZE]) -> Self {
-        Self(AssetValueType::from_le_bytes(bytes))
-    }
-
-    /// Converts `self` into a byte array.
-    #[inline]
-    pub const fn into_bytes(self) -> [u8; Self::SIZE] {
-        self.0.to_le_bytes()
-    }
-
-    /// Checked integer addition. Computes `self + rhs`, returning `None` if overflow occurred.
-    #[inline]
-    pub const fn checked_add(self, rhs: Self) -> Option<Self> {
-        match self.0.checked_add(rhs.0) {
-            Some(result) => Some(Self(result)),
-            _ => None,
-        }
-    }
-
-    /// Checked integer subtraction. Computes `self - rhs`, returning `None` if overflow occurred.
-    #[inline]
-    pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
-        match self.0.checked_sub(rhs.0) {
-            Some(result) => Some(Self(result)),
-            _ => None,
-        }
-    }
-}
-
-impl Add<AssetValueType> for AssetValue {
-    type Output = Self;
-
-    #[inline]
-    fn add(mut self, rhs: AssetValueType) -> Self {
-        self.add_assign(rhs);
-        self
-    }
-}
-
-impl AddAssign<AssetValueType> for AssetValue {
-    #[inline]
-    fn add_assign(&mut self, rhs: AssetValueType) {
-        self.0 += rhs;
-    }
-}
-
-impl From<AssetValue> for [u8; AssetValue::SIZE] {
-    #[inline]
-    fn from(value: AssetValue) -> Self {
-        value.into_bytes()
-    }
-}
-
-impl PartialEq<AssetValueType> for AssetValue {
-    #[inline]
-    fn eq(&self, rhs: &AssetValueType) -> bool {
-        self.0 == *rhs
-    }
-}
-
-impl<D> Sample<D> for AssetValue
-where
-    AssetValueType: Sample<D>,
-{
-    #[inline]
-    fn sample<R>(distribution: D, rng: &mut R) -> Self
-    where
-        R: RngCore + ?Sized,
-    {
-        Self(rng.sample(distribution))
-    }
-}
-
-impl SizeLimit for AssetValue {
-    const SIZE: usize = Self::SIZE;
-}
-
-impl Sub<AssetValueType> for AssetValue {
-    type Output = Self;
-
-    #[inline]
-    fn sub(mut self, rhs: AssetValueType) -> Self {
-        self.sub_assign(rhs);
-        self
-    }
-}
-
-impl SubAssign<AssetValueType> for AssetValue {
-    #[inline]
-    fn sub_assign(&mut self, rhs: AssetValueType) {
-        self.0 -= rhs;
-    }
-}
-
-impl<'a> Sum<&'a AssetValue> for AssetValue {
-    #[inline]
-    fn sum<I>(iter: I) -> Self
-    where
-        I: Iterator<Item = &'a AssetValue>,
-    {
-        iter.copied().sum()
-    }
-}
-
-/// Asset Type
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde", deny_unknown_fields)]
-struct AssetType {
-    /// AssetID removed now, was used as AssetIdType = u32 (check manta-rs v0.5.2)
-    id: AssetIdType,
-
-    /// Asset Value
-    ///
-    /// This is meant to represent a value of type [`AssetValue] which is too big to fit
-    /// into a Javascript integer. Because we don't have access to the Big Number APIs from Rust,
-    /// we just send a `String` back and forth and have Javascript convert it into a numeric
-    /// representation.
-    value: String,
-}
-
-impl From<Asset> for asset::Asset {
-    #[inline]
-    fn from(asset: Asset) -> Self {
-        Self {
-            id: asset.0.id,
-            value: AssetValue(
-                asset
-                    .0
-                    .value
-                    .parse()
-                    .expect("Parsing an asset value is not allowed to fail."),
-            ),
-        }
-    }
-}
-
-impl From<asset::Asset> for Asset {
-    #[inline]
-    fn from(asset: asset::Asset) -> Asset {
-        Self(AssetType {
-            id: asset.id,
-            value: asset.value.0.to_string(),
-        })
-    }
-}
-
-/// Transaction Types
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde", deny_unknown_fields)]
-enum TransactionType {
-    /// Mint
-    Mint(Asset),
-
-    /// Private Transfer
-    PrivateTransfer(Asset, protocol::Address<protocol_pay::Config>),
-
-    /// Reclaim
-    Reclaim(Asset),
-}
-
-impl From<Transaction> for config::Transaction {
-    #[inline]
-    fn from(transaction: Transaction) -> Self {
-        match transaction.0 {
-            TransactionType::Mint(asset) => Self::Mint(asset.into()),
-            TransactionType::PrivateTransfer(asset, receiver) => {
-                Self::PrivateTransfer(asset.into(), receiver)
-            }
-            TransactionType::Reclaim(asset) => Self::Reclaim(asset.into()),
-        }
-    }
-}
-
 /// Transfer Post
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
 #[wasm_bindgen]
 pub struct TransferPost {
     /// Asset Id
-    asset_id: Option<AssetIdType>,
+    asset_id: Option<u32>,
 
     /// Sources
     sources: Vec<String>,
@@ -419,7 +209,7 @@ impl TransferPost {
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
-        asset_id: Option<AssetIdType>,
+        asset_id: Option<u32>,
         sources: Vec<JsString>,
         sender_posts: Vec<JsValue>,
         receiver_posts: Vec<JsValue>,
@@ -500,7 +290,7 @@ pub struct RawEncryptedNote {
     pub ciphertext: [u8; 68],
 }
 
-impl TryFrom<RawEncryptedNote> for protocol::LightIncomingNote {
+impl TryFrom<RawEncryptedNote> for protocol::LightIncomingNote<Config> {
     type Error = scale_codec::Error;
 
     #[inline]
@@ -529,7 +319,7 @@ pub struct RawPullResponse {
     pub senders: Vec<RawVoidNumber>,
 }
 
-impl TryFrom<RawPullResponse> for ReadResponse<SyncData<Config>> {
+impl TryFrom<RawPullResponse> for ReadResponse<SyncData<config::Config>> {
     type Error = ();
 
     #[inline]
@@ -560,14 +350,14 @@ impl ledger::Connection for PolkadotJsLedger {
     type Error = LedgerError;
 }
 
-impl ledger::Read<SyncData<Config>> for PolkadotJsLedger {
+impl ledger::Read<SyncData<config::Config>> for PolkadotJsLedger {
     type Checkpoint = protocol_pay::Checkpoint;
 
     #[inline]
     fn read<'s>(
         &'s mut self,
         checkpoint: &'s Self::Checkpoint,
-    ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<Config>>, Self::Error> {
+    ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<config::Config>>, Self::Error> {
         Box::pin(async {
             Ok(
                 from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
@@ -606,7 +396,7 @@ impl ledger::Write<Vec<config::TransferPost>> for PolkadotJsLedger {
 pub struct SignerError(reqwest::Error);
 
 /// Signer Type
-type SignerType = signer::client::http::Client;
+type SignerType = signer::client::websocket::Client;
 
 /// Signer Client
 #[wasm_bindgen]
@@ -625,10 +415,10 @@ impl Signer {
 
 /// Wallet Error
 #[wasm_bindgen]
-pub struct WalletError(wallet::Error<Config, PolkadotJsLedger, SignerType>);
+pub struct WalletError(wallet::Error<manta_pay::config::Config, PolkadotJsLedger, SignerType>);
 
 /// Wallet Type
-type WalletType = wallet::client::http::Wallet<PolkadotJsLedger>;
+type WalletType = wallet::Wallet<manta_pay::config::Config, PolkadotJsLedger>;
 
 /// Wallet with Polkadot-JS API Connection
 #[wasm_bindgen]
@@ -655,7 +445,7 @@ impl Wallet {
 
     /// Returns the current balance associated with this `id`.
     #[inline]
-    pub fn balance(&self, id: AssetIdType) -> String {
+    pub fn balance(&self, id: u32) -> String {
         self.0.borrow().balance(id.into()).to_string()
     }
 
