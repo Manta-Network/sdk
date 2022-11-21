@@ -2,13 +2,13 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 // TODO: remove this dependency with better signer integration
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
-
 import Api, { ApiConfig } from 'manta-wasm-wallet-api';
 import axios from 'axios';
 import BN from 'bn.js';
 import config from './manta-config.json';
 import { Transaction, Wallet } from 'manta-wasm-wallet';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
+import {Version, PrivateAddress, AssetId, InitApiResult, InitWasmResult, IMantaSdk } from "./sdk.interfaces";
 
 const rpc = config.RPC;
 const types = config.TYPES;
@@ -24,21 +24,94 @@ export enum Environment {
     Production = "PROD"
 }
 
-interface InitApiResult {
-    api: ApiPromise,
-    signer: string
+export class MantaSdk implements IMantaSdk {
+
+    api: ApiPromise;
+    signer: string;
+    wasm: any;
+    wasmWallet: Wallet;
+
+    constructor(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet) {
+        this.api = api;
+        this.signer = signer;
+        this.wasm = wasm;
+        this.wasmWallet = wasmWallet;
+    }
+
+    // Signer Methods
+
+    async privateAddress(): Promise<PrivateAddress> {
+        const privateAddress = await getPrivateAddress(this.wasm, this.wasmWallet);
+        return privateAddress
+    }
+
+    /// must be called before walletSync()
+    async initalWalletSync(): Promise<void> {
+        await init_sync(this.wasmWallet);
+    }
+
+    async walletSync(): Promise<void> {
+        await this.wasmWallet.sync();
+    }
+
+    async signerVersion(): Promise<Version> {
+        const version = await get_signer_version();
+        return version;
+    }
+
+    // Fungible Token Methods
+
+    async assetMetaData(asset_id: AssetId): Promise<any> {
+        const data = await this.api.query.assetManager.assetIdMetadata(asset_id);
+        const json = JSON.stringify(data.toHuman());
+        const jsonObj = JSON.parse(json);
+        return jsonObj;
+    }
+    
+    async privateBalance(asset_id: AssetId): Promise<string> {
+        const balance = await get_private_balance(this.wasm, this.wasmWallet, asset_id);
+        return balance;
+    }
+
+    async toPrivatePost(asset_id: AssetId, amount: number): Promise<void> {
+        await to_private_by_post(this.wasm, this.wasmWallet, asset_id, amount);
+    }
+    
+    async toPrivateSign(asset_id: AssetId, amount: number): Promise<void> {
+        await to_private_by_sign(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount);
+    }
+
+    async privateTransfer(asset_id: AssetId, amount: number, address: PrivateAddress): Promise<void> {
+        await private_transfer(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount, address);
+    }
+
+    async toPublic(asset_id: AssetId, amount: number): Promise<void> {
+        await to_public(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount);
+    }
+
+    // Non Fungible Token Methods
+    
+    async toPrivateNFT(asset_id: number): Promise<void> {
+        await to_private_nft(this.wasm, this.wasmWallet, asset_id);
+    }
+
+    async privateTransferNFT(asset_id: AssetId, address: PrivateAddress): Promise<void> {
+        await private_transfer_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, address)
+    }
+
+    async toPublicNFT(asset_id: number): Promise<void> {
+        await to_public_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id);
+    }
+
 }
 
-interface InitWasmResult {
-    wasm: any,
-    wasmWallet: Wallet
+// Initializes the MantaSdk class.
+export async function init(env: Environment): Promise<MantaSdk> {
+    const {api, signer} = await init_api(env);
+    const {wasm, wasmWallet} = await init_wasm_sdk(api, signer);
+    const sdk = new MantaSdk(api,signer,wasm,wasmWallet);
+    return sdk
 }
-
-type Version = string;
-type PrivateAddress = string;
-
-type AssetId = number;
-
 
 /// Get blockchain connection url by env constant value
 // TODO: better env variable handling
@@ -51,7 +124,7 @@ function env_url(env: Environment): string {
 }
 
 /// Polkadot.js API with web3Extension
-export async function init_api(env: Environment): Promise<InitApiResult> {
+async function init_api(env: Environment): Promise<InitApiResult> {
     const provider = new WsProvider(env_url(env));
     const api = await ApiPromise.create({ provider, types, rpc });
     const [chain, nodeName, nodeVersion] = await Promise.all([
@@ -80,47 +153,8 @@ export async function init_api(env: Environment): Promise<InitApiResult> {
     };
 }
 
-export async function init_api_config(env: Environment): Promise<ApiPromise> {
-    const provider = new WsProvider(env_url(env));
-    const api = await ApiPromise.create({ provider, types, rpc });
-    const [chain, nodeName, nodeVersion] = await Promise.all([
-        api.rpc.system.chain(),
-        api.rpc.system.name(),
-        api.rpc.system.version()
-    ]);
-    console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
-    return api;
-}
-
-// Compile error: Module parse failed: Unexpected token .... => :SDK or : Promise<Sdk>
-// You may need an appropriate loader to handle this file type, currently no loaders are configured to process this file. See https://webpack.js.org/concepts#loaders
-// import {SDK, Sdk} from './sdk.interfaces';
-// export function init_chain(env): SDK
-// async function init_sdk(env): Promise<Sdk>
-
-// Compile ok, but not works
-// TypeError: sdks.private_address is not a function
-export async function init_chain(env: Environment): Promise<any> {
-    const sdks = await init_sdk(env);
-    return {
-        sdks
-    }
-}
-async function init_sdk(env: Environment): Promise<any> {
-    const {api, signer} = await init_api(env);
-    const {wasm, wasmWallet} = await init_wasm_sdk(api, signer);
-    return {
-        private_address: async() => {
-            await getPrivateAddress(wasm, wasmWallet);
-        },
-        init_synchronize: async() => {
-            await init_sync(wasmWallet);
-        },
-    }
-}
-
 /// Initialize wasm wallet sdk
-export async function init_wasm_sdk(api: ApiPromise, signer: string): Promise<InitWasmResult> {
+async function init_wasm_sdk(api: ApiPromise, signer: string): Promise<InitWasmResult> {
     const wasm = await import('manta-wasm-wallet');
     const wasmSigner = new wasm.Signer(SIGNER_URL);
     const wasmApiConfig = new ApiConfig(
@@ -136,7 +170,7 @@ export async function init_wasm_sdk(api: ApiPromise, signer: string): Promise<In
 }
 
 /// Get signer version
-export async function get_signer_version(): Promise<Version> {
+async function get_signer_version(): Promise<Version> {
     const version_res = await axios.get(`${SIGNER_URL}version`, {
         timeout: 1500
     });
@@ -145,7 +179,7 @@ export async function get_signer_version(): Promise<Version> {
 }
 
 /// Get private address
-export async function getPrivateAddress(wasm: any, wallet:Wallet): Promise<PrivateAddress> {
+async function getPrivateAddress(wasm: any, wallet:Wallet): Promise<PrivateAddress> {
     const keys = await wallet.receiving_keys(
         new wasm.ReceivingKeyRequest('GetAll')
     );
@@ -159,7 +193,7 @@ export async function getPrivateAddress(wasm: any, wallet:Wallet): Promise<Priva
     return privateAddress;
 };
 
-export function privateAddressToJson(privateAddress: PrivateAddress): PrivateAddress {
+function privateAddressToJson(privateAddress: PrivateAddress): PrivateAddress {
     const bytes = base58Decode(privateAddress);
     return JSON.stringify({
         spend: Array.from(bytes.slice(0, 32)),
@@ -168,7 +202,7 @@ export function privateAddressToJson(privateAddress: PrivateAddress): PrivateAdd
 };
 
 /// Initial synchronization with signer
-export async function init_sync(wasmWallet: Wallet): Promise<void> {
+async function init_sync(wasmWallet: Wallet): Promise<void> {
     console.log('Beginning initial sync');
     const startTime = performance.now();
     await wasmWallet.restart();
@@ -179,7 +213,7 @@ export async function init_sync(wasmWallet: Wallet): Promise<void> {
 }
 
 /// to_private transaction by post on wallet
-export async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number): Promise<void> {
+async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number): Promise<void> {
     console.log("to_private transaction...");
     const txJson = `{ "Mint": { "id": ${asset_id}, "value": "${to_private_amount}" }}`;
     const transaction = wasm.Transaction.from_string(txJson);
@@ -193,12 +227,12 @@ export async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id
 
 /// to_private can also using sign + signAndSend
 /// TODO: expose sign() method that return TransferPost.
-export async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number): Promise<void> {
+async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number): Promise<void> {
     console.log("to_private transaction...");
     const txJson = `{ "Mint": { "id": ${asset_id}, "value": "${to_private_amount}" }}`;
     const transaction = wasm.Transaction.from_string(txJson);
     try {
-        await sign_and_send_without_metdata(api, signer, wasmWallet, transaction);
+        await sign_and_send_without_metadata(api, signer, wasmWallet, transaction);
         console.log("📜to_private done");
     } catch (error) {
         console.error('Transaction failed', error);
@@ -207,7 +241,7 @@ export async function to_private_by_sign(api: ApiPromise, signer: string, wasm: 
 
 /// to_private transaction for NFT
 /// TODO: fixed amount value
-export async function to_private_nft(wasm: any, wasmWallet: Wallet, asset_id: AssetId): Promise<void> {
+async function to_private_nft(wasm: any, wasmWallet: Wallet, asset_id: AssetId): Promise<void> {
     console.log("to_private NFT transaction...");
     const txJson = `{ "Mint": { "id": ${asset_id}, "value": "${NFT_AMOUNT}" }}`;
     const transaction = wasm.Transaction.from_string(txJson);
@@ -219,8 +253,29 @@ export async function to_private_nft(wasm: any, wasmWallet: Wallet, asset_id: As
     }
 }
 
+/// public transfer transaction
+async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, transfer_amount: number): Promise<void> {
+    console.log("to_public transaction of asset_id:" + asset_id);
+    const txJson = `{ "Reclaim": { "id": ${asset_id}, "value": "${transfer_amount}" }}`;
+    const transaction = wasm.Transaction.from_string(txJson);
+
+    // construct asset metadata json by query api
+    const asset_meta = await api.query.assetManager.assetIdMetadata(asset_id);
+
+    const json = JSON.stringify(asset_meta.toHuman());
+    const jsonObj = JSON.parse(json);
+    console.log("asset metadata:" + json);
+    const decimals = jsonObj["metadata"]["decimals"];
+    const symbol = jsonObj["metadata"]["symbol"];
+    const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
+    console.log("📜asset metadata:" + assetMetadataJson);
+
+    await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction);
+    console.log("📜finish private transfer.");
+}
+
 /// private transfer transaction
-export async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, private_transfer_amount: number, to_private_address: PrivateAddress): Promise<void> {
+async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, private_transfer_amount: number, to_private_address: PrivateAddress): Promise<void> {
     console.log("private_transfer transaction of asset_id:" + asset_id);
     const addressJson = privateAddressToJson(to_private_address);
     const txJson = `{ "PrivateTransfer": [{ "id": ${asset_id}, "value": "${private_transfer_amount}" }, ${addressJson} ]}`;
@@ -238,12 +293,12 @@ export async function private_transfer(api: ApiPromise, signer: string, wasm: an
     console.log("📜asset metadata:" + assetMetadataJson);
 
     await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction);
-    console.log("📜finish private transfer 1 pDOL.");
+    console.log("📜finish private transfer.");
 }
 
 /// private transfer transaction for NFT
 /// TODO: fixed amount value and asset metadata
-export async function private_transfer_nft(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_address: PrivateAddress): Promise<void> {
+async function private_transfer_nft(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_address: PrivateAddress): Promise<void> {
     console.log("private_transfer NFT transaction...");
     const addressJson = privateAddressToJson(to_private_address);
     const txJson = `{ "PrivateTransfer": [{ "id": ${asset_id}, "value": "${NFT_AMOUNT}" }, ${addressJson} ]}`;
@@ -255,24 +310,24 @@ export async function private_transfer_nft(api: ApiPromise, signer: string, wasm
     const assetMetadataJson = `{ "decimals": 12, "symbol": "pNFT" }`;
 
     await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction);
-    console.log("📜finish private transfer 1 pDOL.");
+    console.log("📜finish private transfer.");
 }
 
 /// to_public transaction for NFT
 /// TODO: fixed amount value and asset metadata
-export async function to_public_nft(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId): Promise<void> {
+async function to_public_nft(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId): Promise<void> {
     console.log("to_public NFT transaction...");
     const txJson = `{ "Reclaim": { "id": ${asset_id}, "value": "${NFT_AMOUNT}" }}`;
     const transaction = wasm.Transaction.from_string(txJson);
     const assetMetadataJson = `{ "decimals": 12 , "symbol": "pNFT" }`;
 
     await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction);
-    console.log("📜finish to public transfer 1 pDOL.");
+    console.log("📜finish to public transfer.");
 };
 
-/// Using sign on wallet and using signdAndSend to polkadot.js transaction
-/// This version is using `null` asset metdata. only meaningul for to_private.
-const sign_and_send_without_metdata = async (api: ApiPromise, signer: string, wasmWallet: Wallet, transaction: any): Promise<void> => {
+/// Using sign on wallet and using signAndSend to polkadot.js transaction
+/// This version is using `null` asset metdata. Only meaningful for to_private.
+const sign_and_send_without_metadata = async (api: ApiPromise, signer: string, wasmWallet: Wallet, transaction: any): Promise<void> => {
     const posts = await wasmWallet.sign(transaction, null);
     const transactions = [];
     for (let i = 0; i < posts.length; i++) {
@@ -350,8 +405,8 @@ async function transactionsToBatches(transactions: any, api: ApiPromise): Promis
 }
 
 /// Get private asset balance
-export function get_private_balance(wasm: any, wasmWallet: Wallet, asset_id: AssetId, info: string): string {
+function get_private_balance(wasm: any, wasmWallet: Wallet, asset_id: AssetId): string {
     const balance = wasmWallet.balance(new wasm.AssetId(asset_id));
-    console.log(`💰private asset ${asset_id} balance[${info}]:` + balance);
+    console.log(`💰private asset ${asset_id} balance:` + balance);
     return balance;
 }

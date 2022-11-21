@@ -6,6 +6,7 @@ const to_private_address = "64nmibscb1UdWGMWnRQAYx6hS4TA2iyFqiS897cFRWvNTmjad85p
 
 async function main() {
     
+    /* OLD VERSION:
     const {api, signer} = await sdk.init_api(sdk.Environment.Production);
 
     const { wasm, wasmWallet } = await sdk.init_wasm_sdk(api, signer);
@@ -27,16 +28,31 @@ async function main() {
     sdk.get_private_balance(wasm, wasmWallet, 1, "Sync2 After transfer");
   
     console.log("END");
+    */
+
+    const mantaSdk = await sdk.init(sdk.Environment.Production);
+
+    const privateAddress = await mantaSdk.privateAddress();
+    console.log("The private address is: ", privateAddress);
+
+    await mantaSdk.initalWalletSync();
     
+    const amount = 1000000000000000000; // 1 unit
+    const asset_id = 1; // DOL
 
+    await mantaSdk.toPrivateSign(asset_id,amount);
+
+    await mantaSdk.walletSync();
+
+    let privateBalance = await mantaSdk.privateBalance(asset_id);
+    console.log("Private balance after first sync: ", privateBalance);
+
+    setTimeout(function () { }, 5000);
+
+    privateBalance = await mantaSdk.privateBalance(asset_id);
+    console.log("Private balance after second sync: ", privateBalance);
+
+    console.log("END");
 }
-
-// TRYING USING RETURN FUNCTION TO GET RID OF PASSING PARAMETERS
-// import * as sdk_interface from '../../sdk/sdk.interfaces';
-// async function main2() {
-//     const { sdks } = await sdk.init_chain("");
-//     await sdks.private_address();
-//     console.log("END");
-// }
 
 main()
