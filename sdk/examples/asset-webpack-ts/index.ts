@@ -30,6 +30,9 @@ async function main() {
     console.log("END");
     */
 
+
+    //const publicPolkadotJsAddress = "5HifovYZVQSD4rKLVMo1Rqtv45jfPhCUiGYbf4gPEtKyc1PS"
+    //const mantaSdk = await sdk.init(sdk.Environment.Production, publicPolkadotJsAddress);
     const mantaSdk = await sdk.init(sdk.Environment.Production);
 
     const privateAddress = await mantaSdk.privateAddress();
