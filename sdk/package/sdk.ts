@@ -106,8 +106,8 @@ export class MantaSdk implements IMantaSdk {
 }
 
 // Initializes the MantaSdk class.
-export async function init(env: Environment): Promise<MantaSdk> {
-    const {api, signer} = await init_api(env);
+export async function init(env: Environment, address: string=""): Promise<MantaSdk> {
+    const {api, signer} = await init_api(env, address.toLowerCase());
     const {wasm, wasmWallet} = await init_wasm_sdk(api, signer);
     const sdk = new MantaSdk(api,signer,wasm,wasmWallet);
     return sdk
@@ -124,7 +124,7 @@ function env_url(env: Environment): string {
 }
 
 /// Polkadot.js API with web3Extension
-async function init_api(env: Environment): Promise<InitApiResult> {
+async function init_api(env: Environment, address: string): Promise<InitApiResult> {
     const provider = new WsProvider(env_url(env));
     const api = await ApiPromise.create({ provider, types, rpc });
     const [chain, nodeName, nodeVersion] = await Promise.all([
@@ -138,11 +138,31 @@ async function init_api(env: Environment): Promise<InitApiResult> {
     // TODO: Better handling signer
     const extensions = await web3Enable('Polkadot App');
     if (extensions.length === 0) {
-        console.error("Polkadot browser extension missing. https://polkadot.js.org/extension/")
-        return;
+        throw new Error("Polkadot browser extension missing. https://polkadot.js.org/extension/");
     }
     const allAccounts = await web3Accounts();
-    const account = allAccounts[0];
+    let account: any;
+
+    if (!address) {
+        account = allAccounts[0];
+    } else {
+        // need to check that argument `address` exists in `allAccounts` if an address was
+        // specified.
+        address = address.toLowerCase();
+        for (let i = 0; i < allAccounts.length; i++) {
+            if (allAccounts[i].address.toLowerCase() === address) {
+                console.log("Account with selected address found!");
+                account = allAccounts[i];
+                break;
+            }
+        }
+
+        if (!account) {
+            const errorString = "Unable to find account with specified address: " + address + " in Polkadot JS.";
+            throw new Error(errorString);
+        }
+    }
+
     const injector = await web3FromSource(account.meta.source);
     const signer = account.address;
     console.log("address:" + account.address);
