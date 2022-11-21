@@ -1,0 +1,44 @@
+{
+    "VERSION": "1.0.0",
+    "MIN_REQUIRED_SIGNER_VERSION": "0.7.0",
+    "SIGNER_URL": "http://localhost:29987/",
+    "BLOCKCHAIN_URL": "wss://ws.rococo.dolphin.engineering",
+    "BLOCKCHAIN_URL_LOCAL": "ws://127.0.0.1:9944",
+    "DEFAULT_PULL_SIZE": 4096,
+    "RPC": {
+        "mantaPay": {
+            "pull_ledger_diff": {
+                "description": "pull from mantaPay",
+                "params": [{
+                        "name": "checkpoint",
+                        "type": "Checkpoint"
+                    },
+                    {
+                        "name": "max_receiver",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "max_sender",
+                        "type": "u64"
+                    }
+                ],
+                "type": "PullResponse"
+            }
+        }
+    },
+    "TYPES": {
+        "Checkpoint": {
+            "receiver_index": "[u64; 256]",
+            "sender_index": "u64"
+        },
+        "EncryptedNote": {
+            "ephemeral_public_key": "[u8; 32]",
+            "ciphertext": "[u8; 68]"
+        },
+        "PullResponse": {
+            "should_continue": "bool",
+            "receivers": "Vec<([u8; 32], EncryptedNote)>",
+            "senders": "Vec<[u8; 32]>"
+        }
+    }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "manta-sdk",
+  "version": "1.0.0",
+  "description": "manta sdk",
+  "main": "index.ts",
+  "dependencies": {
+    "@polkadot/extension-dapp": "0.39.3"
+  },
+  "devDependencies": {
+    "tsx": "^3.12.1"
+  },
+  "browser": {
+    "crypto": false
+  }
+}
