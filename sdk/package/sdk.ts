@@ -209,7 +209,6 @@ async function getPrivateAddress(wasm: any, wallet:Wallet): Promise<PrivateAddre
         ...privateAddressRaw.view
     ];
     const privateAddress = base58Encode(privateAddressBytes);
-    console.log("private address:" + privateAddress);
     return privateAddress;
 };
 

@@ -5,57 +5,86 @@ import * as sdk from 'manta.js';
 const to_private_address = "64nmibscb1UdWGMWnRQAYx6hS4TA2iyFqiS897cFRWvNTmjad85p6yD9ud7cyVPhyNPDrSMs2eZxTfovxZbJdFqH";
 
 async function main() {
-    
-    /* OLD VERSION:
-    const {api, signer} = await sdk.init_api(sdk.Environment.Production);
-
-    const { wasm, wasmWallet } = await sdk.init_wasm_sdk(api, signer);
-
-    await sdk.getPrivateAddress(wasm, wasmWallet);
-    await sdk.init_sync(wasmWallet);
-
-    const amount = 10000000000000000000;
-    const asset_id = 1;
-
-    await sdk.to_private_by_sign(api, signer, wasm, wasmWallet, asset_id, amount);
-    // await sdk.private_transfer(api, signer, wasm, wasmWallet, 1, 1000000000000000000, to_private_address);
-
-    await wasmWallet.sync();
-    sdk.get_private_balance(wasm, wasmWallet, 1, "Sync1 after transfer");
-  
-    setTimeout(function () { }, 1000);
-    await wasmWallet.sync();
-    sdk.get_private_balance(wasm, wasmWallet, 1, "Sync2 After transfer");
-  
-    console.log("END");
-    */
-
 
     //const publicPolkadotJsAddress = "5HifovYZVQSD4rKLVMo1Rqtv45jfPhCUiGYbf4gPEtKyc1PS"
     //const mantaSdk = await sdk.init(sdk.Environment.Production, publicPolkadotJsAddress);
-    const mantaSdk = await sdk.init(sdk.Environment.Production);
+
+    await nft_test();
+    console.log("END");
+}
+
+
+const ft_test = async () => {
+    const mantaSdk = await sdk.init(sdk.Environment.Development);
 
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    await mantaSdk.initalWalletSync();
-    
+
     const amount = 1000000000000000000; // 1 unit
     const asset_id = 1; // DOL
 
-    await mantaSdk.toPrivateSign(asset_id,amount);
+    await mantaSdk.initalWalletSync();
+
+    const initalPrivateBalance = await mantaSdk.privateBalance(asset_id);
+    console.log("The inital private balance is: ", initalPrivateBalance);
+
+    await mantaSdk.toPrivatePost(asset_id, amount);
+
+    await mantaSdk.walletSync();
+    let privateBalance = await mantaSdk.privateBalance(asset_id);
+
+    while (true) {
+
+        await new Promise(r => setTimeout(r, 5000));
+        console.log("Syncing with ledger...");
+        await mantaSdk.walletSync();
+        let newPrivateBalance = await mantaSdk.privateBalance(asset_id);
+        console.log("Private Balance after sync: ", newPrivateBalance);
+
+        if (privateBalance !== newPrivateBalance) {
+            console.log("Detected balance change after sync!");
+            console.log("Old balance: ", privateBalance);
+            console.log("New balance: ", newPrivateBalance);
+            break;
+        }
+    }
+}
+
+const nft_test = async () => {
+    const mantaSdk = await sdk.init(sdk.Environment.Development);
+
+    const privateAddress = await mantaSdk.privateAddress();
+    console.log("The private address is: ", privateAddress);
+
+    const nft_asset_id = 286326785;
+
+    await mantaSdk.initalWalletSync();
+
+    const initalPrivateBalanceNFT = await mantaSdk.privateBalance(nft_asset_id);
+    console.log("The inital private balance of NFT is: ", initalPrivateBalanceNFT);
+
+    await mantaSdk.toPrivateNFT(286326785);
 
     await mantaSdk.walletSync();
 
-    let privateBalance = await mantaSdk.privateBalance(asset_id);
-    console.log("Private balance after first sync: ", privateBalance);
+    let privateBalance = await mantaSdk.privateBalance(nft_asset_id);
 
-    setTimeout(function () { }, 5000);
+    while (true) {
 
-    privateBalance = await mantaSdk.privateBalance(asset_id);
-    console.log("Private balance after second sync: ", privateBalance);
+        await new Promise(r => setTimeout(r, 5000));
+        console.log("Syncing with ledger...");
+        await mantaSdk.walletSync();
+        let newPrivateBalance = await mantaSdk.privateBalance(nft_asset_id);
+        console.log("Private Balance after sync: ", newPrivateBalance);
 
-    console.log("END");
+        if (privateBalance !== newPrivateBalance) {
+            console.log("Detected balance change after sync!");
+            console.log("Old balance: ", privateBalance);
+            console.log("New balance: ", newPrivateBalance);
+            break;
+        }
+    }
 }
 
 main()
