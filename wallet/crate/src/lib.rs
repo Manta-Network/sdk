@@ -32,8 +32,7 @@ use core::{cell::RefCell, fmt::Debug};
 use js_sys::{JsString, Promise};
 use manta_accounting::{
     asset,
-    transfer::canonical,
-    transfer::utxo::v2::{self as protocol},
+    transfer::{canonical, utxo::protocol},
     wallet::{
         self,
         ledger::{self, ReadResponse},
@@ -41,26 +40,25 @@ use manta_accounting::{
     },
 };
 use manta_crypto::{
-    encryption::{hybrid, EmptyHeader,EncryptedMessage},
+    arkworks::ff::ToConstraintField,
+    encryption::{hybrid, EmptyHeader, EncryptedMessage},
     rand::{Rand, RngCore, Sample},
-    arkworks::ff::{ToConstraintField},
 };
 use manta_pay::{
     config::{
         self,
-        utxo::v2::{self as protocol_pay, Config},
+        utxo::protocol_pay::{self, Config},
     },
-    signer::{self, client::http},
     crypto::constraint::arkworks::Fp,
+    signer::{self, client::http},
 };
 use manta_util::{
+    codec::Decode,
     future::LocalBoxFutureResult,
     http::reqwest,
-    ops,
+    into_array_unchecked, ops,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
-    serde_with,
-    into_array_unchecked,
-    Array,
+    serde_with, Array,
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
@@ -194,7 +192,7 @@ impl_js_compatible!(
 );
 impl_js_compatible!(
     TransactionKind,
-    canonical::TransactionKind<'static, config::Config>,
+    canonical::TransactionKind<config::Config>,
     "Transaction Kind"
 );
 impl_js_compatible!(SenderPost, config::SenderPost, "Sender Post");
@@ -241,7 +239,12 @@ impl TransferPost {
         validity_proof: JsValue,
     ) -> Self {
         Self {
-            asset_id: asset_id.map(|id| field_from_id_string(id)),
+            asset_id: asset_id.map(|id| field_from_id_string(id)).map(|x| {
+                AssetId(
+                    Decode::decode(x)
+                        .expect("Decoding a field element from [u8; 32] is not allowed to fail"),
+                )
+            }), // TODO: Are all [u8; 32] allowed?
             sources: sources.into_iter().map(Into::into).collect(),
             sender_posts: sender_posts.into_iter().map(from_js).collect(),
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
@@ -305,7 +308,10 @@ where
 pub type RawUtxo = [u8; 32];
 
 /// Raw Void Number Type
-pub type RawVoidNumber = [u8; 32];
+pub type RawVoidNumber = [u8; 32]; // This is only the Nullifier. The OutgoingNote (which is an extra 64 bytes) is missing.
+// Nullifier is a wrapper of NullifierCommitment, which is a field element (32 bytes)
+// FullNullifier has a Nullifier + OutgoingNote
+// OutgoingNote = [u8;64] encrypts: AssetId = field element = 32 bytes, AssetValue = u128 = 16 bytes, tag = [u8;16] = 16 bytes.
 
 /// Raw Encrypted Note
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
@@ -362,13 +368,13 @@ impl TryFrom<RawPullResponse> for ReadResponse<SyncData<config::Config>> {
                     .map(|(utxo, encrypted_note)| {
                         decode(utxo).and_then(|u| Ok(encrypted_note).map(|n| (u, n)))
                     })
-                    .collect::<Result<Vec<_>,_>>()
+                    .collect::<Result<Vec<_>, _>>()
                     .map_err(|_| ())?,
                 nullifier_data: response
                     .nullifier_data
                     .into_iter()
-                    .map(decode)
-                    .collect::<Result<Vec<_>,_>>()
+                    .map(decode) // check type
+                    .collect::<Result<Vec<_>, _>>()
                     .map_err(|_| ())?,
             },
         })
