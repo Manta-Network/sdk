@@ -3934,15 +3934,15 @@ make-fetch-happen@^9.1.0:
     socks-proxy-agent "^6.0.0"
     ssri "^8.0.0"
 
-manta-wasm-wallet-api@1.3.1:
-  version "1.3.1"
-  resolved "https://registry.yarnpkg.com/manta-wasm-wallet-api/-/manta-wasm-wallet-api-1.3.1.tgz#7b132d1a309abdb64e7075dd16f15d30c9f4c5f5"
-  integrity sha512-ouxnKy/Dttn+WxYnhl8h6p1jn3rYo34fmSy+62LfW3ctCyYHS68FzWAASHh9fhPYyu7Vy0PQmlYl2jGxWjf16g==
+manta-wasm-wallet-api@1.5.1-dev-2:
+  version "1.5.1-dev-2"
+  resolved "https://registry.yarnpkg.com/manta-wasm-wallet-api/-/manta-wasm-wallet-api-1.5.1-dev-2.tgz#c9371f564178e3d29fb8353f949d0b91a234610f"
+  integrity sha512-hk7L0BJHggsPU6dwplX2a0UTYlJuZNLuNU3XvxYwvBNkwKWQcCyFeW72gzSMkKdYuurJs2PyZLCxJsDuP+hULQ==
 
-manta-wasm-wallet@1.3.1:
-  version "1.3.1"
-  resolved "https://registry.yarnpkg.com/manta-wasm-wallet/-/manta-wasm-wallet-1.3.1.tgz#d455b0b327e9063663c8404074cc1f73238aa957"
-  integrity sha512-aMp2FN+qVuC5ezSg6PrLE9y2I4uTrZZ22KK/RowZ+51Cz8EmZRaOPCVLrDq8mhlT8Yr7jIDnpdxllDRD/sgdKw==
+manta-wasm-wallet@1.5.1-dev-2:
+  version "1.5.1-dev-2"
+  resolved "https://registry.yarnpkg.com/manta-wasm-wallet/-/manta-wasm-wallet-1.5.1-dev-2.tgz#22376b63d9929f6670e7fea7de736267c60d2b35"
+  integrity sha512-laHrdq44Mn5/1hcxcBDKlwmoVtBYuLKUnVP9Cp+Wf5rEu4QFu3nG4NrSpdrIXLGRlPTjE7aEEiGaE9Cto0MYnA==
 
 "manta.js@file:../../package":
   version "1.0.0"
@@ -3957,8 +3957,8 @@ manta-wasm-wallet@1.3.1:
     "@polkadot/util-crypto" "8.1.2"
     axios "^0.27.2"
     bn.js "^5.2.0"
-    manta-wasm-wallet "1.3.1"
-    manta-wasm-wallet-api "1.3.1"
+    manta-wasm-wallet "1.5.1-dev-2"
+    manta-wasm-wallet-api "1.5.1-dev-2"
 
 md5.js@^1.3.4:
   version "1.3.5"
