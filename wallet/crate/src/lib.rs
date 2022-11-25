@@ -42,6 +42,7 @@ use manta_accounting::{
 use manta_crypto::{
     arkworks::ff::ToConstraintField,
     encryption::{hybrid, EmptyHeader, EncryptedMessage},
+    permutation::duplex,
     rand::{Rand, RngCore, Sample},
 };
 use manta_pay::{
@@ -49,7 +50,10 @@ use manta_pay::{
         self,
         utxo::protocol_pay::{self, Config},
     },
-    crypto::constraint::arkworks::Fp,
+    crypto::{
+        constraint::arkworks::Fp,
+        poseidon::encryption::{self, BlockArray, CiphertextBlock},
+    },
     signer::{self, client::http},
 };
 use manta_util::{
@@ -58,7 +62,7 @@ use manta_util::{
     http::reqwest,
     into_array_unchecked, ops,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
-    serde_with, Array,
+    serde_with, Array, BoxArray,
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
@@ -309,14 +313,14 @@ pub type RawUtxo = [u8; 32];
 
 /// Raw Void Number Type
 pub type RawVoidNumber = [u8; 32]; // This is only the Nullifier. The OutgoingNote (which is an extra 64 bytes) is missing.
-// Nullifier is a wrapper of NullifierCommitment, which is a field element (32 bytes)
-// FullNullifier has a Nullifier + OutgoingNote
-// OutgoingNote = [u8;64] encrypts: AssetId = field element = 32 bytes, AssetValue = u128 = 16 bytes, tag = [u8;16] = 16 bytes.
+                                   // Nullifier is a wrapper of NullifierCommitment, which is a field element (32 bytes)
+                                   // FullNullifier has a Nullifier + OutgoingNote
+                                   // OutgoingNote = [u8;64] encrypts: AssetId = field element = 32 bytes, AssetValue = u128 = 16 bytes, tag = [u8;16] = 16 bytes.
 
 /// Raw Encrypted Note
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
-pub struct RawEncryptedNote {
+pub struct RawLightIncomingNote {
     /// Ephemeral Public Key
     pub ephemeral_public_key: [u8; 32],
 
@@ -325,16 +329,63 @@ pub struct RawEncryptedNote {
     pub ciphertext: [u8; 96],
 }
 
-impl TryFrom<RawEncryptedNote> for protocol_pay::LightIncomingNote {
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde")]
+pub struct RawIncomingNote {
+    /// Ephemeral Public Key
+    pub ephemeral_public_key: [u8; 32],
+
+    // Tag
+    pub tag: [u8; 32],
+
+    /// Ciphertext
+    #[serde(with = "serde_with::As::<[[serde_with::Same; 32]; 3]>")]
+    pub ciphertext: [[u8; 32]; 3],
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde")]
+pub struct RawFullIncomingNote {
+    raw_address_partition: u8,
+    raw_incoming_note: RawIncomingNote,
+    raw_light_incoming_note: RawLightIncomingNote,
+}
+
+impl TryFrom<RawFullIncomingNote> for protocol_pay::FullIncomingNote {
     type Error = scale_codec::Error;
 
     #[inline]
-    fn try_from(encrypted_note: RawEncryptedNote) -> Result<Self, Self::Error> {
+    fn try_from(encrypted_note: RawFullIncomingNote) -> Result<Self, Self::Error> {
         Ok(Self {
-            header: EmptyHeader::default(),
-            ciphertext: hybrid::Ciphertext {
-                ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
-                ciphertext: encrypted_note.ciphertext.into(),
+            address_partition: encrypted_note.raw_address_partition,
+            incoming_note: protocol_pay::IncomingNote {
+                header: EmptyHeader::default(),
+                ciphertext: hybrid::Ciphertext {
+                    ephemeral_public_key: decode(
+                        encrypted_note.raw_incoming_note.ephemeral_public_key,
+                    )?,
+                    ciphertext: duplex::Ciphertext {
+                        tag: encryption::Tag(decode(encrypted_note.raw_incoming_note.tag)?),
+                        message: BlockArray(BoxArray(Box::new([CiphertextBlock(
+                            encrypted_note
+                                .raw_incoming_note
+                                .ciphertext
+                                .into_iter()
+                                .map(decode)
+                                .collect::<Result<Vec<_>, _>>()?
+                                .into(),
+                        )]))),
+                    },
+                },
+            },
+            light_incoming_note: protocol_pay::LightIncomingNote {
+                header: EmptyHeader::default(),
+                ciphertext: hybrid::Ciphertext {
+                    ephemeral_public_key: decode(
+                        encrypted_note.raw_light_incoming_note.ephemeral_public_key,
+                    )?,
+                    ciphertext: encrypted_note.raw_light_incoming_note.ciphertext.into(),
+                },
             },
         })
     }
@@ -348,7 +399,7 @@ pub struct RawPullResponse {
     pub should_continue: bool,
 
     /// Receiver Data
-    pub utxo_note_data: Vec<(RawUtxo, protocol_pay::FullIncomingNote)>,
+    pub utxo_note_data: Vec<(RawUtxo, RawFullIncomingNote)>,
 
     /// Sender Data
     pub nullifier_data: Vec<RawVoidNumber>,
@@ -366,7 +417,7 @@ impl TryFrom<RawPullResponse> for ReadResponse<SyncData<config::Config>> {
                     .utxo_note_data
                     .into_iter()
                     .map(|(utxo, encrypted_note)| {
-                        decode(utxo).and_then(|u| Ok(encrypted_note).map(|n| (u, n)))
+                        decode(utxo).and_then(|u| encrypted_note.try_into().map(|n| (u, n)))
                     })
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(|_| ())?,
