@@ -9,7 +9,8 @@ async function main() {
     //const publicPolkadotJsAddress = "5HifovYZVQSD4rKLVMo1Rqtv45jfPhCUiGYbf4gPEtKyc1PS"
 
     //await ft_test_to_private();
-    await ft_test_to_public();
+    //await ft_test_to_public();
+    await ft_test_to_private_only_sign();
     console.log("END");
 }
 
@@ -51,6 +52,28 @@ const ft_test_to_private = async () => {
             break;
         }
     }
+}
+
+const ft_test_to_private_only_sign = async () => {
+
+    const env = sdk.Environment.Development;
+    const net = sdk.Network.Dolphin;
+    const mantaSdk = await sdk.init(env,net);
+
+    const privateAddress = await mantaSdk.privateAddress();
+    console.log("The private address is: ", privateAddress);
+
+    const amount = 10000000000000000000; // 10 units
+    const asset_id = 1; // DOL
+
+    await mantaSdk.initalWalletSync();
+
+    const initalPrivateBalance = await mantaSdk.privateBalance(asset_id);
+    console.log("The inital private balance is: ", initalPrivateBalance);
+
+    const signResult = await mantaSdk.toPrivateSign(asset_id, amount, true);
+
+    console.log("The result of the signing: ", signResult);
 }
 
 
