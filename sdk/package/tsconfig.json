@@ -1,0 +1,3 @@
+{
+  "extends": "../examples/asset-webpack-ts/tsconfig.json"
+}

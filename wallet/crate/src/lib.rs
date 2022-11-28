@@ -21,6 +21,8 @@
 extern crate alloc;
 extern crate console_error_panic_hook;
 
+use crate::types::*;
+// use crate::transaction::*;
 use alloc::{
     boxed::Box,
     format,
@@ -32,29 +34,18 @@ use core::{cell::RefCell, fmt::Debug};
 use js_sys::{JsString, Promise};
 use manta_accounting::{
     asset,
-    transfer::{canonical, utxo::protocol},
+    transfer::canonical,
     wallet::{
         self,
         ledger::{self, ReadResponse},
         signer::SyncData,
     },
 };
-use manta_crypto::{
-    arkworks::ff::ToConstraintField,
-    encryption::{hybrid, EmptyHeader, EncryptedMessage},
-    permutation::duplex,
-    rand::{Rand, RngCore, Sample},
-};
+use manta_crypto::signature::schnorr;
+// use manta_accounting::transfer::AuthorizationSignature;
 use manta_pay::{
-    config::{
-        self,
-        utxo::protocol_pay::{self, Config},
-    },
-    crypto::{
-        constraint::arkworks::Fp,
-        poseidon::encryption::{self, BlockArray, CiphertextBlock},
-    },
-    signer::{self, client::http},
+    config::{self, utxo::protocol_pay},
+    signer,
 };
 use manta_util::{
     codec::Decode,
@@ -62,10 +53,13 @@ use manta_util::{
     http::reqwest,
     into_array_unchecked, ops,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
-    serde_with, Array, BoxArray,
+    Array,
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
+
+mod types;
+// mod transaction;
 
 #[wasm_bindgen]
 extern "C" {
@@ -98,7 +92,7 @@ where
 
 /// Converts `value` into a value of type `T`.
 #[inline]
-fn from_js<T>(value: JsValue) -> T
+pub fn from_js<T>(value: JsValue) -> T
 where
     T: DeserializeOwned,
 {
@@ -117,10 +111,16 @@ pub fn id_string_from_field(id: [u8; 32]) -> Option<String> {
     }
 }
 
-/// convert StandardAssetId to AssetId (Field)
+/// convert String to AssetId (Field)
 #[inline]
 pub fn field_from_id_string(id: String) -> [u8; 32] {
     into_array_unchecked(id.as_bytes())
+}
+
+/// convert u128 to AssetId (Field)
+#[inline]
+pub fn field_from_id_u128(id: u128) -> [u8; 32] {
+    into_array_unchecked([id.to_le_bytes(), [0; 16]].concat())
 }
 
 /// Implements a JS-compatible wrapper for the given `$type`.
@@ -187,7 +187,7 @@ macro_rules! impl_js_compatible {
 }
 
 impl_js_compatible!(AssetId, protocol_pay::AssetId, "AssetId");
-impl_js_compatible!(Asset, asset::Asset<protocol_pay::AssetId, String>, "Asset");
+impl_js_compatible!(Asset, manta_accounting::transfer::Asset<config::Config>, "Asset");
 impl_js_compatible!(AssetMetadata, asset::AssetMetadata, "Asset Metadata");
 impl_js_compatible!(
     Transaction,
@@ -201,15 +201,68 @@ impl_js_compatible!(
 );
 impl_js_compatible!(SenderPost, config::SenderPost, "Sender Post");
 impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
+// impl_js_compatible!(AuthorizationSignature, manta_accounting::transfer::AuthorizationSignature<config::Config>, "Transfer Post");
 
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde", deny_unknown_fields)]
+pub struct RawAuthorizationSignature {
+    /// Authorization Key
+    pub authorization_key: [u8; 32],
+
+    /// Signature
+    pub signature: ([u8; 32], [u8; 32]),
+}
+
+// impl RawAuthorizationSignature {
+//     pub fn from_js_string(value: JsString) -> RawAuthorizationSignature {
+//         serde_json::from_str(&String::from(value))
+//             .expect("Deserialization is not allowed to fail.")
+//     }
+// }
+
+impl TryFrom<RawAuthorizationSignature> for manta_accounting::transfer::AuthorizationSignature<config::Config> {
+    type Error = scale_codec::Error;
+
+    #[inline]
+    fn try_from(signature: RawAuthorizationSignature) -> Result<Self, Self::Error> {
+        Ok(Self {
+            authorization_key: decode(signature.authorization_key)?,
+            signature: schnorr::Signature {
+                scalar: decode(signature.signature.0)?,
+                nonce_point: decode(signature.signature.1)?,
+            },
+        })
+    }
+}
+
+impl TryFrom<JsString> for RawAuthorizationSignature {
+    type Error = scale_codec::Error;
+
+    #[inline]
+    fn try_from(signature: JsString) -> Result<Self, Self::Error> {
+        let sigStr = String::from(signature);
+        let ref_slice = &sigStr.as_bytes();
+        let arr: [u8; 32] = ref_slice[0..32].try_into().unwrap();
+        let scala: [u8; 32] = ref_slice[32..64].try_into().unwrap();
+        let group: [u8; 32] = ref_slice[64..96].try_into().unwrap();
+        Ok(Self {
+            authorization_key: decode(arr)?,
+            signature: (decode(scala)?, decode(group)?)
+        })
+    }
+}
 
 /// Transfer Post
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
 #[wasm_bindgen]
 pub struct TransferPost {
+    /// Authorization Signature
+    authorization_signature: Option<manta_accounting::transfer::AuthorizationSignature<config::Config>>,
+
     /// Asset Id
     asset_id: Option<AssetId>,
 
@@ -235,6 +288,7 @@ impl TransferPost {
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
+        authorization_signature: Option<JsString>,
         asset_id: Option<String>,
         sources: Vec<JsString>,
         sender_posts: Vec<JsValue>,
@@ -243,6 +297,11 @@ impl TransferPost {
         validity_proof: JsValue,
     ) -> Self {
         Self {
+            authorization_signature: authorization_signature
+                .map(|x| {
+                    let raw: RawAuthorizationSignature = x.try_into().unwrap();
+                    raw.try_into().unwrap()
+                }),
             asset_id: asset_id.map(|id| field_from_id_string(id)).map(|x| {
                 AssetId(
                     Decode::decode(x)
@@ -262,6 +321,7 @@ impl From<config::TransferPost> for TransferPost {
     #[inline]
     fn from(post: config::TransferPost) -> Self {
         Self {
+            authorization_signature: post.authorization_signature.map(Into::into),
             asset_id: post.body.asset_id.map(Into::into),
             sources: post
                 .body
@@ -297,140 +357,6 @@ impl PolkadotJsLedger {
 #[serde(crate = "manta_util::serde")]
 #[wasm_bindgen]
 pub struct LedgerError;
-
-/// Decodes the `bytes` array of the given length `N` into the SCALE decodable type `T` returning a
-/// blanket error if decoding fails.
-#[inline]
-pub(crate) fn decode<T, const N: usize>(bytes: [u8; N]) -> Result<T, scale_codec::Error>
-where
-    T: scale_codec::Decode,
-{
-    T::decode(&mut bytes.as_slice())
-}
-
-/// Raw UTXO Type
-pub type RawUtxo = [u8; 32];
-
-/// Raw Void Number Type
-pub type RawVoidNumber = [u8; 32]; // This is only the Nullifier. The OutgoingNote (which is an extra 64 bytes) is missing.
-                                   // Nullifier is a wrapper of NullifierCommitment, which is a field element (32 bytes)
-                                   // FullNullifier has a Nullifier + OutgoingNote
-                                   // OutgoingNote = [u8;64] encrypts: AssetId = field element = 32 bytes, AssetValue = u128 = 16 bytes, tag = [u8;16] = 16 bytes.
-
-/// Raw Encrypted Note
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde")]
-pub struct RawLightIncomingNote {
-    /// Ephemeral Public Key
-    pub ephemeral_public_key: [u8; 32],
-
-    /// Ciphertext
-    #[serde(with = "serde_with::As::<[serde_with::Same; 96]>")]
-    pub ciphertext: [u8; 96],
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde")]
-pub struct RawIncomingNote {
-    /// Ephemeral Public Key
-    pub ephemeral_public_key: [u8; 32],
-
-    // Tag
-    pub tag: [u8; 32],
-
-    /// Ciphertext
-    #[serde(with = "serde_with::As::<[[serde_with::Same; 32]; 3]>")]
-    pub ciphertext: [[u8; 32]; 3],
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde")]
-pub struct RawFullIncomingNote {
-    raw_address_partition: u8,
-    raw_incoming_note: RawIncomingNote,
-    raw_light_incoming_note: RawLightIncomingNote,
-}
-
-impl TryFrom<RawFullIncomingNote> for protocol_pay::FullIncomingNote {
-    type Error = scale_codec::Error;
-
-    #[inline]
-    fn try_from(encrypted_note: RawFullIncomingNote) -> Result<Self, Self::Error> {
-        Ok(Self {
-            address_partition: encrypted_note.raw_address_partition,
-            incoming_note: protocol_pay::IncomingNote {
-                header: EmptyHeader::default(),
-                ciphertext: hybrid::Ciphertext {
-                    ephemeral_public_key: decode(
-                        encrypted_note.raw_incoming_note.ephemeral_public_key,
-                    )?,
-                    ciphertext: duplex::Ciphertext {
-                        tag: encryption::Tag(decode(encrypted_note.raw_incoming_note.tag)?),
-                        message: BlockArray(BoxArray(Box::new([CiphertextBlock(
-                            encrypted_note
-                                .raw_incoming_note
-                                .ciphertext
-                                .into_iter()
-                                .map(decode)
-                                .collect::<Result<Vec<_>, _>>()?
-                                .into(),
-                        )]))),
-                    },
-                },
-            },
-            light_incoming_note: protocol_pay::LightIncomingNote {
-                header: EmptyHeader::default(),
-                ciphertext: hybrid::Ciphertext {
-                    ephemeral_public_key: decode(
-                        encrypted_note.raw_light_incoming_note.ephemeral_public_key,
-                    )?,
-                    ciphertext: encrypted_note.raw_light_incoming_note.ciphertext.into(),
-                },
-            },
-        })
-    }
-}
-
-/// Raw Pull Response
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde")]
-pub struct RawPullResponse {
-    /// Should Continue Flag
-    pub should_continue: bool,
-
-    /// Receiver Data
-    pub utxo_note_data: Vec<(RawUtxo, RawFullIncomingNote)>,
-
-    /// Sender Data
-    pub nullifier_data: Vec<RawVoidNumber>,
-}
-
-impl TryFrom<RawPullResponse> for ReadResponse<SyncData<config::Config>> {
-    type Error = ();
-
-    #[inline]
-    fn try_from(response: RawPullResponse) -> Result<Self, Self::Error> {
-        Ok(Self {
-            should_continue: response.should_continue,
-            data: SyncData {
-                utxo_note_data: response
-                    .utxo_note_data
-                    .into_iter()
-                    .map(|(utxo, encrypted_note)| {
-                        decode(utxo).and_then(|u| encrypted_note.try_into().map(|n| (u, n)))
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-                    .map_err(|_| ())?,
-                nullifier_data: response
-                    .nullifier_data
-                    .into_iter()
-                    .map(decode) // check type
-                    .collect::<Result<Vec<_>, _>>()
-                    .map_err(|_| ())?,
-            },
-        })
-    }
-}
 
 impl ledger::Connection for PolkadotJsLedger {
     type Error = LedgerError;
@@ -532,13 +458,19 @@ impl Wallet {
     /// Returns the current balance associated with this `id`.
     #[inline]
     pub fn balance(&self, id: u32) -> String {
-        self.balance(id).to_string()
+        // TODO: make id parameter type as u128?
+        let asset_id = Some(id as u128);
+        let asset_id_type = asset_id.map(|id| field_from_id_u128(id)).map(|x| {
+                Decode::decode(x)
+                    .expect("Decoding a field element from [u8; 32] is not allowed to fail")
+        }).expect("asset should have value");
+        self.0.borrow().balance(&asset_id_type).to_string()
     }
 
     /// Returns true if `self` contains at least `asset.value` of the asset of kind `asset.id`.
     #[inline]
     pub fn contains(&self, asset: Asset) -> bool {
-        self.contains(asset)
+        self.0.borrow().contains(&asset.into())
     }
 
     /// Returns a shared reference to the balance state associated to `self`.
@@ -733,6 +665,19 @@ impl Wallet {
     /// Returns public receiving keys according to the `request`.
     #[inline]
     pub fn receiving_keys(&self, network: Network) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer.set_network(Some(network.into()));
+                let response = this.address().await;
+                this.signer.set_network(None);
+                response
+            })
+        })
+    }
+
+    /// Returns public receiving keys according to the `request`.
+    #[inline]
+    pub fn address(&self, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer.set_network(Some(network.into()));

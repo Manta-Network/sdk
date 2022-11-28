@@ -1,0 +1,25 @@
+{
+  "name": "manta.js",
+  "version": "1.0.0",
+  "description": "manta.js sdk",
+  "main": "sdk.ts",
+  "dependencies": {
+    "manta-wasm-wallet": "file:../../wallet/crate/pkg",
+    "manta-wasm-wallet-api": "file:../../wallet/api",
+
+    "@polkadot/api": "6.8.1",
+    "@polkadot/extension-dapp": "0.39.3",
+    "@polkadot/keyring": "8.1.2",
+    "@polkadot/types": "8.11.3",
+    "@polkadot/ui-keyring": "0.85.1",
+    "@polkadot/ui-settings": "0.85.1",
+    "@polkadot/util": "8.1.2",
+    "@polkadot/util-crypto": "8.1.2",
+
+    "axios": "^0.27.2",
+    "bn.js": "^5.2.0"
+  },
+  "browser": {
+    "crypto": false
+  }
+}

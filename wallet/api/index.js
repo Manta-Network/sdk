@@ -48,6 +48,55 @@ export default class Api {
     };
   }
 
+  _outgoing_note_to_json(note) {
+    return {
+      ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
+      ciphertext: Array.from(
+        Array.from(note.ciphertext.toU8a())
+      ),
+    }
+  }
+
+  _light_incoming_note_to_json(note) {
+    return {
+      ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
+      ciphertext: Array.from(note.ciphertext.toU8a()),
+    };
+  }
+
+  _incoming_note_to_json(note) {
+    return {
+      ephemeral_public_key: Array.from(
+        note.ephemeral_public_key.toU8a()
+      ),
+      tag: Array.from(note.tag.toU8a()),
+      ciphertext: Array.from(
+        Array.from(note.ciphertext.toU8a())
+      ),
+    }
+  }
+
+  _full_incoming_note_to_jons(note) {
+    return {
+      address_partition: note.address_partition,
+      incoming_note: this._incoming_note_to_json(note.incoming_note),
+      light_incoming_note: this._light_incoming_note_to_json(note.light_incoming_note),
+    }
+  }
+
+  _utxo_to_json(utxo) {
+    let asset_id = Array.from(utxo.public_asset.id.toU8a()); // [u8; 32]
+    let asset_value = utxo.public_asset.value.toNumber(); // u128
+    return {
+      transparency: true, // todo
+      public_asset: {
+        asset_id: asset_id,
+        asset_value: asset_value,
+      },
+      commitment: Array.from(utxo.commitment.toU8a())
+    };
+  }
+
   // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
   async pull(checkpoint) {
     try {
@@ -59,16 +108,22 @@ export default class Api {
         this.maxSendersPullSize
       );
 
-      console.log('pull result', result);
+      console.log('pull result', JSON.stringify(result));
 
       const receivers = result.receivers.map((receiver_raw) => {
         return [
-          Array.from(receiver_raw[0].toU8a()),
-          this._encrypted_note_to_json(receiver_raw[1]),
+          // Array.from(receiver_raw[0].toU8a()),
+          this._utxo_to_json(receiver_raw[0]),
+          // this._encrypted_note_to_json(receiver_raw[1]),
+          this._full_incoming_note_to_jons(receiver_raw[1]),
         ];
       });
       const senders = result.senders.map((sender_raw) => {
-        return Array.from(sender_raw.toU8a());
+        // return Array.from(sender_raw.toU8a());
+        return [
+          Array.from(sender_raw[0].toU8a()),
+          this._outgoing_note_to_json(sender_raw[1]),
+        ];
       });
       if (this.pullCallback) {
         this.pullCallback(
@@ -78,6 +133,8 @@ export default class Api {
           result.sender_recievers_total.toNumber()
         );
       }
+      console.log("receivers:" + JSON.stringify(receivers));
+      console.log("senders:" + JSON.stringify(senders));
       return {
         should_continue: result.should_continue,
         receivers: receivers,
@@ -141,3 +198,4 @@ export default class Api {
 
 export const SUCCESS = 'success';
 export const FAILURE = 'failure';
+// export {Api, ApiConfig};
