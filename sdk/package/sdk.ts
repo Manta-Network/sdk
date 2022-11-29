@@ -372,7 +372,10 @@ async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: Asset
 /// TODO: expose sign() method that return TransferPost.
 async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number, network: Network): Promise<void> {
     console.log("to_private transaction...");
-    const txJson = `{ "ToPrivate": { "id": ${asset_id}, "value": "${to_private_amount}" }}`;
+    const asset_ids = new Uint8Array(32);
+    asset_ids[31] = asset_id;
+    const asset_id_arr = Array.from(asset_ids);
+    const txJson = `{ "ToPrivate": { "id": [${asset_id_arr}], "value": ${to_private_amount} }}`;
     const transaction = wasm.Transaction.from_string(txJson);
     try {
         await sign_and_send_without_metadata(wasm, api, signer, wasmWallet, transaction, network);
@@ -488,8 +491,11 @@ const sign_and_send_without_metadata = async (wasm: any, api: ApiPromise, signer
     const posts = await wasmWallet.sign(transaction, null, networkType);
     const transactions = [];
     for (let i = 0; i < posts.length; i++) {
-        let convertedPost = convertToOldPost(posts[i]);
-        const transaction = await mapPostToTransaction(convertedPost, api);
+        console.log("post:" + JSON.stringify(posts[i]));
+        // let convertedPost = convertToOldPost(posts[i]);
+        // console.log("convert post:" + JSON.stringify(convertedPost));
+        const transaction = await mapPostToTransaction(posts[i], api);
+        console.log("transaction:" + JSON.stringify(transaction));
         transactions.push(transaction);
     }
     const txs = await transactionsToBatches(transactions, api);

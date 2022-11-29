@@ -279,7 +279,7 @@ pub struct TransferPost {
     sinks: Vec<String>,
 
     /// Validity Proof
-    validity_proof: config::Proof,
+    proof: config::Proof,
 }
 
 #[wasm_bindgen]
@@ -294,7 +294,7 @@ impl TransferPost {
         sender_posts: Vec<JsValue>,
         receiver_posts: Vec<JsValue>,
         sinks: Vec<JsString>,
-        validity_proof: JsValue,
+        proof: JsValue,
     ) -> Self {
         Self {
             authorization_signature: authorization_signature
@@ -312,7 +312,7 @@ impl TransferPost {
             sender_posts: sender_posts.into_iter().map(from_js).collect(),
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
             sinks: sinks.into_iter().map(Into::into).collect(),
-            validity_proof: from_js(validity_proof),
+            proof: from_js(proof),
         }
     }
 }
@@ -332,7 +332,7 @@ impl From<config::TransferPost> for TransferPost {
             sender_posts: post.body.sender_posts,
             receiver_posts: post.body.receiver_posts,
             sinks: post.body.sinks.into_iter().map(|s| s.to_string()).collect(),
-            validity_proof: post.body.proof,
+            proof: post.body.proof,
         }
     }
 }

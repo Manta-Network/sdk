@@ -31,7 +31,7 @@ const ft_test_to_private = async () => {
     const initalPrivateBalance = await mantaSdk.privateBalance(asset_id);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    await mantaSdk.toPrivatePost(asset_id, amount);
+    await mantaSdk.toPrivateSign(asset_id, amount);
 
     await mantaSdk.walletSync();
     let privateBalance = await mantaSdk.privateBalance(asset_id);
