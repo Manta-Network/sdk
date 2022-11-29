@@ -55,16 +55,12 @@
             "receiver_index": "[u64; 256]",
             "sender_index": "u64"
         },
-        "EncryptedNote": {
-            "ephemeral_public_key": "[u8; 32]",
-            "ciphertext": "[u8; 68]"
-        },
         "Asset": {
             "id": "[u8; 32]",
             "value": "u128"
         },
         "Utxo": {
-            "transparency": "bool",
+            "is_transparent": "bool",
             "public_asset": "Asset",
             "commitment": "[u8; 32]"
         },
@@ -75,7 +71,7 @@
         },
         "LightIncomingNote": {
             "ephemeral_public_key": "[u8; 32]",
-            "ciphertext": "[u8; 96]"
+            "ciphertext": "[[u8; 32]; 3]"
         },
         "FullIncomingNote": {
             "address_partition": "u8",
@@ -90,6 +86,28 @@
             "should_continue": "bool",
             "receivers": "Vec<(Utxo, FullIncomingNote)>",
             "senders": "Vec<([u8; 32], OutgoingNote)>"
+        },
+        "AuthorizationSignature": {
+            "authorization_key": "[u8; 32]",
+            "signature": "([u8; 32], [u8; 32])"
+        },
+        "SenderPost": {
+            "utxo_accumulator_output": "[u8; 32]",
+            "nullifier_commitment": "[u8; 32]",
+            "outgoing_note": "OutgoingNote"
+        },
+        "ReceiverPost": {
+            "utxo": "Utxo",
+            "full_incoming_note": "FullIncomingNote"
+        },
+        "TransferPost": {
+            "authorization_signature": "Option<AuthorizationSignature>",
+            "asset_id": "[u8; 32]",
+            "sources": "Option<u128>",
+            "sender_posts": "Vec<SenderPost>",
+            "receiver_posts": "Vec<ReceiverPost>",
+            "sinks": "Vec<u128>",
+            "proof": "[u8; 128]"
         }
     }
 }

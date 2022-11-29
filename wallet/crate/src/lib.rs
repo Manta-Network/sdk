@@ -22,7 +22,6 @@ extern crate alloc;
 extern crate console_error_panic_hook;
 
 use crate::types::*;
-// use crate::transaction::*;
 use alloc::{
     boxed::Box,
     format,
@@ -44,7 +43,7 @@ use manta_accounting::{
 use manta_crypto::signature::schnorr;
 // use manta_accounting::transfer::AuthorizationSignature;
 use manta_pay::{
-    config::{self, utxo::protocol_pay},
+    config::{self, utxo},
     signer,
 };
 use manta_util::{
@@ -59,7 +58,6 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
 
 mod types;
-// mod transaction;
 
 #[wasm_bindgen]
 extern "C" {
@@ -186,7 +184,7 @@ macro_rules! impl_js_compatible {
     };
 }
 
-impl_js_compatible!(AssetId, protocol_pay::AssetId, "AssetId");
+impl_js_compatible!(AssetId, utxo::AssetId, "AssetId");
 impl_js_compatible!(Asset, manta_accounting::transfer::Asset<config::Config>, "Asset");
 impl_js_compatible!(AssetMetadata, asset::AssetMetadata, "Asset Metadata");
 impl_js_compatible!(
@@ -229,10 +227,10 @@ impl TryFrom<RawAuthorizationSignature> for manta_accounting::transfer::Authoriz
     #[inline]
     fn try_from(signature: RawAuthorizationSignature) -> Result<Self, Self::Error> {
         Ok(Self {
-            authorization_key: decode(signature.authorization_key)?,
+            authorization_key: group_decode(signature.authorization_key.to_vec())?,
             signature: schnorr::Signature {
-                scalar: decode(signature.signature.0)?,
-                nonce_point: decode(signature.signature.1)?,
+                scalar: fp_decode(signature.signature.0.to_vec())?,
+                nonce_point: group_decode(signature.signature.1.to_vec())?,
             },
         })
     }
@@ -363,7 +361,7 @@ impl ledger::Connection for PolkadotJsLedger {
 }
 
 impl ledger::Read<SyncData<config::Config>> for PolkadotJsLedger {
-    type Checkpoint = protocol_pay::Checkpoint;
+    type Checkpoint = utxo::Checkpoint;
 
     #[inline]
     fn read<'s>(

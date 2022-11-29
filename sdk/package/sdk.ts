@@ -372,8 +372,9 @@ async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: Asset
 /// TODO: expose sign() method that return TransferPost.
 async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number, network: Network): Promise<void> {
     console.log("to_private transaction...");
+    // TODO: make asset_id parameter type as Uint8Array(32)
     const asset_ids = new Uint8Array(32);
-    asset_ids[31] = asset_id;
+    asset_ids[0] = asset_id;
     const asset_id_arr = Array.from(asset_ids);
     const txJson = `{ "ToPrivate": { "id": [${asset_id_arr}], "value": ${to_private_amount} }}`;
     const transaction = wasm.Transaction.from_string(txJson);
@@ -480,7 +481,19 @@ const convertToOldPost = (post:any): any => {
     // EncryptedNote { ephermeral_public_key: [], ciphertext: [] }
 
     let postCopy = JSON.parse(JSON.stringify(post));
-    postCopy.receiver_posts.map((x:any) => {x.encrypted_note = x.encrypted_note.ciphertext});
+    // postCopy.receiver_posts.map((x:any) => {x.encrypted_note = x.encrypted_note.ciphertext});
+    postCopy.receiver_posts.map((x:any) => {
+        // [[u8; 32], 3] ==> [[[...], [...], [...]]]
+        var arr1 = x.note.incoming_note.ciphertext.ciphertext.message.flatMap(
+            function(item: any,index:any,a: any){
+            return item;
+        });
+        // var arr2 = arr1.flatMap(
+        //     function(item: any,index:any,a: any){
+        //     return item;
+        // });
+        x.note.incoming_note.ciphertext.ciphertext.message = arr1
+    });
     return postCopy
 }
 
@@ -492,20 +505,27 @@ const sign_and_send_without_metadata = async (wasm: any, api: ApiPromise, signer
     const transactions = [];
     for (let i = 0; i < posts.length; i++) {
         console.log("post:" + JSON.stringify(posts[i]));
+
+        const post_type = api.createType("TransferPost", posts[i]);
+        console.log("post type:" + post_type);
+        const post_encode = post_type.toU8a();
+        console.log("decode post:" + post_encode);
+        
+        const transaction = await mapPostToTransaction(posts[i], api);
         // let convertedPost = convertToOldPost(posts[i]);
         // console.log("convert post:" + JSON.stringify(convertedPost));
-        const transaction = await mapPostToTransaction(posts[i], api);
+        // const transaction = await mapPostToTransaction(convertedPost, api);
         console.log("transaction:" + JSON.stringify(transaction));
         transactions.push(transaction);
     }
-    const txs = await transactionsToBatches(transactions, api);
-    for (let i = 0; i < txs.length; i++) {
-        try {
-            await txs[i].signAndSend(signer, (status, events) => { });
-        } catch (error) {
-            console.error('Transaction failed', error);
-        }
-    }
+    // const txs = await transactionsToBatches(transactions, api);
+    // for (let i = 0; i < txs.length; i++) {
+    //     try {
+    //         await txs[i].signAndSend(signer, (status, events) => { });
+    //     } catch (error) {
+    //         console.error('Transaction failed', error);
+    //     }
+    // }
 }
 
 /// Using sign on wallet and using signdAndSend to polkadot.js transaction

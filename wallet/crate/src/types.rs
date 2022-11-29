@@ -5,10 +5,13 @@ use manta_crypto::{
     encryption::{hybrid, EmptyHeader},
     permutation::duplex,
 };
+use manta_crypto::arkworks::constraint::fp::Fp;
+use manta_crypto::arkworks::algebra::Group;
+use manta_crypto::arkworks::ec::ProjectiveCurve;
 use manta_pay::{
     config::{
         self,
-        utxo::protocol_pay::{self, Config},
+        utxo::{self, Config},
     },
     crypto::poseidon::encryption::{self, BlockArray, CiphertextBlock},
 };
@@ -16,6 +19,7 @@ use manta_util::{
     serde::{Deserialize, Serialize},
     serde_with, BoxArray,
 };
+use manta_util::codec::Encode;
 use scale_codec::Error;
 
 /// Decodes the `bytes` array of the given length `N` into the SCALE decodable type `T` returning a
@@ -31,8 +35,8 @@ where
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
 pub enum UtxoTransparency {
-    Transparent,
     Opaque,
+    Transparent,
 }
 
 pub type RawAssetId = [u8; 32];
@@ -40,6 +44,18 @@ pub type RawAssetId = [u8; 32];
 pub type RawAssetValue = u128;
 
 pub type RawUtxoCommitment = [u8; 32];
+
+pub fn fp_decode<T>(bytes: Vec<u8>) -> Result<Fp<T>, scale_codec::Error>
+    where T: manta_crypto::arkworks::ff::Field
+{
+    Fp::try_from(bytes).map_err(|_e| scale_codec::Error::from("Fp Serialize"))
+}
+
+pub fn group_decode<T>(bytes: Vec<u8>) -> Result<Group<T>, scale_codec::Error>
+    where T: ProjectiveCurve
+{
+    Group::try_from(bytes).map_err(|_e| scale_codec::Error::from("Group Serialize"))
+}
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
@@ -57,7 +73,7 @@ impl TryFrom<RawAsset> for config::Asset {
     #[inline]
     fn try_from(asset: RawAsset) -> Result<Self, Self::Error> {
         Ok(Self {
-            id: decode(asset.id)?,
+            id: fp_decode(asset.id.to_vec())?,
             value: asset.value,
         })
     }
@@ -75,6 +91,7 @@ pub struct RawNullifierCommitment {
 pub struct RawUtxo {
     /// Transparency Flag: 
     pub transparency: UtxoTransparency,
+    // pub transparency: bool,
 
     /// Public Asset: 40 bytes
     pub public_asset: RawAsset,
@@ -85,15 +102,16 @@ pub struct RawUtxo {
 
 impl RawUtxo {
     #[inline]
-    pub fn try_into(self) -> Result<protocol_pay::Utxo, Error> {
+    pub fn try_into(self) -> Result<utxo::Utxo, Error> {
         let is_transparency = match self.transparency {
             UtxoTransparency::Transparent => true,
             UtxoTransparency::Opaque => false,
         };
-        Ok(protocol_pay::Utxo {
+        Ok(utxo::Utxo {
             is_transparent: is_transparency,
+            // is_transparent: self.transparency,
             public_asset: self.public_asset.try_into()?,
-            commitment: decode(self.commitment)?,
+            commitment: fp_decode(self.commitment.to_vec())?,
         })
     }
 }
@@ -142,13 +160,13 @@ pub struct RawNulllifier {
     pub outgoing_note: RawOutgoingNote,
 }
 
-impl TryFrom<RawNullifierCommitment> for manta_accounting::transfer::utxo::v3::Nullifier<Config> {
+impl TryFrom<RawNullifierCommitment> for manta_accounting::transfer::utxo::protocol::Nullifier<Config> {
     type Error = scale_codec::Error;
 
     #[inline]
     fn try_from(commitment: RawNullifierCommitment) -> Result<Self, Self::Error> {
         Ok(Self {
-            commitment: decode(commitment.commitment)?,
+            commitment: fp_decode(commitment.commitment.to_vec())?,
         })
     }
 }
@@ -161,38 +179,38 @@ pub struct RawFullIncomingNote {
     raw_light_incoming_note: RawLightIncomingNote,
 }
 
-impl TryFrom<RawFullIncomingNote> for protocol_pay::FullIncomingNote {
+impl TryFrom<RawFullIncomingNote> for utxo::FullIncomingNote {
     type Error = scale_codec::Error;
 
     #[inline]
     fn try_from(encrypted_note: RawFullIncomingNote) -> Result<Self, Self::Error> {
         Ok(Self {
             address_partition: encrypted_note.raw_address_partition,
-            incoming_note: protocol_pay::IncomingNote {
+            incoming_note: utxo::IncomingNote {
                 header: EmptyHeader::default(),
                 ciphertext: hybrid::Ciphertext {
-                    ephemeral_public_key: decode(
-                        encrypted_note.raw_incoming_note.ephemeral_public_key,
+                    ephemeral_public_key: group_decode(
+                        encrypted_note.raw_incoming_note.ephemeral_public_key.to_vec(),
                     )?,
                     ciphertext: duplex::Ciphertext {
-                        tag: encryption::Tag(decode(encrypted_note.raw_incoming_note.tag)?),
+                        tag: encryption::Tag(fp_decode(encrypted_note.raw_incoming_note.tag.to_vec())?),
                         message: BlockArray(BoxArray(Box::new([CiphertextBlock(
                             encrypted_note
                                 .raw_incoming_note
                                 .ciphertext
                                 .into_iter()
-                                .map(decode)
+                                .map(|x| fp_decode(x.to_vec()))
                                 .collect::<Result<Vec<_>, _>>()?
                                 .into(),
                         )]))),
                     },
                 },
             },
-            light_incoming_note: protocol_pay::LightIncomingNote {
+            light_incoming_note: utxo::LightIncomingNote {
                 header: EmptyHeader::default(),
                 ciphertext: hybrid::Ciphertext {
-                    ephemeral_public_key: decode(
-                        encrypted_note.raw_light_incoming_note.ephemeral_public_key,
+                    ephemeral_public_key: group_decode(
+                        encrypted_note.raw_light_incoming_note.ephemeral_public_key.to_vec(),
                     )?,
                     ciphertext: encrypted_note.raw_light_incoming_note.ciphertext.into(),
                 },
@@ -201,7 +219,7 @@ impl TryFrom<RawFullIncomingNote> for protocol_pay::FullIncomingNote {
     }
 }
 
-impl TryFrom<RawOutgoingNote> for protocol_pay::OutgoingNote {
+impl TryFrom<RawOutgoingNote> for utxo::OutgoingNote {
     type Error = Error;
 
     #[inline]
@@ -218,7 +236,7 @@ impl TryFrom<RawOutgoingNote> for protocol_pay::OutgoingNote {
         Ok(Self {
             header: EmptyHeader::default(),
             ciphertext: hybrid::Ciphertext {
-                ephemeral_public_key: decode(note.ephemeral_public_key)?,
+                ephemeral_public_key: group_decode(note.ephemeral_public_key.to_vec())?,
                 ciphertext: decoded.into(),
             },
         })
@@ -227,8 +245,8 @@ impl TryFrom<RawOutgoingNote> for protocol_pay::OutgoingNote {
 
 impl RawNulllifier {
     #[inline]
-    pub fn try_into(self) -> Result<protocol_pay::Nullifier, Error> {
-        Ok(protocol_pay::Nullifier {
+    pub fn try_into(self) -> Result<utxo::Nullifier, Error> {
+        Ok(utxo::Nullifier {
             nullifier: self.nullifier.try_into()?,
             outgoing_note: self.outgoing_note.try_into()?,
         })
