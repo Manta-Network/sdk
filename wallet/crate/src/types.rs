@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, vec::Vec};
+use alloc::string::String;
 use core::fmt::Debug;
 use manta_accounting::wallet::{ledger::ReadResponse, signer::SyncData};
 use manta_crypto::{
@@ -32,12 +33,12 @@ where
     T::decode(&mut bytes.as_slice())
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde")]
-pub enum UtxoTransparency {
-    Opaque,
-    Transparent,
-}
+// #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+// #[serde(crate = "manta_util::serde")]
+// pub enum UtxoTransparency {
+//     Opaque,
+//     Transparent,
+// }
 
 pub type RawAssetId = [u8; 32];
 
@@ -90,8 +91,8 @@ pub struct RawNullifierCommitment {
 #[serde(crate = "manta_util::serde")]
 pub struct RawUtxo {
     /// Transparency Flag: 
-    pub transparency: UtxoTransparency,
-    // pub transparency: bool,
+    // pub is_transparent: UtxoTransparency,
+    pub is_transparent: bool,
 
     /// Public Asset: 40 bytes
     pub public_asset: RawAsset,
@@ -103,13 +104,12 @@ pub struct RawUtxo {
 impl RawUtxo {
     #[inline]
     pub fn try_into(self) -> Result<utxo::Utxo, Error> {
-        let is_transparency = match self.transparency {
-            UtxoTransparency::Transparent => true,
-            UtxoTransparency::Opaque => false,
-        };
+        // let is_transparency = match self.transparency {
+        //     UtxoTransparency::Transparent => true,
+        //     UtxoTransparency::Opaque => false,
+        // };
         Ok(utxo::Utxo {
-            is_transparent: is_transparency,
-            // is_transparent: self.transparency,
+            is_transparent: self.is_transparent,
             public_asset: self.public_asset.try_into()?,
             commitment: fp_decode(self.commitment.to_vec())?,
         })
@@ -124,8 +124,8 @@ pub struct RawLightIncomingNote {
     pub ephemeral_public_key: [u8; 32],
 
     /// Ciphertext
-    #[serde(with = "serde_with::As::<[serde_with::Same; 96]>")]
-    pub ciphertext: [u8; 96],
+    #[serde(with = "serde_with::As::<[[serde_with::Same; 32]; 3]>")]
+    pub ciphertext: [[u8; 32]; 3],
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
@@ -174,29 +174,37 @@ impl TryFrom<RawNullifierCommitment> for manta_accounting::transfer::utxo::proto
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
 pub struct RawFullIncomingNote {
-    raw_address_partition: u8,
-    raw_incoming_note: RawIncomingNote,
-    raw_light_incoming_note: RawLightIncomingNote,
+    address_partition: u8,
+    incoming_note: RawIncomingNote,
+    light_incoming_note: RawLightIncomingNote,
 }
 
 impl TryFrom<RawFullIncomingNote> for utxo::FullIncomingNote {
     type Error = scale_codec::Error;
 
     #[inline]
-    fn try_from(encrypted_note: RawFullIncomingNote) -> Result<Self, Self::Error> {
+    fn try_from(note: RawFullIncomingNote) -> Result<Self, Self::Error> {
+        let mut encoded_incoming_ciphertext = [0u8; 96];
+        let mut ind = 0;
+        for component in note.light_incoming_note.ciphertext {
+            for byte in component {
+                encoded_incoming_ciphertext[ind as usize] = byte;
+                ind += 1;
+            }
+        }
         Ok(Self {
-            address_partition: encrypted_note.raw_address_partition,
+            address_partition: note.address_partition,
             incoming_note: utxo::IncomingNote {
                 header: EmptyHeader::default(),
                 ciphertext: hybrid::Ciphertext {
                     ephemeral_public_key: group_decode(
-                        encrypted_note.raw_incoming_note.ephemeral_public_key.to_vec(),
+                        note.incoming_note.ephemeral_public_key.to_vec(),
                     )?,
                     ciphertext: duplex::Ciphertext {
-                        tag: encryption::Tag(fp_decode(encrypted_note.raw_incoming_note.tag.to_vec())?),
+                        tag: encryption::Tag(fp_decode(note.incoming_note.tag.to_vec())?),
                         message: BlockArray(BoxArray(Box::new([CiphertextBlock(
-                            encrypted_note
-                                .raw_incoming_note
+                            note
+                                .incoming_note
                                 .ciphertext
                                 .into_iter()
                                 .map(|x| fp_decode(x.to_vec()))
@@ -210,9 +218,9 @@ impl TryFrom<RawFullIncomingNote> for utxo::FullIncomingNote {
                 header: EmptyHeader::default(),
                 ciphertext: hybrid::Ciphertext {
                     ephemeral_public_key: group_decode(
-                        encrypted_note.raw_light_incoming_note.ephemeral_public_key.to_vec(),
+                        note.light_incoming_note.ephemeral_public_key.to_vec(),
                     )?,
-                    ciphertext: encrypted_note.raw_light_incoming_note.ciphertext.into(),
+                    ciphertext: encoded_incoming_ciphertext.into(),
                 },
             },
         })

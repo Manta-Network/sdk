@@ -49,49 +49,66 @@ export default class Api {
   }
 
   _outgoing_note_to_json(note) {
+    // [u8; 64] -> [[u8; 32], 2]
+    const ciphertext = note.ciphertext.toU8a();
+    const cipher0 = Array.from(ciphertext.slice(0, 32));
+    const cipher1 = Array.from(ciphertext.slice(32, 64));
     return {
       ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
-      ciphertext: Array.from(
-        Array.from(note.ciphertext.toU8a())
-      ),
+      ciphertext: new Array(cipher0, cipher1)
     }
   }
 
   _light_incoming_note_to_json(note) {
+    const ciphertext = note.ciphertext.toU8a(); // hex to u8 array
+    // console.log("light incoming note ciphertext:" + ciphertext);
+    const cipher0 = Array.from(ciphertext.slice(0, 32));
+    const cipher1 = Array.from(ciphertext.slice(32, 64));
+    const cipher2 = Array.from(ciphertext.slice(64, 96));
     return {
       ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
-      ciphertext: Array.from(note.ciphertext.toU8a()),
+      // ciphertext: Array.from(note.ciphertext.toU8a()),
+      ciphertext: new Array(cipher0, cipher1, cipher2)
     };
   }
 
   _incoming_note_to_json(note) {
+    // console.log("ciphertext:" + note.ciphertext);
+    const ciphertext = note.ciphertext.toU8a(); // hex to u8 array: [u8; 96]
+    // console.log("incoming note ciphertext:" + ciphertext);
+    const cipher0 = Array.from(ciphertext.slice(0, 32));
+    const cipher1 = Array.from(ciphertext.slice(32, 64));
+    const cipher2 = Array.from(ciphertext.slice(64, 96));
     return {
       ephemeral_public_key: Array.from(
         note.ephemeral_public_key.toU8a()
       ),
       tag: Array.from(note.tag.toU8a()),
-      ciphertext: Array.from(
-        Array.from(note.ciphertext.toU8a())
-      ),
+      // change to [[u8; 32]; 3]
+      // ciphertext: Array.from(
+      //   Array.from(note.ciphertext.toU8a())
+      // ),
+      ciphertext: new Array(cipher0, cipher1, cipher2)
     }
   }
 
   _full_incoming_note_to_jons(note) {
     return {
-      address_partition: note.address_partition,
+      address_partition: note.address_partition.toNumber(),
       incoming_note: this._incoming_note_to_json(note.incoming_note),
       light_incoming_note: this._light_incoming_note_to_json(note.light_incoming_note),
     }
   }
 
   _utxo_to_json(utxo) {
-    let asset_id = Array.from(utxo.public_asset.id.toU8a()); // [u8; 32]
+    let asset_id = Array.from(utxo.public_asset.id.toU8a()); // hex -> [u8; 32]
+    // TODO: toNumnber is u64, it will overflow!!
     let asset_value = utxo.public_asset.value.toNumber(); // u128
     return {
-      transparency: true, // todo
+      is_transparent: utxo.is_transparent,
       public_asset: {
-        asset_id: asset_id,
-        asset_value: asset_value,
+        id: asset_id,
+        value: asset_value,
       },
       commitment: Array.from(utxo.commitment.toU8a())
     };
@@ -111,13 +128,20 @@ export default class Api {
       console.log('pull result', JSON.stringify(result));
 
       const receivers = result.receivers.map((receiver_raw) => {
-        return [
-          // Array.from(receiver_raw[0].toU8a()),
+        // return [
+        //   this._utxo_to_json(receiver_raw[0]),
+        //   this._full_incoming_note_to_jons(receiver_raw[1])
+        // ];
+        // return {
+        //   utxo: this._utxo_to_json(receiver_raw[0]),
+        //   full_incoming_note: this._full_incoming_note_to_jons(receiver_raw[1])
+        // };
+        return new Array(
           this._utxo_to_json(receiver_raw[0]),
-          // this._encrypted_note_to_json(receiver_raw[1]),
-          this._full_incoming_note_to_jons(receiver_raw[1]),
-        ];
+          this._full_incoming_note_to_jons(receiver_raw[1])
+        );
       });
+      console.log("receivers:" + JSON.stringify(receivers));
       const senders = result.senders.map((sender_raw) => {
         // return Array.from(sender_raw.toU8a());
         return [
@@ -133,13 +157,13 @@ export default class Api {
           result.sender_recievers_total.toNumber()
         );
       }
-      console.log("receivers:" + JSON.stringify(receivers));
-      console.log("senders:" + JSON.stringify(senders));
-      return {
+      const pull_result = {
         should_continue: result.should_continue,
         receivers: receivers,
         senders: senders,
       };
+      console.log("pull response:" + JSON.stringify(pull_result));
+      return pull_result;
     } catch (err) {
       if (this.errorCallback) {
         this.errorCallback();

@@ -98,7 +98,7 @@
         },
         "ReceiverPost": {
             "utxo": "Utxo",
-            "full_incoming_note": "FullIncomingNote"
+            "note": "FullIncomingNote"
         },
         "TransferPost": {
             "authorization_signature": "Option<AuthorizationSignature>",

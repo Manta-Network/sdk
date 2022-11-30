@@ -474,27 +474,39 @@ async function to_public_nft(api: ApiPromise, signer: string, wasm: any, wasmWal
     console.log("📜finish to public nft transfer.");
 };
 
-/// Converts old transferpost to new transferpost.
-const convertToOldPost = (post:any): any => {
-    // need to iterate over all receiverPosts and convert EncryptedNote from new
-    // format of EncryptedNote { header: (), Ciphertext {...} } to old format:
-    // EncryptedNote { ephermeral_public_key: [], ciphertext: [] }
-
-    let postCopy = JSON.parse(JSON.stringify(post));
-    // postCopy.receiver_posts.map((x:any) => {x.encrypted_note = x.encrypted_note.ciphertext});
-    postCopy.receiver_posts.map((x:any) => {
-        // [[u8; 32], 3] ==> [[[...], [...], [...]]]
+/// NOTE: `post` from manta-rs sign result should match runtime side data structure type.
+const transfer_post = (post:any): any => {
+    // let json = JSON.parse(post);
+    let json = JSON.parse(JSON.stringify(post));
+    console.log("json:" + json);
+    // TODO: try not modified runtime `full_incoming_note`, and in this transfer
+    // change x.full_incoming_note = xxx, delete x.note.
+    json.receiver_posts.map((x:any) => {
+        // `message` is [[[..],[..],[..]]], change to [[..], [..], [..]]
         var arr1 = x.note.incoming_note.ciphertext.ciphertext.message.flatMap(
             function(item: any,index:any,a: any){
             return item;
         });
-        // var arr2 = arr1.flatMap(
-        //     function(item: any,index:any,a: any){
-        //     return item;
-        // });
-        x.note.incoming_note.ciphertext.ciphertext.message = arr1
+        const tag = x.note.incoming_note.ciphertext.ciphertext.tag; 
+        const pk = x.note.incoming_note.ciphertext.ephemeral_public_key; 
+        x.note.incoming_note.tag = tag;
+        x.note.incoming_note.ephemeral_public_key = pk;
+        x.note.incoming_note.ciphertext = arr1;
+        delete x.note.incoming_note.header;
+
+        const light_pk = x.note.light_incoming_note.ciphertext.ephemeral_public_key; 
+        // ciphertext is [u8; 96] on manta-rs, but runtime side is [[u8; 32]; 3]
+        const light_cipher = x.note.light_incoming_note.ciphertext.ciphertext;
+        const light_ciper0 = light_cipher.slice(0, 32);
+        const light_ciper1 = light_cipher.slice(32, 64);
+        const light_ciper2 = light_cipher.slice(64, 96);
+        x.note.light_incoming_note.ephemeral_public_key = light_pk;
+        x.note.light_incoming_note.ciphertext = [light_ciper0, light_ciper1, light_ciper2];
+        delete x.note.light_incoming_note.header;
+
     });
-    return postCopy
+    // TODO: sender_posts
+    return json
 }
 
 /// Using sign on wallet and using signAndSend to polkadot.js transaction
@@ -503,29 +515,29 @@ const sign_and_send_without_metadata = async (wasm: any, api: ApiPromise, signer
     const networkType = wasm.Network.from_string(`"${network}"`);
     const posts = await wasmWallet.sign(transaction, null, networkType);
     const transactions = [];
+
     for (let i = 0; i < posts.length; i++) {
         console.log("post:" + JSON.stringify(posts[i]));
+        const convertedPost = transfer_post(posts[i]);
+        console.log("convert post:" + JSON.stringify(convertedPost));
 
-        const post_type = api.createType("TransferPost", posts[i]);
-        console.log("post type:" + post_type);
-        const post_encode = post_type.toU8a();
-        console.log("decode post:" + post_encode);
+        // const post_type = api.createType("TransferPost", convertedPost);
+        // console.log("post type:" + post_type);
+        // const post_encode = post_type.toU8a();
+        // console.log("decode post:" + post_encode);
         
-        const transaction = await mapPostToTransaction(posts[i], api);
-        // let convertedPost = convertToOldPost(posts[i]);
-        // console.log("convert post:" + JSON.stringify(convertedPost));
-        // const transaction = await mapPostToTransaction(convertedPost, api);
+        const transaction = await mapPostToTransaction(convertedPost, api);
         console.log("transaction:" + JSON.stringify(transaction));
         transactions.push(transaction);
     }
-    // const txs = await transactionsToBatches(transactions, api);
-    // for (let i = 0; i < txs.length; i++) {
-    //     try {
-    //         await txs[i].signAndSend(signer, (status, events) => { });
-    //     } catch (error) {
-    //         console.error('Transaction failed', error);
-    //     }
-    // }
+    const txs = await transactionsToBatches(transactions, api);
+    for (let i = 0; i < txs.length; i++) {
+        try {
+            await txs[i].signAndSend(signer, (status, events) => { });
+        } catch (error) {
+            console.error('Transaction failed', error);
+        }
+    }
 }
 
 /// Using sign on wallet and using signdAndSend to polkadot.js transaction
@@ -535,7 +547,7 @@ const sign_and_send = async (api: ApiPromise, signer: string, wasm: any, wasmWal
     const posts = await wasmWallet.sign(transaction, assetMetadata, networkType);
     const transactions = [];
     for (let i = 0; i < posts.length; i++) {
-        let convertedPost = convertToOldPost(posts[i]);
+        let convertedPost = transfer_post(posts[i]);
         const transaction = await mapPostToTransaction(convertedPost, api);
         transactions.push(transaction);
     }
