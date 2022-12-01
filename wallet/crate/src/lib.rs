@@ -501,7 +501,7 @@ impl Wallet {
                 .map(into_js)
                 .map_err(|err| into_js(format!("Error during asynchronous call: {err:?}")))
         });
-        self.0.clone().borrow_mut().signer.set_network(None);
+        self.0.clone().borrow_mut().signer_mut().set_network(None);
         response
     }
 
@@ -520,9 +520,9 @@ impl Wallet {
     pub fn restart(&self, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer.set_network(Some(network.into()));
+                this.signer_mut().set_network(Some(network.into()));
                 let response = this.restart().await;
-                this.signer.set_network(None);
+                this.signer_mut().set_network(None);
                 response
             })
         })
@@ -545,9 +545,9 @@ impl Wallet {
     pub fn sync(&self, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer.set_network(Some(network.into()));
+                this.signer_mut().set_network(Some(network.into()));
                 let response = this.sync().await;
-                this.signer.set_network(None);
+                this.signer_mut().set_network(None);
                 response
             })
         })
@@ -570,9 +570,9 @@ impl Wallet {
     pub fn sync_partial(&self, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer.set_network(Some(network.into()));
+                this.signer_mut().set_network(Some(network.into()));
                 let response = this.sync_partial().await;
-                this.signer.set_network(None);
+                this.signer_mut().set_network(None);
                 response
             })
         })
@@ -606,7 +606,7 @@ impl Wallet {
     ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer.set_network(Some(network.into()));
+                this.signer_mut().set_network(Some(network.into()));
                 let response = this
                     .sign(transaction.into(), metadata.map(Into::into))
                     .await
@@ -617,7 +617,7 @@ impl Wallet {
                             .map(TransferPost::from)
                             .collect::<Vec<_>>()
                     });
-                this.signer.set_network(None);
+                this.signer_mut().set_network(None);
                 response
             })
         })
@@ -651,11 +651,11 @@ impl Wallet {
     ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer.set_network(Some(network.into()));
+                this.signer_mut().set_network(Some(network.into()));
                 let response = this
                     .post(transaction.into(), metadata.map(Into::into))
                     .await;
-                this.signer.set_network(None);
+                this.signer_mut().set_network(None);
                 response
             })
         })
@@ -666,9 +666,9 @@ impl Wallet {
     pub fn receiving_keys(&self, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer.set_network(Some(network.into()));
+                this.signer_mut().set_network(Some(network.into()));
                 let response = this.address().await;
-                this.signer.set_network(None);
+                this.signer_mut().set_network(None);
                 response
             })
         })
@@ -679,9 +679,9 @@ impl Wallet {
     pub fn address(&self, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.signer.set_network(Some(network.into()));
+                this.signer_mut().set_network(Some(network.into()));
                 let response = this.address().await;
-                this.signer.set_network(None);
+                this.signer_mut().set_network(None);
                 response
             })
         })

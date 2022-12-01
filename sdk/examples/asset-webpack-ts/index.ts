@@ -24,8 +24,7 @@ const ft_test_to_private = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = 10000000000000000000; // 10 units
-    const private_amount = 5000000000000000000; // 5 units
+    const amount = 1000000000000000000; // 1 unit
     const asset_id = 1; // DOL
 
     await mantaSdk.initalWalletSync();
@@ -33,14 +32,11 @@ const ft_test_to_private = async () => {
     const initalPrivateBalance = await mantaSdk.privateBalance(asset_id);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    // await mantaSdk.toPrivateSign(asset_id, amount);
+    await mantaSdk.toPrivateSign(asset_id, amount);
     // await mantaSdk.privateTransfer(asset_id, private_amount, to_private_address);
-    await mantaSdk.toPublic(asset_id, private_amount);
+    // await mantaSdk.toPublic(asset_id, private_amount);
 
-    await mantaSdk.walletSync();
-    let privateBalance = await mantaSdk.privateBalance(asset_id);
-
-    // while (true) {
+    while (true) {
 
         await new Promise(r => setTimeout(r, 5000));
         console.log("Syncing with ledger...");
@@ -48,13 +44,13 @@ const ft_test_to_private = async () => {
         let newPrivateBalance = await mantaSdk.privateBalance(asset_id);
         console.log("Private Balance after sync: ", newPrivateBalance);
 
-        // if (privateBalance !== newPrivateBalance) {
-        //     console.log("Detected balance change after sync!");
-        //     console.log("Old balance: ", privateBalance);
-        //     console.log("New balance: ", newPrivateBalance);
-        //     break;
-        // }
-    // }
+        if (initalPrivateBalance !== newPrivateBalance) {
+            console.log("Detected balance change after sync!");
+            console.log("Old balance: ", initalPrivateBalance);
+            console.log("New balance: ", newPrivateBalance);
+            break;
+        }
+    }
 }
 
 
