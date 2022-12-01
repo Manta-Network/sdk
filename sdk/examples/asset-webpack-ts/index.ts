@@ -8,9 +8,9 @@ async function main() {
 
     //const publicPolkadotJsAddress = "5HifovYZVQSD4rKLVMo1Rqtv45jfPhCUiGYbf4gPEtKyc1PS"
 
-    //await ft_test_to_private();
+    await ft_test_to_private();
     //await ft_test_to_public();
-    await ft_test_to_private_only_sign();
+    //await ft_test_to_private_only_sign();
     console.log("END");
 }
 
@@ -124,7 +124,7 @@ const nft_test_to_private = async () => {
 
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
-
+    // collection_id: 4369(0x1111), item_id: 1(0x0001), asset_id: 0x11110001=286326785
     const nft_asset_id = 286326785;
 
     await mantaSdk.initalWalletSync();

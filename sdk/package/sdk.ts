@@ -188,6 +188,13 @@ export class MantaSdk implements IMantaSdk {
     ///
     /// Non fungible token methods
     ///
+
+    /// Collection ID : The ID corresponding to the NFT collection.
+    ///
+    /// Item ID: The ID corresponding to a given item (NFT) of a collection.
+    ///
+    /// Asset ID: The ID derived from combining a Collection ID with an Item ID,
+    ///           this is used for transacting NFTs on mantapay.
     
     /// Executes a "To Private" transaction for any non-fungible token.
     async toPrivateNFT(asset_id: number): Promise<void> {
@@ -204,6 +211,29 @@ export class MantaSdk implements IMantaSdk {
         await to_public_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, this.network);
     }
 
+    /*
+    /// Creates an NFT collection
+    async createCollection(collectionId: number): Promise<void> {
+        await createNFTCollection(this.api, collectionId);
+    }
+
+    /// Creates a new NFT as a part of an existing collection with id of `collectionId`
+    /// and item Id of `itemId` to the destination address of `address`.
+    /// Returns the assetId of the minted NFT.
+    async mintNFT(collectionId: number, itemId: number, address: string): Promise<AssetId> {
+        await createNFT(this.api, collectionId, itemId, address);
+        const assetId = this.assetIdFromItemAndCollectionId(collectionId,itemId);
+        return assetId;
+    }
+
+    to private to public = old circuit manta-api
+
+    /// Updates the metadata of the NFT
+    async updateMetadata(collectionId: number, itemId: number, metadata:any): Promise<void> {
+        await updateNFTMetadata(this.api, collectionId, itemId, metadata);
+    }
+
+    */
 }
 
 // Initializes the MantaSdk class, given an optional address, this will be used
@@ -393,21 +423,6 @@ async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wa
     }
 }
 
-/// to_private transaction for NFT
-/// TODO: fixed amount value
-async function to_private_nft(wasm: any, wasmWallet: Wallet, asset_id: AssetId, network: Network): Promise<void> {
-    console.log("to_private NFT transaction...");
-    const txJson = `{ "Mint": { "id": ${asset_id}, "value": "${NFT_AMOUNT}" }}`;
-    const transaction = wasm.Transaction.from_string(txJson);
-    const networkType = wasm.Network.from_string(`"${network}"`);
-    try {
-        const res = await wasmWallet.post(transaction, null, networkType);
-        console.log("📜to_private NFT result:" + res);
-    } catch (error) {
-        console.error('Transaction failed', error);
-    }
-}
-
 /// public transfer transaction
 /// Optional: The `onlySign` flag allows for the ability to sign and return
 /// the transaction without posting it to the ledger.
@@ -462,6 +477,58 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
     } else {
         await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
         console.log("📜finish private transfer.");
+    }
+}
+
+/*
+/// Create NFT collection
+async function createNFTCollection(api: ApiPromise, collectionId: number): Promise<void> {
+    try {
+        
+        await api.tx.uniques.create(collectionId,)
+
+        return;
+    } catch (e) {
+        console.log("Failed to create NFT collection of Collection ID: " + collectionId);
+        console.error(e);
+    }
+}
+
+/// Create NFT Item
+async function createNFT(api: ApiPromise, collectionId: number, itemId: number, address: string): Promise<void> {
+    try {
+        // create nft item to address
+        return;
+    } catch (e) {
+        console.log("Failed to create NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
+        console.error(e);
+    }
+}
+
+/// Update NFT metadata
+async function updateNFTMetadata(api: ApiPromise, collectionId: number, itemId: number, metadata: any): Promise<void> {
+    try {
+        // update nft metadata
+        return;
+    } catch (e) {
+        console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
+        console.error(e);
+    }
+}
+*/
+
+/// to_private transaction for NFT
+/// TODO: fixed amount value
+async function to_private_nft(wasm: any, wasmWallet: Wallet, asset_id: AssetId, network: Network): Promise<void> {
+    console.log("to_private NFT transaction...");
+    const txJson = `{ "Mint": { "id": ${asset_id}, "value": "${NFT_AMOUNT}" }}`;
+    const transaction = wasm.Transaction.from_string(txJson);
+    const networkType = wasm.Network.from_string(`"${network}"`);
+    try {
+        const res = await wasmWallet.post(transaction, null, networkType);
+        console.log("📜to_private NFT result:" + res);
+    } catch (error) {
+        console.error('Transaction failed', error);
     }
 }
 
