@@ -3958,8 +3958,8 @@ make-fetch-happen@^9.1.0:
     "@polkadot/util-crypto" "8.1.2"
     axios "^0.27.2"
     bn.js "^5.2.0"
-    manta-wasm-wallet "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-f6306ca3-d17f-4b54-8b80-73835050ee7e-1669927493789/wallet/crate/pkg"
-    manta-wasm-wallet-api "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-f6306ca3-d17f-4b54-8b80-73835050ee7e-1669927493789/wallet/api"
+    manta-wasm-wallet "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-5b36da4c-f78d-424c-93dc-baea1c5721a2-1669932672845/wallet/crate/pkg"
+    manta-wasm-wallet-api "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-5b36da4c-f78d-424c-93dc-baea1c5721a2-1669932672845/wallet/api"
 
 md5.js@^1.3.4:
   version "1.3.5"

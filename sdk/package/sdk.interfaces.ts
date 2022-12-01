@@ -35,9 +35,9 @@ export interface IMantaSdk {
   assetMetaData(asset_id: AssetId): Promise<any>;
   privateBalance(asset_id: AssetId): Promise<string>;
   toPrivatePost(asset_id: AssetId, amount: number): Promise<void>;
-  toPrivateSign(asset_id: AssetId, amount: number): Promise<void>;
-  privateTransfer(asset_id: AssetId, amount: number, address: Address): Promise<void>;
-  toPublic(asset_id: AssetId, amount: number): Promise<void>;
+  toPrivateSign(asset_id: AssetId, amount: number, onlySign: boolean): Promise<any>;
+  privateTransfer(asset_id: AssetId, amount: number, address: Address, onlySign: boolean): Promise<any>;
+  toPublic(asset_id: AssetId, amount: number, onlySign: boolean): Promise<any>;
   toPrivateNFT(asset_id: number): Promise<void>;
   privateTransferNFT(asset_id: AssetId, address: Address): Promise<void>;
   toPublicNFT(asset_id: number): Promise<void>;
