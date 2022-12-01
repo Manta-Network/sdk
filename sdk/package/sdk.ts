@@ -405,8 +405,13 @@ async function to_private_nft(wasm: any, wasmWallet: Wallet, asset_id: AssetId, 
 /// public transfer transaction
 async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, transfer_amount: number, network: Network): Promise<void> {
     console.log("to_public transaction of asset_id:" + asset_id);
-    const txJson = `{ "ToPublic": { "id": ${asset_id}, "value": "${transfer_amount}" }}`;
+    // TODO: make asset_id parameter type as Uint8Array(32)
+    const asset_ids = new Uint8Array(32);
+    asset_ids[0] = asset_id;
+    const asset_id_arr = Array.from(asset_ids);
+    const txJson = `{ "ToPublic": { "id": [${asset_id_arr}], "value": ${transfer_amount} }}`;
     const transaction = wasm.Transaction.from_string(txJson);
+    console.log("sdk transaction:" + txJson + ", " + JSON.stringify(transaction));
 
     // construct asset metadata json by query api
     const asset_meta = await api.query.assetManager.assetIdMetadata(asset_id);
@@ -434,6 +439,7 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
     const asset_id_arr = Array.from(asset_ids);
     const txJson = `{ "PrivateTransfer": [{ "id": [${asset_id_arr}], "value": ${private_transfer_amount} }, ${addressJson} ]}`;
     const transaction = wasm.Transaction.from_string(txJson);
+    console.log("sdk transaction:" + txJson + ", " + JSON.stringify(transaction));
 
     // construct asset metadata json by query api
     const asset_meta = await api.query.assetManager.assetIdMetadata(asset_id);
@@ -484,9 +490,11 @@ const transfer_post = (post:any): any => {
     let json = JSON.parse(JSON.stringify(post));
     
     // transfer authorization_signature format
-    const scala = json.authorization_signature.signature.scalar;
-    const nonce = json.authorization_signature.signature.nonce_point;
-    json.authorization_signature.signature = [scala, nonce];
+    if(json.authorization_signature != null){
+        const scala = json.authorization_signature.signature.scalar;
+        const nonce = json.authorization_signature.signature.nonce_point;
+        json.authorization_signature.signature = [scala, nonce];
+    }
 
     // transfer receiver_posts to match runtime side
     json.receiver_posts.map((x:any) => {
@@ -515,6 +523,7 @@ const transfer_post = (post:any): any => {
         x.full_incoming_note = x.note;
         delete x.note;
     });
+
     // transfer sender_posts to match runtime side
     json.sender_posts.map((x:any) => {
         const pk = x.nullifier.outgoing_note.ciphertext.ephemeral_public_key;
