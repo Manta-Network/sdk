@@ -314,8 +314,9 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
 function privateAddressToJson(privateAddress: Address): Address {
     const bytes = base58Decode(privateAddress);
     return JSON.stringify({
-        spend: Array.from(bytes.slice(0, 32)),
-        view: Array.from(bytes.slice(32))
+        // spend: Array.from(bytes.slice(0, 32)),
+        // view: Array.from(bytes.slice(32))
+        receiving_key: Array.from(bytes)
     });
 };
 
@@ -426,8 +427,12 @@ async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet:
 async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, private_transfer_amount: number, to_private_address: Address, network: Network): Promise<void> {
     console.log("private_transfer transaction of asset_id:" + asset_id);
     const addressJson = privateAddressToJson(to_private_address);
+    console.log("to zkAddress:" + JSON.stringify(addressJson));
     // asset_id: [u8; 32]
-    const txJson = `{ "PrivateTransfer": [{ "id": ${asset_id}, "value": "${private_transfer_amount}" }, ${addressJson} ]}`;
+    const asset_ids = new Uint8Array(32);
+    asset_ids[0] = asset_id;
+    const asset_id_arr = Array.from(asset_ids);
+    const txJson = `{ "PrivateTransfer": [{ "id": [${asset_id_arr}], "value": ${private_transfer_amount} }, ${addressJson} ]}`;
     const transaction = wasm.Transaction.from_string(txJson);
 
     // construct asset metadata json by query api
@@ -476,11 +481,14 @@ async function to_public_nft(api: ApiPromise, signer: string, wasm: any, wasmWal
 
 /// NOTE: `post` from manta-rs sign result should match runtime side data structure type.
 const transfer_post = (post:any): any => {
-    // let json = JSON.parse(post);
     let json = JSON.parse(JSON.stringify(post));
-    console.log("json:" + json);
-    // TODO: try not modified runtime `full_incoming_note`, and in this transfer
-    // change x.full_incoming_note = xxx, delete x.note.
+    
+    // transfer authorization_signature format
+    const scala = json.authorization_signature.signature.scalar;
+    const nonce = json.authorization_signature.signature.nonce_point;
+    json.authorization_signature.signature = [scala, nonce];
+
+    // transfer receiver_posts to match runtime side
     json.receiver_posts.map((x:any) => {
         // `message` is [[[..],[..],[..]]], change to [[..], [..], [..]]
         var arr1 = x.note.incoming_note.ciphertext.ciphertext.message.flatMap(
@@ -504,8 +512,24 @@ const transfer_post = (post:any): any => {
         x.note.light_incoming_note.ciphertext = [light_ciper0, light_ciper1, light_ciper2];
         delete x.note.light_incoming_note.header;
 
+        x.full_incoming_note = x.note;
+        delete x.note;
     });
-    // TODO: sender_posts
+    // transfer sender_posts to match runtime side
+    json.sender_posts.map((x:any) => {
+        const pk = x.nullifier.outgoing_note.ciphertext.ephemeral_public_key;
+        const cipher = x.nullifier.outgoing_note.ciphertext.ciphertext; 
+        const ciper0 = cipher.slice(0, 32);
+        const ciper1 = cipher.slice(32, 64);
+        const outgoing = {
+            ephemeral_public_key: pk,
+            ciphertext: [ciper0, ciper1]
+        };
+        x.outgoing_note = outgoing;
+        const nullifier = x.nullifier.nullifier.commitment;
+        x.nullifier_commitment = nullifier;
+        delete x.nullifier;
+    });
     return json
 }
 
@@ -520,12 +544,6 @@ const sign_and_send_without_metadata = async (wasm: any, api: ApiPromise, signer
         console.log("post:" + JSON.stringify(posts[i]));
         const convertedPost = transfer_post(posts[i]);
         console.log("convert post:" + JSON.stringify(convertedPost));
-
-        // const post_type = api.createType("TransferPost", convertedPost);
-        // console.log("post type:" + post_type);
-        // const post_encode = post_type.toU8a();
-        // console.log("decode post:" + post_encode);
-        
         const transaction = await mapPostToTransaction(convertedPost, api);
         console.log("transaction:" + JSON.stringify(transaction));
         transactions.push(transaction);
@@ -547,8 +565,11 @@ const sign_and_send = async (api: ApiPromise, signer: string, wasm: any, wasmWal
     const posts = await wasmWallet.sign(transaction, assetMetadata, networkType);
     const transactions = [];
     for (let i = 0; i < posts.length; i++) {
-        let convertedPost = transfer_post(posts[i]);
+        console.log("post" + i + ":" + JSON.stringify(posts[i]));
+        const convertedPost = transfer_post(posts[i]);
+        console.log("convert post:" + JSON.stringify(convertedPost));
         const transaction = await mapPostToTransaction(convertedPost, api);
+        console.log("transaction:" + JSON.stringify(transaction));
         transactions.push(transaction);
     }
     const txs = await transactionsToBatches(transactions, api);

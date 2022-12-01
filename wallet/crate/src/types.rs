@@ -1,14 +1,11 @@
-use alloc::{boxed::Box, vec::Vec};
-use alloc::string::String;
+use alloc::{boxed::Box, string::String, vec::Vec};
 use core::fmt::Debug;
 use manta_accounting::wallet::{ledger::ReadResponse, signer::SyncData};
 use manta_crypto::{
+    arkworks::{algebra::Group, constraint::fp::Fp, ec::ProjectiveCurve},
     encryption::{hybrid, EmptyHeader},
     permutation::duplex,
 };
-use manta_crypto::arkworks::constraint::fp::Fp;
-use manta_crypto::arkworks::algebra::Group;
-use manta_crypto::arkworks::ec::ProjectiveCurve;
 use manta_pay::{
     config::{
         self,
@@ -17,10 +14,10 @@ use manta_pay::{
     crypto::poseidon::encryption::{self, BlockArray, CiphertextBlock},
 };
 use manta_util::{
+    codec::Encode,
     serde::{Deserialize, Serialize},
     serde_with, BoxArray,
 };
-use manta_util::codec::Encode;
 use scale_codec::Error;
 
 /// Decodes the `bytes` array of the given length `N` into the SCALE decodable type `T` returning a
@@ -33,13 +30,6 @@ where
     T::decode(&mut bytes.as_slice())
 }
 
-// #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-// #[serde(crate = "manta_util::serde")]
-// pub enum UtxoTransparency {
-//     Opaque,
-//     Transparent,
-// }
-
 pub type RawAssetId = [u8; 32];
 
 pub type RawAssetValue = u128;
@@ -47,13 +37,15 @@ pub type RawAssetValue = u128;
 pub type RawUtxoCommitment = [u8; 32];
 
 pub fn fp_decode<T>(bytes: Vec<u8>) -> Result<Fp<T>, scale_codec::Error>
-    where T: manta_crypto::arkworks::ff::Field
+where
+    T: manta_crypto::arkworks::ff::Field,
 {
     Fp::try_from(bytes).map_err(|_e| scale_codec::Error::from("Fp Serialize"))
 }
 
 pub fn group_decode<T>(bytes: Vec<u8>) -> Result<Group<T>, scale_codec::Error>
-    where T: ProjectiveCurve
+where
+    T: ProjectiveCurve,
 {
     Group::try_from(bytes).map_err(|_e| scale_codec::Error::from("Group Serialize"))
 }
@@ -90,8 +82,7 @@ pub struct RawNullifierCommitment {
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
 pub struct RawUtxo {
-    /// Transparency Flag: 
-    // pub is_transparent: UtxoTransparency,
+    /// Transparency Flag:
     pub is_transparent: bool,
 
     /// Public Asset: 40 bytes
@@ -104,10 +95,6 @@ pub struct RawUtxo {
 impl RawUtxo {
     #[inline]
     pub fn try_into(self) -> Result<utxo::Utxo, Error> {
-        // let is_transparency = match self.transparency {
-        //     UtxoTransparency::Transparent => true,
-        //     UtxoTransparency::Opaque => false,
-        // };
         Ok(utxo::Utxo {
             is_transparent: self.is_transparent,
             public_asset: self.public_asset.try_into()?,
@@ -160,7 +147,9 @@ pub struct RawNulllifier {
     pub outgoing_note: RawOutgoingNote,
 }
 
-impl TryFrom<RawNullifierCommitment> for manta_accounting::transfer::utxo::protocol::Nullifier<Config> {
+impl TryFrom<RawNullifierCommitment>
+    for manta_accounting::transfer::utxo::protocol::Nullifier<Config>
+{
     type Error = scale_codec::Error;
 
     #[inline]
@@ -203,8 +192,7 @@ impl TryFrom<RawFullIncomingNote> for utxo::FullIncomingNote {
                     ciphertext: duplex::Ciphertext {
                         tag: encryption::Tag(fp_decode(note.incoming_note.tag.to_vec())?),
                         message: BlockArray(BoxArray(Box::new([CiphertextBlock(
-                            note
-                                .incoming_note
+                            note.incoming_note
                                 .ciphertext
                                 .into_iter()
                                 .map(|x| fp_decode(x.to_vec()))

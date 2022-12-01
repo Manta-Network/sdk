@@ -185,7 +185,11 @@ macro_rules! impl_js_compatible {
 }
 
 impl_js_compatible!(AssetId, utxo::AssetId, "AssetId");
-impl_js_compatible!(Asset, manta_accounting::transfer::Asset<config::Config>, "Asset");
+impl_js_compatible!(
+    Asset,
+    manta_accounting::transfer::Asset<config::Config>,
+    "Asset"
+);
 impl_js_compatible!(AssetMetadata, asset::AssetMetadata, "Asset Metadata");
 impl_js_compatible!(
     Transaction,
@@ -199,7 +203,6 @@ impl_js_compatible!(
 );
 impl_js_compatible!(SenderPost, config::SenderPost, "Sender Post");
 impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
-// impl_js_compatible!(AuthorizationSignature, manta_accounting::transfer::AuthorizationSignature<config::Config>, "Transfer Post");
 
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
@@ -214,14 +217,9 @@ pub struct RawAuthorizationSignature {
     pub signature: ([u8; 32], [u8; 32]),
 }
 
-// impl RawAuthorizationSignature {
-//     pub fn from_js_string(value: JsString) -> RawAuthorizationSignature {
-//         serde_json::from_str(&String::from(value))
-//             .expect("Deserialization is not allowed to fail.")
-//     }
-// }
-
-impl TryFrom<RawAuthorizationSignature> for manta_accounting::transfer::AuthorizationSignature<config::Config> {
+impl TryFrom<RawAuthorizationSignature>
+    for manta_accounting::transfer::AuthorizationSignature<config::Config>
+{
     type Error = scale_codec::Error;
 
     #[inline]
@@ -248,7 +246,7 @@ impl TryFrom<JsString> for RawAuthorizationSignature {
         let group: [u8; 32] = ref_slice[64..96].try_into().unwrap();
         Ok(Self {
             authorization_key: decode(arr)?,
-            signature: (decode(scala)?, decode(group)?)
+            signature: (decode(scala)?, decode(group)?),
         })
     }
 }
@@ -259,7 +257,8 @@ impl TryFrom<JsString> for RawAuthorizationSignature {
 #[wasm_bindgen]
 pub struct TransferPost {
     /// Authorization Signature
-    authorization_signature: Option<manta_accounting::transfer::AuthorizationSignature<config::Config>>,
+    authorization_signature:
+        Option<manta_accounting::transfer::AuthorizationSignature<config::Config>>,
 
     /// Asset Id
     asset_id: Option<AssetId>,
@@ -295,11 +294,10 @@ impl TransferPost {
         proof: JsValue,
     ) -> Self {
         Self {
-            authorization_signature: authorization_signature
-                .map(|x| {
-                    let raw: RawAuthorizationSignature = x.try_into().unwrap();
-                    raw.try_into().unwrap()
-                }),
+            authorization_signature: authorization_signature.map(|x| {
+                let raw: RawAuthorizationSignature = x.try_into().unwrap();
+                raw.try_into().unwrap()
+            }),
             asset_id: asset_id.map(|id| field_from_id_string(id)).map(|x| {
                 AssetId(
                     Decode::decode(x)
@@ -458,10 +456,13 @@ impl Wallet {
     pub fn balance(&self, id: u32) -> String {
         // TODO: make id parameter type as u128?
         let asset_id = Some(id as u128);
-        let asset_id_type = asset_id.map(|id| field_from_id_u128(id)).map(|x| {
+        let asset_id_type = asset_id
+            .map(|id| field_from_id_u128(id))
+            .map(|x| {
                 Decode::decode(x)
                     .expect("Decoding a field element from [u8; 32] is not allowed to fail")
-        }).expect("asset should have value");
+            })
+            .expect("asset should have value");
         self.0.borrow().balance(&asset_id_type).to_string()
     }
 
