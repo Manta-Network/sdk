@@ -12,7 +12,7 @@ async function main() {
     //await ft_test_to_private();
     // await ft_test_to_public();
 
-    await ft_test_to_private_only_sign();
+    await ft_test_to_private();
 
     console.log("END");
 }
@@ -27,7 +27,8 @@ const ft_test_to_private_only_sign = async () => {
     console.log("The private address is: ", privateAddress);
 
     const amount = 10000000000000000000; // 10 units
-    const asset_id = 1; // DOL
+    const asset_id_number = 1; // DOL
+    const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
     await mantaSdk.initalWalletSync();
 
@@ -49,7 +50,8 @@ const ft_test_to_private = async () => {
     console.log("The private address is: ", privateAddress);
 
     const amount = 1000000000000000000; // 1 unit
-    const asset_id = 1; // DOL
+    const asset_id_number = 1; // DOL
+    const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
     await mantaSdk.initalWalletSync();
 
@@ -88,7 +90,8 @@ const ft_test_to_public = async () => {
     console.log("The private address is: ", privateAddress);
 
     const amount = 1000000000000000000; // 1 unit
-    const asset_id = 1; // DOL
+    const asset_id_number = 1; // DOL
+    const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
     await mantaSdk.initalWalletSync();
 
@@ -118,6 +121,10 @@ const ft_test_to_public = async () => {
 
 }
 
+// @TODO: Create proper implementation of mantaSdk.numberToAssetIdArray and
+// mantaSdk.assetIdArrayToNumber so this test will work.
+// @TODO: Will need to update test to use register asset and new nft creation methods.
+/*
 const nft_test_to_private = async () => {
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
@@ -155,5 +162,5 @@ const nft_test_to_private = async () => {
         }
     }
 }
-
+*/
 main()

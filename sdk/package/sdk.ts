@@ -57,6 +57,20 @@ export class MantaSdk implements IMantaSdk {
     /// SDK methods
     ///
 
+
+    /// Converts a javascript number to Uint8Array(32), which is the type of AssetId and used
+    /// for all transactions.
+    /// @TODO: Add proper implementation for this method. 
+    numberToAssetIdArray(assetIdNumber: number): AssetId {
+        return numberToUint8Array(assetIdNumber);
+    }
+
+    /// Converts an AssetId of type [u8;32] to a number.
+    /// Assumes that AssetId Uint32Array is in little endian order.
+    assetIdArrayToNumber(assetId: AssetId): number {
+        return uint8ArrayToNumber(assetId);
+    }
+
     /// Switches MantaSdk environment.
     /// Requirements: Must call initialWalletSync() after switching to a different
     /// environment, to pull the latest data before calling any other methods.
@@ -138,11 +152,12 @@ export class MantaSdk implements IMantaSdk {
     ///
     /// Fungible token methods
     ///
-
+ 
     /// Returns the metadata for an asset with a given `asset_id` for the currently
     /// connected network.
     async assetMetaData(asset_id: AssetId): Promise<any> {
-        const data = await this.api.query.assetManager.assetIdMetadata(asset_id);
+        const assetIdNumber = this.assetIdArrayToNumber(asset_id);
+        const data = await this.api.query.assetManager.assetIdMetadata(assetIdNumber);
         const json = JSON.stringify(data.toHuman());
         const jsonObj = JSON.parse(json);
         this.api.query.assets;
@@ -197,7 +212,7 @@ export class MantaSdk implements IMantaSdk {
     /// this is used for transacting NFTs on mantapay.
     
     /// Executes a "To Private" transaction for any non-fungible token.
-    async toPrivateNFT(asset_id: number): Promise<void> {
+    async toPrivateNFT(asset_id: AssetId): Promise<void> {
         await to_private_nft(this.wasm, this.wasmWallet, asset_id, this.network);
     }
 
@@ -207,7 +222,7 @@ export class MantaSdk implements IMantaSdk {
     }
 
     /// Executes a "To Public" transaction for any non-fungible token.
-    async toPublicNFT(asset_id: number): Promise<void> {
+    async toPublicNFT(asset_id: AssetId): Promise<void> {
         await to_public_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, this.network);
     }
 
@@ -335,7 +350,8 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
 
 /// Returns private asset balance for a given `asset_id` for the associated zkAddress.
 function get_private_balance(wasmWallet: Wallet, asset_id: AssetId): string {
-    const balance = wasmWallet.balance(asset_id);
+    const assetIdNumber = uint8ArrayToNumber(asset_id);
+    const balance = wasmWallet.balance(assetIdNumber);
     console.log(`💰private asset ${asset_id} balance:` + balance);
     return balance;
 }
@@ -382,9 +398,7 @@ async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: Asset
     console.log("to_private transaction...");
     // let asset = asset_id.toU8a(); // [u8; 32]
     // const asset_arr = Array.from(uint8);
-    const asset_ids = new Uint8Array(32);
-    asset_ids[31] = asset_id;
-    const asset_id_arr = Array.from(asset_ids);
+    const asset_id_arr = Array.from(asset_id);
     const txJson = `{ "ToPrivate": { "id": [${asset_id_arr}], "value": ${to_private_amount} }}`;
     console.log("txJson:" + txJson);
     const transaction = wasm.Transaction.from_string(txJson);
@@ -404,10 +418,7 @@ async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: Asset
 /// the transaction without posting it to the ledger.
 async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number, network: Network, onlySign: boolean): Promise<any> {
     console.log("to_private transaction...");
-    // TODO: make asset_id parameter type as Uint8Array(32)
-    const asset_ids = new Uint8Array(32);
-    asset_ids[0] = asset_id;
-    const asset_id_arr = Array.from(asset_ids);
+    const asset_id_arr = Array.from(asset_id);
     const txJson = `{ "ToPrivate": { "id": [${asset_id_arr}], "value": ${to_private_amount} }}`;
     const transaction = wasm.Transaction.from_string(txJson);
     try {
@@ -428,16 +439,14 @@ async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wa
 /// the transaction without posting it to the ledger.
 async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, transfer_amount: number, network: Network, onlySign: boolean): Promise<any> {
     console.log("to_public transaction of asset_id:" + asset_id);
-    // TODO: make asset_id parameter type as Uint8Array(32)
-    const asset_ids = new Uint8Array(32);
-    asset_ids[0] = asset_id;
-    const asset_id_arr = Array.from(asset_ids);
+    const asset_id_arr = Array.from(asset_id);
     const txJson = `{ "ToPublic": { "id": [${asset_id_arr}], "value": ${transfer_amount} }}`;
     const transaction = wasm.Transaction.from_string(txJson);
     console.log("sdk transaction:" + txJson + ", " + JSON.stringify(transaction));
 
     // construct asset metadata json by query api
-    const asset_meta = await api.query.assetManager.assetIdMetadata(asset_id);
+    const assetIdNumber = uint8ArrayToNumber(asset_id);
+    const asset_meta = await api.query.assetManager.assetIdMetadata(assetIdNumber);
 
     const json = JSON.stringify(asset_meta.toHuman());
     const jsonObj = JSON.parse(json);
@@ -462,15 +471,14 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
     const addressJson = privateAddressToJson(to_private_address);
     console.log("to zkAddress:" + JSON.stringify(addressJson));
     // asset_id: [u8; 32]
-    const asset_ids = new Uint8Array(32);
-    asset_ids[0] = asset_id;
-    const asset_id_arr = Array.from(asset_ids);
+    const asset_id_arr = Array.from(asset_id);
     const txJson = `{ "PrivateTransfer": [{ "id": [${asset_id_arr}], "value": ${private_transfer_amount} }, ${addressJson} ]}`;
     const transaction = wasm.Transaction.from_string(txJson);
     console.log("sdk transaction:" + txJson + ", " + JSON.stringify(transaction));
 
     // construct asset metadata json by query api
-    const asset_meta = await api.query.assetManager.assetIdMetadata(asset_id);
+    const assetIdNumber = uint8ArrayToNumber(asset_id);
+    const asset_meta = await api.query.assetManager.assetIdMetadata(assetIdNumber);
     // console.log(asset_meta.toHuman());
     const json = JSON.stringify(asset_meta.toHuman());
     const jsonObj = JSON.parse(json);
@@ -493,7 +501,8 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
 /// TODO: fixed amount value
 async function to_private_nft(wasm: any, wasmWallet: Wallet, asset_id: AssetId, network: Network): Promise<void> {
     console.log("to_private NFT transaction...");
-    const txJson = `{ "ToPrivate": { "id": ${asset_id}, "value": "${NFT_AMOUNT}" }}`;
+    const asset_id_arr = Array.from(asset_id);
+    const txJson = `{ "ToPrivate": { "id": [${asset_id_arr}], "value": "${NFT_AMOUNT}" }}`;
     const transaction = wasm.Transaction.from_string(txJson);
     const networkType = wasm.Network.from_string(`"${network}"`);
     try {
@@ -509,7 +518,8 @@ async function to_private_nft(wasm: any, wasmWallet: Wallet, asset_id: AssetId, 
 async function private_transfer_nft(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_address: Address, network: Network): Promise<void> {
     console.log("private_transfer NFT transaction...");
     const addressJson = privateAddressToJson(to_private_address);
-    const txJson = `{ "PrivateTransfer": [{ "id": ${asset_id}, "value": "${NFT_AMOUNT}" }, ${addressJson} ]}`;
+    const asset_id_arr = Array.from(asset_id);
+    const txJson = `{ "PrivateTransfer": [{ "id": [${asset_id_arr}], "value": "${NFT_AMOUNT}" }, ${addressJson} ]}`;
     const transaction = wasm.Transaction.from_string(txJson);
 
     // TODO: symbol query from chain storage.
@@ -525,7 +535,8 @@ async function private_transfer_nft(api: ApiPromise, signer: string, wasm: any, 
 /// TODO: fixed amount value and asset metadata
 async function to_public_nft(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, network: Network): Promise<void> {
     console.log("to_public NFT transaction...");
-    const txJson = `{ "ToPublic": { "id": ${asset_id}, "value": "${NFT_AMOUNT}" }}`;
+    const asset_id_arr = Array.from(asset_id);
+    const txJson = `{ "ToPublic": { "id": [${asset_id_arr}], "value": "${NFT_AMOUNT}" }}`;
     const transaction = wasm.Transaction.from_string(txJson);
     const assetMetadataJson = `{ "decimals": 12 , "symbol": "pNFT" }`;
 
@@ -685,4 +696,22 @@ const transfer_post = (post:any): any => {
         delete x.nullifier;
     });
     return json
+}
+
+/// Convert uint8Array to number
+/// This method assumes the uint8array is sorted in little-endian form
+/// thus the smallest, least significant value is stored first.
+const uint8ArrayToNumber = (uint8array: AssetId): number => {
+    let value = 0;
+    for (let i = uint8array.length-1; i >= 0; i--) {
+        value = (value * 256) + uint8array[i];
+    }
+    return value;
+}
+
+/// @TODO: Proper implementation of this function
+const numberToUint8Array = (assetIdNumber: number): AssetId => {
+    const assetIdArray = new Uint8Array(32);
+    assetIdArray[0] = assetIdNumber;
+    return assetIdArray;
 }

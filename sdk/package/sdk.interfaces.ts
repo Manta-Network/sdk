@@ -4,7 +4,9 @@ import { Environment, Network } from './sdk';
 
 export type Version = string;
 export type Address = string;
-export type AssetId = number;
+
+// Must be a uint8Array of length 32.
+export type AssetId = Uint8Array;
 
 export interface InitApiResult {
   api: ApiPromise,
@@ -25,6 +27,8 @@ export interface IMantaSdk {
   network: Network;
   environment: Environment;
 
+  numberToAssetIdArray(assetIdNumber: number): AssetId;
+  assetIdArrayToNumber(assetId: AssetId): number;
   networks(): any;
   setNetwork(network: Network): Promise<void>
   setEnvironment(environment: Environment): Promise<void>
@@ -38,8 +42,7 @@ export interface IMantaSdk {
   toPrivateSign(asset_id: AssetId, amount: number, onlySign: boolean): Promise<any>;
   privateTransfer(asset_id: AssetId, amount: number, address: Address, onlySign: boolean): Promise<any>;
   toPublic(asset_id: AssetId, amount: number, onlySign: boolean): Promise<any>;
-  toPrivateNFT(asset_id: number): Promise<void>;
+  toPrivateNFT(asset_id: AssetId): Promise<void>;
   privateTransferNFT(asset_id: AssetId, address: Address): Promise<void>;
-  toPublicNFT(asset_id: number): Promise<void>;
-
+  toPublicNFT(asset_id: AssetId): Promise<void>;
 }
