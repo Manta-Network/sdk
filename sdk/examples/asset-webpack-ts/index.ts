@@ -10,11 +10,39 @@ async function main() {
     //const publicPolkadotJsAddress = "5HifovYZVQSD4rKLVMo1Rqtv45jfPhCUiGYbf4gPEtKyc1PS"
 
     //await ft_test_to_private();
-    // await ft_test_to_public();
+    //await ft_test_to_public();
+    //await ft_test_to_private();
 
-    await ft_test_to_private();
+
+    await create_nft_test();
+
 
     console.log("END");
+}
+
+
+/// Note: This test requires Manta node with uniques pallet integrated.
+const create_nft_test = async () => {
+    const env = sdk.Environment.Development;
+    const net = sdk.Network.Dolphin;
+    const mantaSdk = await sdk.init(env,net);
+
+
+    // collection_id: 4369(0x1111), item_id: 1(0x0001), asset_id: 0x11110001=286326785
+
+    const collectionId = 4369;
+    const itemId = 1;
+    const assetId = 286326785;
+    const metadata = "https://ipfs.io/";
+
+    //await mantaSdk.createCollection(collectionId);
+
+    //await mantaSdk.mintNFT(collectionId, itemId);
+
+    //await mantaSdk.updateNFTMetadata(collectionId,itemId,metadata);
+
+    //const stored_metadata = await mantaSdk.getNFTMetadata(collectionId,itemId);
+
 }
 
 const ft_test_to_private_only_sign = async () => {

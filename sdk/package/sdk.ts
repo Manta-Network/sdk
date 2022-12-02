@@ -160,7 +160,6 @@ export class MantaSdk implements IMantaSdk {
         const data = await this.api.query.assetManager.assetIdMetadata(assetIdNumber);
         const json = JSON.stringify(data.toHuman());
         const jsonObj = JSON.parse(json);
-        this.api.query.assets;
         return jsonObj;
     }
     
@@ -226,6 +225,33 @@ export class MantaSdk implements IMantaSdk {
         await to_public_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, this.network);
     }
 
+    /// Creates an NFT collection
+    async createCollection(collectionId: number): Promise<void> {
+        await createNFTCollection(this.api, collectionId, this.signer);
+    }
+
+    /// Creates a new NFT as a part of an existing collection with collection id of
+    /// `collectionId` and item Id of `itemId` to the destination address of `address`.
+    /// Note: if no address is provided, the NFT will be minted to the address of this.signer
+    async mintNFT(collectionId: number, itemId: number, address: string=""): Promise<void> {
+        let targetAddress = address;
+        if (!address) {
+            targetAddress = this.signer;
+        }
+        await createNFT(this.api, collectionId, itemId, targetAddress, this.signer);
+    }
+
+    /// Updates the metadata of the NFT
+    async updateNFTMetadata(collectionId: number, itemId: number, metadata:any): Promise<void> {
+        await updateMetadata(this.api, collectionId, itemId, metadata, this.signer);
+    }
+
+    /// Returns the metadata associated with a particular NFT of with collection id of
+    /// `collectionId` and item Id of `itemId`.
+    async getNFTMetadata(collectionId: number, itemId: number): Promise<any> {
+        const metadata = await viewMetadata(this.api, collectionId, itemId);
+        return metadata
+    }
 }
 
 // Initializes the MantaSdk class, given an optional address, this will be used
@@ -494,6 +520,53 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
     } else {
         await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
         console.log("📜finish private transfer.");
+    }
+}
+
+/// Create NFT collection
+async function createNFTCollection(api: ApiPromise, collectionId: number, signer:string): Promise<void> {
+    try {
+        const submitExtrinsic = await api.tx.uniques.create(collectionId, signer);
+        await submitExtrinsic.signAndSend(signer);
+        return;
+    } catch (e) {
+        console.log("Failed to create NFT collection of Collection ID: " + collectionId);
+        console.error(e);
+    }
+}
+
+/// Create NFT Item
+async function createNFT(api: ApiPromise, collectionId: number, itemId: number, address: string, signer:string): Promise<void> {
+    try {
+        const submitExtrinsic = await api.tx.uniques.mint(collectionId,itemId,address);
+        await submitExtrinsic.signAndSend(signer);
+        return;
+    } catch (e) {
+        console.log("Failed to create NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
+        console.error(e);
+    }
+}
+
+/// Update NFT metadata
+async function updateMetadata(api: ApiPromise, collectionId: number, itemId: number, metadata: any, signer:string): Promise<void> {
+    try {
+        const submitExtrinsic = await api.tx.uniques.setMetadata(collectionId,itemId,metadata,false);
+        await submitExtrinsic.signAndSend(signer);
+        return;
+    } catch (e) {
+        console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
+        console.error(e);
+    }
+}
+
+/// View NFT metadata
+async function viewMetadata(api: ApiPromise, collectionId: number, itemId: number): Promise<any> {
+    try {
+        const metadata = await api.query.uniques.instanceMetadataOf(collectionId, itemId);
+        return metadata.toHuman();
+    } catch (e) {
+        console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
+        console.error(e);
     }
 }
 

@@ -45,4 +45,8 @@ export interface IMantaSdk {
   toPrivateNFT(asset_id: AssetId): Promise<void>;
   privateTransferNFT(asset_id: AssetId, address: Address): Promise<void>;
   toPublicNFT(asset_id: AssetId): Promise<void>;
+  createCollection(collectionId: number): Promise<void>;
+  mintNFT(collectionId: number, itemId: number, address: string): Promise<void>;
+  updateNFTMetadata(collectionId: number, itemId: number, metadata:any): Promise<void>;
+  getNFTMetadata(collectionId: number, itemId: number): Promise<any>;
 }
