@@ -784,7 +784,20 @@ const uint8ArrayToNumber = (uint8array: AssetId): number => {
 
 /// @TODO: Proper implementation of this function
 const numberToUint8Array = (assetIdNumber: number): AssetId => {
-    const assetIdArray = new Uint8Array(32);
-    assetIdArray[0] = assetIdNumber;
-    return assetIdArray;
+    // @TODO: the `number` type has value limitation, should change to `string` type.
+    var bn = assetIdNumber.toString();
+    var hex = BigInt(bn).toString(16);
+    if (hex.length % 2) { hex = '0' + hex; }
+  
+    var len = 32;
+    var u8a = new Uint8Array(len);
+  
+    var i = 0;
+    var j = 0;
+    while (i < len) {
+      u8a[i] = parseInt(hex.slice(j, j+2), 16);
+      i += 1;
+      j += 2;
+    }
+    return u8a;
 }
