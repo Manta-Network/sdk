@@ -252,6 +252,12 @@ export class MantaSdk implements IMantaSdk {
         const metadata = await viewMetadata(this.api, collectionId, itemId);
         return metadata
     }
+
+    /// Transfer a public NFT to another address.
+    async transferNFT(collectionId: number, itemId: number, address: string): Promise<void> {
+        await publicTransferNFT(this.api, this.signer, collectionId, itemId, address);
+    }
+
 }
 
 // Initializes the MantaSdk class, given an optional address, this will be used
@@ -564,6 +570,17 @@ async function viewMetadata(api: ApiPromise, collectionId: number, itemId: numbe
     try {
         const metadata = await api.query.uniques.instanceMetadataOf(collectionId, itemId);
         return metadata.toHuman();
+    } catch (e) {
+        console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
+        console.error(e);
+    }
+}
+
+/// Transfer an nft publicly using the uniques pallet.
+async function publicTransferNFT(api: ApiPromise, signer: string, collectionId: number, itemId: number, address: string): Promise<void> {
+    try {
+        const submitExtrinsic = await api.tx.uniques.transfer(collectionId,itemId,address);
+        await submitExtrinsic.signAndSend(signer);
     } catch (e) {
         console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
         console.error(e);
