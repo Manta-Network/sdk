@@ -30,9 +30,10 @@ const create_nft_test = async () => {
 
     // collection_id: 4369(0x1111), item_id: 1(0x0001), asset_id: 0x11110001=286326785
 
-    const collectionId = 4369;
-    const itemId = 1;
-    const assetId = 286326785;
+    const collectionId = 0;
+    const itemId = 0;
+    const assetIdNumber = 8;
+    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
     const metadata = "https://ipfs.io/";
     const aliceAddress = "dmyjURuBeJwFo4Nvf2GZ8f5E2Asz98JY2d7UcaDykqYm1zpoi";
 
@@ -44,7 +45,7 @@ const create_nft_test = async () => {
 
     //const stored_metadata = await mantaSdk.getNFTMetadata(collectionId,itemId);
 
-    await mantaSdk.transferNFT(collectionId,itemId,aliceAddress)
+    await mantaSdk.publicTransferNFT(assetId,aliceAddress);
 
 }
 

@@ -49,5 +49,5 @@ export interface IMantaSdk {
   mintNFT(collectionId: number, itemId: number, address: string): Promise<void>;
   updateNFTMetadata(collectionId: number, itemId: number, metadata:any): Promise<void>;
   getNFTMetadata(collectionId: number, itemId: number): Promise<any>;
-  transferNFT(collectionId: number, itemId: number, address: string): Promise<void>;
+  publicTransferNFT(asset_id: AssetId, address: Address): Promise<void>;
 }

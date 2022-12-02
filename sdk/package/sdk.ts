@@ -217,7 +217,12 @@ export class MantaSdk implements IMantaSdk {
 
     /// Executes a "Private Transfer" transaction for any non-fungible token.
     async privateTransferNFT(asset_id: AssetId, address: Address): Promise<void> {
-        await private_transfer_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, address, this.network)
+        await private_transfer_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, address, this.network);
+    }
+
+    /// Transfer a public NFT to another address, using the mantaPay pallet.
+    async publicTransferNFT(asset_id: AssetId, address: Address): Promise<void> {
+        await publicTransferNFT(this.api, this.signer, asset_id, address);
     }
 
     /// Executes a "To Public" transaction for any non-fungible token.
@@ -252,12 +257,6 @@ export class MantaSdk implements IMantaSdk {
         const metadata = await viewMetadata(this.api, collectionId, itemId);
         return metadata
     }
-
-    /// Transfer a public NFT to another address.
-    async transferNFT(collectionId: number, itemId: number, address: string): Promise<void> {
-        await publicTransferNFT(this.api, this.signer, collectionId, itemId, address);
-    }
-
 }
 
 // Initializes the MantaSdk class, given an optional address, this will be used
@@ -576,17 +575,6 @@ async function viewMetadata(api: ApiPromise, collectionId: number, itemId: numbe
     }
 }
 
-/// Transfer an nft publicly using the uniques pallet.
-async function publicTransferNFT(api: ApiPromise, signer: string, collectionId: number, itemId: number, address: string): Promise<void> {
-    try {
-        const submitExtrinsic = await api.tx.uniques.transfer(collectionId,itemId,address);
-        await submitExtrinsic.signAndSend(signer);
-    } catch (e) {
-        console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-        console.error(e);
-    }
-}
-
 /// to_private transaction for NFT
 /// TODO: fixed amount value
 async function to_private_nft(wasm: any, wasmWallet: Wallet, asset_id: AssetId, network: Network): Promise<void> {
@@ -619,6 +607,22 @@ async function private_transfer_nft(api: ApiPromise, signer: string, wasm: any, 
 
     await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
     console.log("📜finish private nft transfer.");
+}
+
+/// Transfer an nft publicly using the uniques pallet.
+async function publicTransferNFT(api: ApiPromise, signer: string, assetId:AssetId, address: string): Promise<void> {
+    try {
+        const asset_id_arr = Array.from(assetId);
+        const tx = await api.tx.mantaPay.publicTransfer(
+            { id: asset_id_arr, value: NFT_AMOUNT },
+            address
+          );
+          const batchTx = await api.tx.utility.batch([tx]);
+          await batchTx.signAndSend(signer);
+    } catch (e) {
+        console.log("Failed to transfer NFT item of Asset ID: " + assetId + " to address: " + address);
+        console.error(e);
+    }
 }
 
 /// to_public transaction for NFT
