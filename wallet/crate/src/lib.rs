@@ -239,8 +239,8 @@ impl TryFrom<JsString> for RawAuthorizationSignature {
 
     #[inline]
     fn try_from(signature: JsString) -> Result<Self, Self::Error> {
-        let sigStr = String::from(signature);
-        let ref_slice = &sigStr.as_bytes();
+        let sig_str = String::from(signature);
+        let ref_slice = &sig_str.as_bytes();
         let arr: [u8; 32] = ref_slice[0..32].try_into().unwrap();
         let scala: [u8; 32] = ref_slice[32..64].try_into().unwrap();
         let group: [u8; 32] = ref_slice[64..96].try_into().unwrap();

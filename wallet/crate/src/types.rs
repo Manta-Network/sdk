@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, string::String, vec::Vec};
+use alloc::{boxed::Box, vec::Vec};
 use core::fmt::Debug;
 use manta_accounting::wallet::{ledger::ReadResponse, signer::SyncData};
 use manta_crypto::{
