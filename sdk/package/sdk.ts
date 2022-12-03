@@ -231,8 +231,10 @@ export class MantaSdk implements IMantaSdk {
     }
 
     /// Creates an NFT collection
-    async createCollection(collectionId: number): Promise<void> {
-        await createNFTCollection(this.api, collectionId, this.signer);
+    /// Returns the newly created collections ID
+    async createCollection(): Promise<any> {
+        const res = await createNFTCollection(this.api, this.signer);
+        return res;
     }
 
     /// Creates a new NFT as a part of an existing collection with collection id of
@@ -529,22 +531,46 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
 }
 
 /// Create NFT collection
-async function createNFTCollection(api: ApiPromise, collectionId: number, signer:string): Promise<void> {
+/// Returns Collection Id of newly created collection.
+async function createNFTCollection(api: ApiPromise, signer:string): Promise<any> {
     try {
-        const submitExtrinsic = await api.tx.uniques.create(collectionId, signer);
+        // @TODO: Fix typescript to support new uniques pallet version
+        // @ts-ignore
+        const collectionId = await api.query.uniques.nextCollectionId();
+        // @ts-ignore
+        const submitExtrinsic = await api.tx.uniques.create(signer);
         await submitExtrinsic.signAndSend(signer);
-        return;
+
+        return collectionId.toHuman();
     } catch (e) {
-        console.log("Failed to create NFT collection of Collection ID: " + collectionId);
+        console.log("Failed to create NFT collection");
         console.error(e);
     }
 }
 
 /// Create NFT Item
+/// @TODO: Add call to assetManager to register the asset after minting.
 async function createNFT(api: ApiPromise, collectionId: number, itemId: number, address: string, signer:string): Promise<void> {
     try {
-        const submitExtrinsic = await api.tx.uniques.mint(collectionId,itemId,address);
-        await submitExtrinsic.signAndSend(signer);
+        /*
+        const tx: any = {
+            metadata: {
+                NonFungible: {
+                    MantaPrimitivesAssetsNonFungibleAssetStorageMetadata: {
+                        name: "",
+                        info: "",
+                        collectionId,
+                        itemId
+                    }
+                }
+            }
+        }
+        const registerAssetExtrinsic = await api.tx.assetManager.registerAsset(address,tx);
+        await registerAssetExtrinsic.signAndSend(signer);
+        */
+        const mintExtrinsic = await api.tx.uniques.mint(collectionId,itemId,address);
+        //const batchTx = await api.tx.utility.batch([mintExtrinsic]);
+        await mintExtrinsic.signAndSend(signer);
         return;
     } catch (e) {
         console.log("Failed to create NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
