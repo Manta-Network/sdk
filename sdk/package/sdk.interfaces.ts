@@ -50,4 +50,5 @@ export interface IMantaSdk {
   updateNFTMetadata(collectionId: number, itemId: number, metadata:any): Promise<void>;
   getNFTMetadata(collectionId: number, itemId: number): Promise<any>;
   publicTransferNFT(asset_id: AssetId, address: Address): Promise<void>;
+  viewAllNFTsInCollection(collectionId:number, address:string): Promise<any>;
 }

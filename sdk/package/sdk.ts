@@ -261,6 +261,18 @@ export class MantaSdk implements IMantaSdk {
         const metadata = await viewMetadata(this.api, collectionId, itemId);
         return metadata
     }
+
+    /// View all NFTs owned by `address` of a particular `collectionId`. If address is not
+    /// specified the sdk address will be used.
+    async viewAllNFTsInCollection(collectionId:number, address:string=""): Promise<any> {
+        let targetAddress = address;
+        if (!address) {
+            targetAddress = this.signer;
+        }
+
+        const res = await allNFTsInCollection(this.api, collectionId, targetAddress);
+        return res;
+    }
 }
 
 // Initializes the MantaSdk class, given an optional address, this will be used
@@ -564,11 +576,12 @@ async function createNFT(api: ApiPromise, collectionId: number, itemId: number, 
             }
         }
         
+        const assetId = await api.query.assetManager.nextAssetId();
         const mintExtrinsic = await api.tx.uniques.mint(collectionId,itemId,address);
         const registerAssetExtrinsic = await api.tx.assetManager.registerAsset(address,metadata);
         const batchTx = await api.tx.utility.batch([mintExtrinsic, registerAssetExtrinsic]);
-        const res = await batchTx.signAndSend(signer);
-        return res;
+        await batchTx.signAndSend(signer);
+        return assetId.toHuman();
     } catch (e) {
         console.log("Failed to create NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
         console.error(e);
@@ -594,6 +607,21 @@ async function viewMetadata(api: ApiPromise, collectionId: number, itemId: numbe
         return metadata.toHuman();
     } catch (e) {
         console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
+        console.error(e);
+    }
+}
+
+/// View all NFTs an account owns of a particular collection
+async function allNFTsInCollection(api: ApiPromise, collectionId: number, address:string): Promise<any> {
+    try {
+        const nfts = await api.query.uniques.account.keys(address,collectionId);
+        const readableNfts = [];
+        for (let i = 0; i < nfts.length; i++) {
+            readableNfts.push(nfts[i].toHuman());
+        }
+        return readableNfts;
+    } catch (e) {
+        console.log("Failed to view all NFTs of Collection ID: " + collectionId);
         console.error(e);
     }
 }
