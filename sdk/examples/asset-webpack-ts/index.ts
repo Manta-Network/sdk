@@ -1,6 +1,8 @@
 // TODO: should use published npm package
 // import * as sdk from '../../sdk/sdk';
 import * as sdk from 'manta.js';
+import { Buffer } from 'buffer';
+
 
 // const to_private_address = "64nmibscb1UdWGMWnRQAYx6hS4TA2iyFqiS897cFRWvNTmjad85p6yD9ud7cyVPhyNPDrSMs2eZxTfovxZbJdFqH";
 const to_private_address = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
@@ -31,18 +33,17 @@ const create_nft_test = async () => {
     // collection_id: 4369(0x1111), item_id: 1(0x0001), asset_id: 0x11110001=286326785
 
     const collectionId = 0;
-    const itemId = 1;
+    const itemId = 5;
     const assetIdNumber = 8;
     const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
     const metadata = "https://ipfs.io/";
     const aliceAddress = "dmyjURuBeJwFo4Nvf2GZ8f5E2Asz98JY2d7UcaDykqYm1zpoi";
 
-    const collectionIdRes = await mantaSdk.createCollection();
+    //const collectionIdRes = await mantaSdk.createCollection();
 
     //const n = await mantaSdk.assetIdArrayToNumber(collectionIdRes);
 
-    console.log(collectionIdRes);
-    //await mantaSdk.mintNFT(collectionId, itemId);
+    const nft_register = await mantaSdk.mintNFT(collectionId, itemId);
 
     //await mantaSdk.updateNFTMetadata(collectionId,itemId,metadata);
 
