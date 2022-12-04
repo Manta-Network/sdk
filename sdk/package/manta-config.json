@@ -28,6 +28,7 @@
             "subscanUrl": null
         }
     },
+    "CALAMARI_PRIVATE_SS58_ADDRESS": "dmwQify37LiZkBEYP4jRd1BGDqxGb1Zax1gKUi3kQxCyaPwdF",
     "DEFAULT_PULL_SIZE": 4096,
     "RPC": {
         "mantaPay": {
