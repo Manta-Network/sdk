@@ -43,14 +43,16 @@ export class MantaSdk implements IMantaSdk {
     wasmWallet: Wallet;
     network: Network;
     environment: Environment;
+    wasmApi: any;
 
-    constructor(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment) {
+    constructor(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment, wasmApi: any) {
         this.api = api;
         this.signer = signer;
         this.wasm = wasm;
         this.wasmWallet = wasmWallet;
         this.network = network;
         this.environment = environment;
+        this.wasmApi = wasmApi;
     }
 
     ///
@@ -85,6 +87,7 @@ export class MantaSdk implements IMantaSdk {
         this.signer = (await sdk).signer;
         this.wasm = (await sdk).wasm;
         this.wasmWallet = (await sdk).wasmWallet;
+        this.wasmApi = (await sdk).wasmApi;
         this.environment = environment;
     }
 
@@ -102,6 +105,7 @@ export class MantaSdk implements IMantaSdk {
         this.signer = (await sdk).signer;
         this.wasm = (await sdk).wasm;
         this.wasmWallet = (await sdk).wasmWallet;
+        this.wasmApi = (await sdk).wasmApi;
         this.network = network;
     }
 
@@ -280,8 +284,8 @@ export class MantaSdk implements IMantaSdk {
 // If no address is specified then the first polkadot.js address will be used.
 export async function init(env: Environment, network: Network, address: string=""): Promise<MantaSdk> {
     const {api, signer} = await init_api(env, address.toLowerCase(), network);
-    const {wasm, wasmWallet} = await init_wasm_sdk(api, signer);
-    const sdk = new MantaSdk(api,signer,wasm,wasmWallet,network,env);
+    const {wasm, wasmWallet, wasmApi} = await init_wasm_sdk(api, signer);
+    const sdk = new MantaSdk(api,signer,wasm,wasmWallet,network,env,wasmApi);
     return sdk
 }
 
@@ -357,7 +361,8 @@ async function init_wasm_sdk(api: ApiPromise, signer: string): Promise<InitWasmR
     const wasmWallet = new wasm.Wallet(wasmLedger, wasmSigner);
     return {
         wasm,
-        wasmWallet
+        wasmWallet,
+        wasmApi
     }
 }
 

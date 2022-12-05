@@ -15,17 +15,19 @@ export interface InitApiResult {
 
 export interface InitWasmResult {
   wasm: any,
-  wasmWallet: Wallet
+  wasmWallet: Wallet,
+  wasmApi: any
 }
 
 export interface IMantaSdk {
 
-  api: ApiPromise,
-  signer: string,
-  wasm: any,
-  wasmWallet: Wallet
+  api: ApiPromise;
+  signer: string;
+  wasm: any;
+  wasmWallet: Wallet;
   network: Network;
   environment: Environment;
+  wasmApi: any;
 
   numberToAssetIdArray(assetIdNumber: number): AssetId;
   assetIdArrayToNumber(assetId: AssetId): number;
