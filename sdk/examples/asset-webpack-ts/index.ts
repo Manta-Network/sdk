@@ -8,10 +8,8 @@ const to_private_address = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
 async function main() {
 
     const publicPolkadotJsAddress = "5HifovYZVQSD4rKLVMo1Rqtv45jfPhCUiGYbf4gPEtKyc1PS"
-
     await ft_test_to_private();
     await ft_test_to_public();
-    await ft_test_to_private();
 
     console.log("END");
 }
@@ -43,7 +41,7 @@ const ft_test_to_private = async () => {
 
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net);
+    const mantaSdk = await sdk.init(env,net,"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
 
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
@@ -83,7 +81,7 @@ const ft_test_to_public = async () => {
 
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net);
+    const mantaSdk = await sdk.init(env,net,"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
 
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);

@@ -47,6 +47,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 // TODO: remove this dependency with better signer integration
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
+// @ts-ignore
 import Api, { ApiConfig } from 'manta-wasm-wallet-api';
 import axios from 'axios';
 import BN from 'bn.js';
@@ -55,7 +56,7 @@ var rpc = config.RPC;
 var types = config.TYPES;
 var DEFAULT_PULL_SIZE = config.DEFAULT_PULL_SIZE;
 var SIGNER_URL = config.SIGNER_URL;
-
+var PRIVATE_ASSET_PREFIX = "p";
 /// The Envrionment that the sdk is configured to run for, if development
 /// is selected then it will attempt to connect to a local node instance.
 /// If production is selected it will attempt to connect to actual node.
@@ -353,154 +354,6 @@ var MantaSdk = /** @class */ (function () {
                     case 1:
                         result = _a.sent();
                         return [2 /*return*/, result];
-                }
-            });
-        });
-    };
-    ///
-    /// Non fungible token methods
-    ///
-    /// Collection ID : The ID corresponding to the NFT collection.
-    ///
-    /// Item ID: The ID corresponding to a given item (NFT) of a collection.
-    ///
-    /// Asset ID: The ID derived from combining a Collection ID with an Item ID,
-    /// this is used for transacting NFTs on mantapay.
-    /// Executes a "To Private" transaction for any non-fungible token.
-    MantaSdk.prototype.toPrivateNFT = function (asset_id) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, to_private_nft(this.wasm, this.wasmWallet, asset_id, this.network)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /// Executes a "Private Transfer" transaction for any non-fungible token.
-    MantaSdk.prototype.privateTransferNFT = function (asset_id, address) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, private_transfer_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, address, this.network)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /// Transfer a public NFT to another address, using the mantaPay pallet.
-    MantaSdk.prototype.publicTransferNFT = function (asset_id, address) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, publicTransferNFT(this.api, this.signer, asset_id, address)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /// Executes a "To Public" transaction for any non-fungible token.
-    MantaSdk.prototype.toPublicNFT = function (asset_id) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, to_public_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, this.network)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /// Creates an NFT collection
-    /// Returns the newly created collections ID
-    MantaSdk.prototype.createCollection = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var res;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, createNFTCollection(this.api, this.signer)];
-                    case 1:
-                        res = _a.sent();
-                        return [2 /*return*/, res];
-                }
-            });
-        });
-    };
-    /// Creates a new NFT as a part of an existing collection with collection id of
-    /// `collectionId` and item Id of `itemId` to the destination address of `address`.
-    /// Note: if no address is provided, the NFT will be minted to the address of this.signer
-    /// Registers the NFT in Asset Manager and returns the unique Asset ID.
-    MantaSdk.prototype.mintNFT = function (collectionId, itemId, address) {
-        if (address === void 0) { address = ""; }
-        return __awaiter(this, void 0, void 0, function () {
-            var targetAddress, res;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        targetAddress = address;
-                        if (!address) {
-                            targetAddress = this.signer;
-                        }
-                        return [4 /*yield*/, createNFT(this.api, collectionId, itemId, targetAddress, this.signer)];
-                    case 1:
-                        res = _a.sent();
-                        return [2 /*return*/, res];
-                }
-            });
-        });
-    };
-    /// Updates the metadata of the NFT
-    MantaSdk.prototype.updateNFTMetadata = function (collectionId, itemId, metadata) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, updateMetadata(this.api, collectionId, itemId, metadata, this.signer)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /// Returns the metadata associated with a particular NFT of with collection id of
-    /// `collectionId` and item Id of `itemId`.
-    MantaSdk.prototype.getNFTMetadata = function (collectionId, itemId) {
-        return __awaiter(this, void 0, void 0, function () {
-            var metadata;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, viewMetadata(this.api, collectionId, itemId)];
-                    case 1:
-                        metadata = _a.sent();
-                        return [2 /*return*/, metadata];
-                }
-            });
-        });
-    };
-    /// View all NFTs owned by `address` of a particular `collectionId`. If address is not
-    /// specified the sdk address will be used.
-    MantaSdk.prototype.viewAllNFTsInCollection = function (collectionId, address) {
-        if (address === void 0) { address = ""; }
-        return __awaiter(this, void 0, void 0, function () {
-            var targetAddress, res;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        targetAddress = address;
-                        if (!address) {
-                            targetAddress = this.signer;
-                        }
-                        return [4 /*yield*/, allNFTsInCollection(this.api, collectionId, targetAddress)];
-                    case 1:
-                        res = _a.sent();
-                        return [2 /*return*/, res];
                 }
             });
         });
@@ -818,8 +671,8 @@ function to_public(api, signer, wasm, wasmWallet, asset_id, transfer_amount, net
                     json = JSON.stringify(asset_meta.toHuman());
                     jsonObj = JSON.parse(json);
                     console.log("asset metadata:" + json);
-                    decimals = jsonObj["Fungible"]["metadata"]["decimals"];
-                    symbol = jsonObj["Fungible"]["metadata"]["symbol"];
+                    decimals = jsonObj["metadata"]["decimals"];
+                    symbol = jsonObj["metadata"]["symbol"];
                     assetMetadataJson = "{ \"decimals\": ".concat(decimals, ", \"symbol\": \"").concat(PRIVATE_ASSET_PREFIX).concat(symbol, "\" }");
                     console.log("📜asset metadata:" + assetMetadataJson);
                     if (!onlySign) return [3 /*break*/, 3];
@@ -857,8 +710,9 @@ function private_transfer(api, signer, wasm, wasmWallet, asset_id, private_trans
                     json = JSON.stringify(asset_meta.toHuman());
                     jsonObj = JSON.parse(json);
                     console.log("asset metadata:" + json);
-                    decimals = jsonObj["Fungible"]["metadata"]["decimals"];
-                    symbol = jsonObj["Fungible"]["metadata"]["symbol"];
+                    console.log("asset JSON:" + jsonObj);
+                    decimals = jsonObj["metadata"]["decimals"];
+                    symbol = jsonObj["metadata"]["symbol"];
                     assetMetadataJson = "{ \"decimals\": ".concat(decimals, ", \"symbol\": \"").concat(PRIVATE_ASSET_PREFIX).concat(symbol, "\" }");
                     console.log("📜asset metadata:" + assetMetadataJson);
                     if (!onlySign) return [3 /*break*/, 3];
@@ -875,260 +729,10 @@ function private_transfer(api, signer, wasm, wasmWallet, asset_id, private_trans
         });
     });
 }
-/// Create NFT collection
-/// Returns Collection Id of newly created collection.
-function createNFTCollection(api, signer) {
-    return __awaiter(this, void 0, void 0, function () {
-        var collectionId, submitExtrinsic, e_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 4, , 5]);
-                    return [4 /*yield*/, api.query.uniques.nextCollectionId()];
-                case 1:
-                    collectionId = _a.sent();
-                    return [4 /*yield*/, api.tx.uniques.create(signer)];
-                case 2:
-                    submitExtrinsic = _a.sent();
-                    return [4 /*yield*/, submitExtrinsic.signAndSend(signer)];
-                case 3:
-                    _a.sent();
-                    return [2 /*return*/, collectionId.toHuman()];
-                case 4:
-                    e_1 = _a.sent();
-                    console.log("Failed to create NFT collection");
-                    console.error(e_1);
-                    return [3 /*break*/, 5];
-                case 5: return [2 /*return*/];
-            }
-        });
-    });
-}
-/// Creates NFT Item and Registers it in Asset Manager.
-/// Returns the Asset ID of the newly created NFT.
-function createNFT(api, collectionId, itemId, address, signer) {
-    return __awaiter(this, void 0, void 0, function () {
-        var metadata, assetId, mintExtrinsic, registerAssetExtrinsic, batchTx, e_2;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 6, , 7]);
-                    metadata = {
-                        "NonFungible": {
-                            "name": "",
-                            "info": "",
-                            "collection_id": collectionId,
-                            "item_id": itemId,
-                        }
-                    };
-                    return [4 /*yield*/, api.query.assetManager.nextAssetId()];
-                case 1:
-                    assetId = _a.sent();
-                    return [4 /*yield*/, api.tx.uniques.mint(collectionId, itemId, address)];
-                case 2:
-                    mintExtrinsic = _a.sent();
-                    return [4 /*yield*/, api.tx.assetManager.registerAsset(address, metadata)];
-                case 3:
-                    registerAssetExtrinsic = _a.sent();
-                    return [4 /*yield*/, api.tx.utility.batch([mintExtrinsic, registerAssetExtrinsic])];
-                case 4:
-                    batchTx = _a.sent();
-                    return [4 /*yield*/, batchTx.signAndSend(signer)];
-                case 5:
-                    _a.sent();
-                    return [2 /*return*/, assetId.toHuman()];
-                case 6:
-                    e_2 = _a.sent();
-                    console.log("Failed to create NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-                    console.error(e_2);
-                    return [3 /*break*/, 7];
-                case 7: return [2 /*return*/];
-            }
-        });
-    });
-}
-/// Update NFT metadata
-function updateMetadata(api, collectionId, itemId, metadata, signer) {
-    return __awaiter(this, void 0, void 0, function () {
-        var submitExtrinsic, e_3;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 3, , 4]);
-                    return [4 /*yield*/, api.tx.uniques.setMetadata(collectionId, itemId, metadata, false)];
-                case 1:
-                    submitExtrinsic = _a.sent();
-                    return [4 /*yield*/, submitExtrinsic.signAndSend(signer)];
-                case 2:
-                    _a.sent();
-                    return [2 /*return*/];
-                case 3:
-                    e_3 = _a.sent();
-                    console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-                    console.error(e_3);
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-/// View NFT metadata
-function viewMetadata(api, collectionId, itemId) {
-    return __awaiter(this, void 0, void 0, function () {
-        var metadata, e_4;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, api.query.uniques.instanceMetadataOf(collectionId, itemId)];
-                case 1:
-                    metadata = _a.sent();
-                    return [2 /*return*/, metadata.toHuman()];
-                case 2:
-                    e_4 = _a.sent();
-                    console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-                    console.error(e_4);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
-            }
-        });
-    });
-}
-/// View all NFTs an account owns of a particular collection
-function allNFTsInCollection(api, collectionId, address) {
-    return __awaiter(this, void 0, void 0, function () {
-        var nfts, readableNfts, i, e_5;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, api.query.uniques.account.keys(address, collectionId)];
-                case 1:
-                    nfts = _a.sent();
-                    readableNfts = [];
-                    for (i = 0; i < nfts.length; i++) {
-                        readableNfts.push(nfts[i].toHuman());
-                    }
-                    return [2 /*return*/, readableNfts];
-                case 2:
-                    e_5 = _a.sent();
-                    console.log("Failed to view all NFTs of Collection ID: " + collectionId);
-                    console.error(e_5);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
-            }
-        });
-    });
-}
-/// to_private transaction for NFT
-/// TODO: fixed amount value
-function to_private_nft(wasm, wasmWallet, asset_id, network) {
-    return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, txJson, transaction, networkType, res, error_5;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    console.log("to_private NFT transaction...");
-                    asset_id_arr = Array.from(asset_id);
-                    txJson = "{ \"ToPrivate\": { \"id\": [".concat(asset_id_arr, "], \"value\": \"").concat(NFT_AMOUNT, "\" }}");
-                    transaction = wasm.Transaction.from_string(txJson);
-                    networkType = wasm.Network.from_string("\"".concat(network, "\""));
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, wasmWallet.post(transaction, null, networkType)];
-                case 2:
-                    res = _a.sent();
-                    console.log("📜to_private NFT result:" + res);
-                    return [3 /*break*/, 4];
-                case 3:
-                    error_5 = _a.sent();
-                    console.error('Transaction failed', error_5);
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-/// private transfer transaction for NFT
-/// TODO: fixed amount value and asset metadata
-function private_transfer_nft(api, signer, wasm, wasmWallet, asset_id, to_private_address, network) {
-    return __awaiter(this, void 0, void 0, function () {
-        var addressJson, asset_id_arr, txJson, transaction, assetMetadataJson;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    console.log("private_transfer NFT transaction...");
-                    addressJson = privateAddressToJson(to_private_address);
-                    asset_id_arr = Array.from(asset_id);
-                    txJson = "{ \"PrivateTransfer\": [{ \"id\": [".concat(asset_id_arr, "], \"value\": \"").concat(NFT_AMOUNT, "\" }, ").concat(addressJson, " ]}");
-                    transaction = wasm.Transaction.from_string(txJson);
-                    assetMetadataJson = "{ \"decimals\": 12, \"symbol\": \"pNFT\" }";
-                    return [4 /*yield*/, sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network)];
-                case 1:
-                    _a.sent();
-                    console.log("📜finish private nft transfer.");
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-/// Transfer an nft publicly using the uniques pallet.
-function publicTransferNFT(api, signer, assetId, address) {
-    return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, tx, batchTx, e_6;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 4, , 5]);
-                    asset_id_arr = Array.from(assetId);
-                    return [4 /*yield*/, api.tx.mantaPay.publicTransfer({ id: asset_id_arr, value: NFT_AMOUNT }, address)];
-                case 1:
-                    tx = _a.sent();
-                    return [4 /*yield*/, api.tx.utility.batch([tx])];
-                case 2:
-                    batchTx = _a.sent();
-                    return [4 /*yield*/, batchTx.signAndSend(signer)];
-                case 3:
-                    _a.sent();
-                    return [3 /*break*/, 5];
-                case 4:
-                    e_6 = _a.sent();
-                    console.log("Failed to transfer NFT item of Asset ID: " + assetId + " to address: " + address);
-                    console.error(e_6);
-                    return [3 /*break*/, 5];
-                case 5: return [2 /*return*/];
-            }
-        });
-    });
-}
-/// to_public transaction for NFT
-/// TODO: fixed amount value and asset metadata
-function to_public_nft(api, signer, wasm, wasmWallet, asset_id, network) {
-    return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, txJson, transaction, assetMetadataJson;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    console.log("to_public NFT transaction...");
-                    asset_id_arr = Array.from(asset_id);
-                    txJson = "{ \"ToPublic\": { \"id\": [".concat(asset_id_arr, "], \"value\": \"").concat(NFT_AMOUNT, "\" }}");
-                    transaction = wasm.Transaction.from_string(txJson);
-                    assetMetadataJson = "{ \"decimals\": 12 , \"symbol\": \"pNFT\" }";
-                    return [4 /*yield*/, sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network)];
-                case 1:
-                    _a.sent();
-                    console.log("📜finish to public nft transfer.");
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-;
 /// Using sign on wallet and using signAndSend to polkadot.js transaction
 /// This version is using `null` asset metdata. Only meaningful for to_private.
 var sign_and_send_without_metadata = function (wasm, api, signer, wasmWallet, transaction, network) { return __awaiter(void 0, void 0, void 0, function () {
-    var signed_transaction, i, error_6;
+    var signed_transaction, i, error_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0: return [4 /*yield*/, sign_transaction(api, wasm, wasmWallet, null, transaction, network)];
@@ -1146,8 +750,8 @@ var sign_and_send_without_metadata = function (wasm, api, signer, wasmWallet, tr
                 _a.sent();
                 return [3 /*break*/, 6];
             case 5:
-                error_6 = _a.sent();
-                console.error('Transaction failed', error_6);
+                error_5 = _a.sent();
+                console.error('Transaction failed', error_5);
                 return [3 /*break*/, 6];
             case 6:
                 i++;
@@ -1201,7 +805,7 @@ var sign_transaction = function (api, wasm, wasmWallet, assetMetadataJson, trans
 }); };
 /// Using sign on wallet and using signdAndSend to polkadot.js transaction
 var sign_and_send = function (api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network) { return __awaiter(void 0, void 0, void 0, function () {
-    var signed_transaction, i, error_7;
+    var signed_transaction, i, error_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0: return [4 /*yield*/, sign_transaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network)];
@@ -1219,8 +823,8 @@ var sign_and_send = function (api, signer, wasm, wasmWallet, assetMetadataJson, 
                 _a.sent();
                 return [3 /*break*/, 6];
             case 5:
-                error_7 = _a.sent();
-                console.error('Transaction failed', error_7);
+                error_6 = _a.sent();
+                console.error('Transaction failed', error_6);
                 return [3 /*break*/, 6];
             case 6:
                 i++;

@@ -2,6 +2,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 // TODO: remove this dependency with better signer integration
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
+// @ts-ignore
 import Api, {ApiConfig } from 'manta-wasm-wallet-api';
 import axios from 'axios';
 import BN from 'bn.js';
@@ -14,6 +15,7 @@ const rpc = config.RPC;
 const types = config.TYPES;
 const DEFAULT_PULL_SIZE = config.DEFAULT_PULL_SIZE;
 const SIGNER_URL = config.SIGNER_URL;
+const PRIVATE_ASSET_PREFIX = "p";
 
 /// The Envrionment that the sdk is configured to run for, if development
 /// is selected then it will attempt to connect to a local node instance.
@@ -432,8 +434,8 @@ async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet:
     const json = JSON.stringify(asset_meta.toHuman());
     const jsonObj = JSON.parse(json);
     console.log("asset metadata:" + json);
-    const decimals = jsonObj["Fungible"]["metadata"]["decimals"];
-    const symbol = jsonObj["Fungible"]["metadata"]["symbol"];
+    const decimals = jsonObj["metadata"]["decimals"];
+    const symbol = jsonObj["metadata"]["symbol"];
     const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
     console.log("📜asset metadata:" + assetMetadataJson);
 
@@ -465,8 +467,9 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
     const json = JSON.stringify(asset_meta.toHuman());
     const jsonObj = JSON.parse(json);
     console.log("asset metadata:" + json);
-    const decimals = jsonObj["Fungible"]["metadata"]["decimals"];
-    const symbol = jsonObj["Fungible"]["metadata"]["symbol"];
+    console.log("asset JSON:" + jsonObj);
+    const decimals = jsonObj["metadata"]["decimals"];
+    const symbol = jsonObj["metadata"]["symbol"];
     const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
     console.log("📜asset metadata:" + assetMetadataJson);
 

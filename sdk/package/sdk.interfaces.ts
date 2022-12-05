@@ -29,6 +29,7 @@ export interface IMantaSdk {
   environment: Environment;
   wasmApi: any;
 
+  convertPrivateAddressToJson(address: string): any
   numberToAssetIdArray(assetIdNumber: number): AssetId;
   assetIdArrayToNumber(assetId: AssetId): number;
   networks(): any;
@@ -44,13 +45,4 @@ export interface IMantaSdk {
   toPrivateSign(asset_id: AssetId, amount: number, onlySign: boolean): Promise<any>;
   privateTransfer(asset_id: AssetId, amount: number, address: Address, onlySign: boolean): Promise<any>;
   toPublic(asset_id: AssetId, amount: number, onlySign: boolean): Promise<any>;
-  toPrivateNFT(asset_id: AssetId): Promise<void>;
-  privateTransferNFT(asset_id: AssetId, address: Address): Promise<void>;
-  toPublicNFT(asset_id: AssetId): Promise<void>;
-  createCollection(): Promise<any>;
-  mintNFT(collectionId: number, itemId: number, address: string): Promise<void>;
-  updateNFTMetadata(collectionId: number, itemId: number, metadata:any): Promise<void>;
-  getNFTMetadata(collectionId: number, itemId: number): Promise<any>;
-  publicTransferNFT(asset_id: AssetId, address: Address): Promise<void>;
-  viewAllNFTsInCollection(collectionId:number, address:string): Promise<any>;
 }
