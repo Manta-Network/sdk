@@ -43,14 +43,16 @@ export class MantaSdk implements IMantaSdk {
     wasmWallet: Wallet;
     network: Network;
     environment: Environment;
+    wasmApi: any;
 
-    constructor(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment) {
+    constructor(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment, wasmApi: any) {
         this.api = api;
         this.signer = signer;
         this.wasm = wasm;
         this.wasmWallet = wasmWallet;
         this.network = network;
         this.environment = environment;
+        this.wasmApi = wasmApi;
     }
 
     ///
@@ -71,6 +73,11 @@ export class MantaSdk implements IMantaSdk {
         return uint8ArrayToNumber(assetId);
     }
 
+    /// Convert a private address to JSON.
+    convertPrivateAddressToJson(address: string): any {
+        return privateAddressToJson(address);
+    }
+
     /// Switches MantaSdk environment.
     /// Requirements: Must call initialWalletSync() after switching to a different
     /// environment, to pull the latest data before calling any other methods.
@@ -85,6 +92,7 @@ export class MantaSdk implements IMantaSdk {
         this.signer = (await sdk).signer;
         this.wasm = (await sdk).wasm;
         this.wasmWallet = (await sdk).wasmWallet;
+        this.wasmApi = (await sdk).wasmApi;
         this.environment = environment;
     }
 
@@ -102,6 +110,7 @@ export class MantaSdk implements IMantaSdk {
         this.signer = (await sdk).signer;
         this.wasm = (await sdk).wasm;
         this.wasmWallet = (await sdk).wasmWallet;
+        this.wasmApi = (await sdk).wasmApi;
         this.network = network;
     }
 
@@ -171,8 +180,9 @@ export class MantaSdk implements IMantaSdk {
     }
 
     /// Executes a "To Private" transaction for any fungible token, using the post method.
-    async toPrivatePost(asset_id: AssetId, amount: number): Promise<void> {
-        await to_private_by_post(this.wasm, this.wasmWallet, asset_id, amount, this.network);
+    async toPrivatePost(asset_id: AssetId, amount: number): Promise<any> {
+        const res = await to_private_by_post(this.wasm, this.wasmWallet, asset_id, amount, this.network);
+        return res;
     }
     
     /// Executes a "To Private" transaction for any fungible token.
@@ -217,7 +227,12 @@ export class MantaSdk implements IMantaSdk {
 
     /// Executes a "Private Transfer" transaction for any non-fungible token.
     async privateTransferNFT(asset_id: AssetId, address: Address): Promise<void> {
-        await private_transfer_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, address, this.network)
+        await private_transfer_nft(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, address, this.network);
+    }
+
+    /// Transfer a public NFT to another address, using the mantaPay pallet.
+    async publicTransferNFT(asset_id: AssetId, address: Address): Promise<void> {
+        await publicTransferNFT(this.api, this.signer, asset_id, address);
     }
 
     /// Executes a "To Public" transaction for any non-fungible token.
@@ -226,19 +241,23 @@ export class MantaSdk implements IMantaSdk {
     }
 
     /// Creates an NFT collection
-    async createCollection(collectionId: number): Promise<void> {
-        await createNFTCollection(this.api, collectionId, this.signer);
+    /// Returns the newly created collections ID
+    async createCollection(): Promise<any> {
+        const res = await createNFTCollection(this.api, this.signer);
+        return res;
     }
 
     /// Creates a new NFT as a part of an existing collection with collection id of
     /// `collectionId` and item Id of `itemId` to the destination address of `address`.
     /// Note: if no address is provided, the NFT will be minted to the address of this.signer
-    async mintNFT(collectionId: number, itemId: number, address: string=""): Promise<void> {
+    /// Registers the NFT in Asset Manager and returns the unique Asset ID.
+    async mintNFT(collectionId: number, itemId: number, address: string=""): Promise<any> {
         let targetAddress = address;
         if (!address) {
             targetAddress = this.signer;
         }
-        await createNFT(this.api, collectionId, itemId, targetAddress, this.signer);
+        const res = await createNFT(this.api, collectionId, itemId, targetAddress, this.signer);
+        return res;
     }
 
     /// Updates the metadata of the NFT
@@ -252,6 +271,18 @@ export class MantaSdk implements IMantaSdk {
         const metadata = await viewMetadata(this.api, collectionId, itemId);
         return metadata
     }
+
+    /// View all NFTs owned by `address` of a particular `collectionId`. If address is not
+    /// specified the sdk address will be used.
+    async viewAllNFTsInCollection(collectionId:number, address:string=""): Promise<any> {
+        let targetAddress = address;
+        if (!address) {
+            targetAddress = this.signer;
+        }
+
+        const res = await allNFTsInCollection(this.api, collectionId, targetAddress);
+        return res;
+    }
 }
 
 // Initializes the MantaSdk class, given an optional address, this will be used
@@ -259,8 +290,8 @@ export class MantaSdk implements IMantaSdk {
 // If no address is specified then the first polkadot.js address will be used.
 export async function init(env: Environment, network: Network, address: string=""): Promise<MantaSdk> {
     const {api, signer} = await init_api(env, address.toLowerCase(), network);
-    const {wasm, wasmWallet} = await init_wasm_sdk(api, signer);
-    const sdk = new MantaSdk(api,signer,wasm,wasmWallet,network,env);
+    const {wasm, wasmWallet, wasmApi} = await init_wasm_sdk(api, signer);
+    const sdk = new MantaSdk(api,signer,wasm,wasmWallet,network,env,wasmApi);
     return sdk
 }
 
@@ -336,7 +367,8 @@ async function init_wasm_sdk(api: ApiPromise, signer: string): Promise<InitWasmR
     const wasmWallet = new wasm.Wallet(wasmLedger, wasmSigner);
     return {
         wasm,
-        wasmWallet
+        wasmWallet,
+        wasmApi
     }
 }
 
@@ -360,7 +392,7 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
     const privateAddressRaw = await wallet.address(
         networkType
     );
-    console.log("privateAddressRaw:" + JSON.stringify(privateAddressRaw));
+    //console.log("privateAddressRaw:" + JSON.stringify(privateAddressRaw));
     // const privateAddressRaw = keys[0];
     // const privateAddressBytes = [
     //     ...privateAddressRaw.spend,
@@ -369,7 +401,7 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
     const privateAddressBytes = [
         ...privateAddressRaw.receiving_key
     ];
-    console.log("privateAddressBytes:" + JSON.stringify(privateAddressBytes));
+    //console.log("privateAddressBytes:" + JSON.stringify(privateAddressBytes));
     const privateAddress = base58Encode(privateAddressBytes);
     return privateAddress;
 };
@@ -420,7 +452,7 @@ async function sync(wasm: any, wasmWallet: Wallet, network: Network): Promise<vo
 
 /// Attempts to execute a "To Private" transaction by a post on the currently
 /// connected wallet.
-async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number, network: Network): Promise<void> {
+async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number, network: Network): Promise<any> {
     console.log("to_private transaction...");
     // let asset = asset_id.toU8a(); // [u8; 32]
     // const asset_arr = Array.from(uint8);
@@ -433,6 +465,7 @@ async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: Asset
     try {
         const res = await wasmWallet.post(transaction, null, networkType);
         console.log("📜to_private result:" + res);
+        return res;
     } catch (error) {
         console.error('Transaction failed', error);
     }
@@ -452,8 +485,9 @@ async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wa
             const signResult = await sign_transaction(api, wasm, wasmWallet, null, transaction, network);
             return signResult;
         } else {
-            await sign_and_send_without_metadata(wasm, api, signer, wasmWallet, transaction, network);
+            const res = await sign_and_send_without_metadata(wasm, api, signer, wasmWallet, transaction, network);
             console.log("📜to_private done");
+            return res;
         }
     } catch (error) {
         console.error('Transaction failed', error);
@@ -477,8 +511,8 @@ async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet:
     const json = JSON.stringify(asset_meta.toHuman());
     const jsonObj = JSON.parse(json);
     console.log("asset metadata:" + json);
-    const decimals = jsonObj["metadata"]["decimals"];
-    const symbol = jsonObj["metadata"]["symbol"];
+    const decimals = jsonObj["Fungible"]["metadata"]["decimals"];
+    const symbol = jsonObj["Fungible"]["metadata"]["symbol"];
     const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
     console.log("📜asset metadata:" + assetMetadataJson);
 
@@ -486,8 +520,9 @@ async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet:
         const signResult = await sign_transaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network);
         return signResult;
     } else {
-        await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
+        const res = await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
         console.log("📜finish to public transfer.");
+        return res;
     }
 }
 
@@ -509,8 +544,8 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
     const json = JSON.stringify(asset_meta.toHuman());
     const jsonObj = JSON.parse(json);
     console.log("asset metadata:" + json);
-    const decimals = jsonObj["metadata"]["decimals"];
-    const symbol = jsonObj["metadata"]["symbol"];
+    const decimals = jsonObj["Fungible"]["metadata"]["decimals"];
+    const symbol = jsonObj["Fungible"]["metadata"]["symbol"];
     const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
     console.log("📜asset metadata:" + assetMetadataJson);
 
@@ -518,29 +553,50 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
         const signResult = await sign_transaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network);
         return signResult;
     } else {
-        await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
+        const res = await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
         console.log("📜finish private transfer.");
+        return res;
     }
 }
 
 /// Create NFT collection
-async function createNFTCollection(api: ApiPromise, collectionId: number, signer:string): Promise<void> {
+/// Returns Collection Id of newly created collection.
+async function createNFTCollection(api: ApiPromise, signer:string): Promise<any> {
     try {
-        const submitExtrinsic = await api.tx.uniques.create(collectionId, signer);
+        // @TODO: Fix typescript to support new uniques pallet version
+        // @ts-ignore
+        const collectionId = await api.query.uniques.nextCollectionId();
+        // @ts-ignore
+        const submitExtrinsic = await api.tx.uniques.create(signer);
         await submitExtrinsic.signAndSend(signer);
-        return;
+
+        return collectionId.toHuman();
     } catch (e) {
-        console.log("Failed to create NFT collection of Collection ID: " + collectionId);
+        console.log("Failed to create NFT collection");
         console.error(e);
     }
 }
 
-/// Create NFT Item
-async function createNFT(api: ApiPromise, collectionId: number, itemId: number, address: string, signer:string): Promise<void> {
+/// Creates NFT Item and Registers it in Asset Manager.
+/// Returns the Asset ID of the newly created NFT.
+async function createNFT(api: ApiPromise, collectionId: number, itemId: number, address: string, signer:string): Promise<any> {
     try {
-        const submitExtrinsic = await api.tx.uniques.mint(collectionId,itemId,address);
-        await submitExtrinsic.signAndSend(signer);
-        return;
+
+        const metadata = {
+            "NonFungible": {
+                "name": "",
+                "info": "",
+                "collection_id": collectionId,
+                "item_id": itemId,
+            }
+        }
+        
+        const assetId = await api.query.assetManager.nextAssetId();
+        const mintExtrinsic = await api.tx.uniques.mint(collectionId,itemId,address);
+        const registerAssetExtrinsic = await api.tx.assetManager.registerAsset(address,metadata);
+        const batchTx = await api.tx.utility.batch([mintExtrinsic, registerAssetExtrinsic]);
+        await batchTx.signAndSend(signer);
+        return assetId.toHuman();
     } catch (e) {
         console.log("Failed to create NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
         console.error(e);
@@ -566,6 +622,21 @@ async function viewMetadata(api: ApiPromise, collectionId: number, itemId: numbe
         return metadata.toHuman();
     } catch (e) {
         console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
+        console.error(e);
+    }
+}
+
+/// View all NFTs an account owns of a particular collection
+async function allNFTsInCollection(api: ApiPromise, collectionId: number, address:string): Promise<any> {
+    try {
+        const nfts = await api.query.uniques.account.keys(address,collectionId);
+        const readableNfts = [];
+        for (let i = 0; i < nfts.length; i++) {
+            readableNfts.push(nfts[i].toHuman());
+        }
+        return readableNfts;
+    } catch (e) {
+        console.log("Failed to view all NFTs of Collection ID: " + collectionId);
         console.error(e);
     }
 }
@@ -602,6 +673,22 @@ async function private_transfer_nft(api: ApiPromise, signer: string, wasm: any, 
 
     await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
     console.log("📜finish private nft transfer.");
+}
+
+/// Transfer an nft publicly using the uniques pallet.
+async function publicTransferNFT(api: ApiPromise, signer: string, assetId:AssetId, address: string): Promise<void> {
+    try {
+        const asset_id_arr = Array.from(assetId);
+        const tx = await api.tx.mantaPay.publicTransfer(
+            { id: asset_id_arr, value: NFT_AMOUNT },
+            address
+          );
+          const batchTx = await api.tx.utility.batch([tx]);
+          await batchTx.signAndSend(signer);
+    } catch (e) {
+        console.log("Failed to transfer NFT item of Asset ID: " + assetId + " to address: " + address);
+        console.error(e);
+    }
 }
 
 /// to_public transaction for NFT

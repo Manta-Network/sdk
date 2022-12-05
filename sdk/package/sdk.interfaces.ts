@@ -15,17 +15,19 @@ export interface InitApiResult {
 
 export interface InitWasmResult {
   wasm: any,
-  wasmWallet: Wallet
+  wasmWallet: Wallet,
+  wasmApi: any
 }
 
 export interface IMantaSdk {
 
-  api: ApiPromise,
-  signer: string,
-  wasm: any,
-  wasmWallet: Wallet
+  api: ApiPromise;
+  signer: string;
+  wasm: any;
+  wasmWallet: Wallet;
   network: Network;
   environment: Environment;
+  wasmApi: any;
 
   numberToAssetIdArray(assetIdNumber: number): AssetId;
   assetIdArrayToNumber(assetId: AssetId): number;
@@ -45,8 +47,10 @@ export interface IMantaSdk {
   toPrivateNFT(asset_id: AssetId): Promise<void>;
   privateTransferNFT(asset_id: AssetId, address: Address): Promise<void>;
   toPublicNFT(asset_id: AssetId): Promise<void>;
-  createCollection(collectionId: number): Promise<void>;
+  createCollection(): Promise<any>;
   mintNFT(collectionId: number, itemId: number, address: string): Promise<void>;
   updateNFTMetadata(collectionId: number, itemId: number, metadata:any): Promise<void>;
   getNFTMetadata(collectionId: number, itemId: number): Promise<any>;
+  publicTransferNFT(asset_id: AssetId, address: Address): Promise<void>;
+  viewAllNFTsInCollection(collectionId:number, address:string): Promise<any>;
 }
