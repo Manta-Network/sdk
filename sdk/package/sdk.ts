@@ -73,6 +73,11 @@ export class MantaSdk implements IMantaSdk {
         return uint8ArrayToNumber(assetId);
     }
 
+    /// Convert a private address to JSON.
+    convertPrivateAddressToJson(address: string): any {
+        return privateAddressToJson(address);
+    }
+
     /// Switches MantaSdk environment.
     /// Requirements: Must call initialWalletSync() after switching to a different
     /// environment, to pull the latest data before calling any other methods.
