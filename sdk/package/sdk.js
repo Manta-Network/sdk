@@ -820,8 +820,8 @@ function to_public(api, signer, wasm, wasmWallet, asset_id, transfer_amount, net
                     json = JSON.stringify(asset_meta.toHuman());
                     jsonObj = JSON.parse(json);
                     console.log("asset metadata:" + json);
-                    decimals = jsonObj["metadata"]["decimals"];
-                    symbol = jsonObj["metadata"]["symbol"];
+                    decimals = jsonObj["Fungible"]["metadata"]["decimals"];
+                    symbol = jsonObj["Fungible"]["metadata"]["symbol"];
                     assetMetadataJson = "{ \"decimals\": ".concat(decimals, ", \"symbol\": \"").concat(PRIVATE_ASSET_PREFIX).concat(symbol, "\" }");
                     console.log("📜asset metadata:" + assetMetadataJson);
                     if (!onlySign) return [3 /*break*/, 3];
@@ -859,8 +859,8 @@ function private_transfer(api, signer, wasm, wasmWallet, asset_id, private_trans
                     json = JSON.stringify(asset_meta.toHuman());
                     jsonObj = JSON.parse(json);
                     console.log("asset metadata:" + json);
-                    decimals = jsonObj["metadata"]["decimals"];
-                    symbol = jsonObj["metadata"]["symbol"];
+                    decimals = jsonObj["Fungible"]["metadata"]["decimals"];
+                    symbol = jsonObj["Fungible"]["metadata"]["symbol"];
                     assetMetadataJson = "{ \"decimals\": ".concat(decimals, ", \"symbol\": \"").concat(PRIVATE_ASSET_PREFIX).concat(symbol, "\" }");
                     console.log("📜asset metadata:" + assetMetadataJson);
                     if (!onlySign) return [3 /*break*/, 3];

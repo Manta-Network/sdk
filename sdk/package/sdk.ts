@@ -511,8 +511,8 @@ async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet:
     const json = JSON.stringify(asset_meta.toHuman());
     const jsonObj = JSON.parse(json);
     console.log("asset metadata:" + json);
-    const decimals = jsonObj["metadata"]["decimals"];
-    const symbol = jsonObj["metadata"]["symbol"];
+    const decimals = jsonObj["Fungible"]["metadata"]["decimals"];
+    const symbol = jsonObj["Fungible"]["metadata"]["symbol"];
     const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
     console.log("📜asset metadata:" + assetMetadataJson);
 
@@ -544,8 +544,8 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
     const json = JSON.stringify(asset_meta.toHuman());
     const jsonObj = JSON.parse(json);
     console.log("asset metadata:" + json);
-    const decimals = jsonObj["metadata"]["decimals"];
-    const symbol = jsonObj["metadata"]["symbol"];
+    const decimals = jsonObj["Fungible"]["metadata"]["decimals"];
+    const symbol = jsonObj["Fungible"]["metadata"]["symbol"];
     const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
     console.log("📜asset metadata:" + assetMetadataJson);
 
