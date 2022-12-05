@@ -180,8 +180,9 @@ export class MantaSdk implements IMantaSdk {
     }
 
     /// Executes a "To Private" transaction for any fungible token, using the post method.
-    async toPrivatePost(asset_id: AssetId, amount: number): Promise<void> {
-        await to_private_by_post(this.wasm, this.wasmWallet, asset_id, amount, this.network);
+    async toPrivatePost(asset_id: AssetId, amount: number): Promise<any> {
+        const res = await to_private_by_post(this.wasm, this.wasmWallet, asset_id, amount, this.network);
+        return res;
     }
     
     /// Executes a "To Private" transaction for any fungible token.
@@ -451,7 +452,7 @@ async function sync(wasm: any, wasmWallet: Wallet, network: Network): Promise<vo
 
 /// Attempts to execute a "To Private" transaction by a post on the currently
 /// connected wallet.
-async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number, network: Network): Promise<void> {
+async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: number, network: Network): Promise<any> {
     console.log("to_private transaction...");
     // let asset = asset_id.toU8a(); // [u8; 32]
     // const asset_arr = Array.from(uint8);
@@ -464,6 +465,7 @@ async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: Asset
     try {
         const res = await wasmWallet.post(transaction, null, networkType);
         console.log("📜to_private result:" + res);
+        return res;
     } catch (error) {
         console.error('Transaction failed', error);
     }
@@ -483,8 +485,9 @@ async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wa
             const signResult = await sign_transaction(api, wasm, wasmWallet, null, transaction, network);
             return signResult;
         } else {
-            await sign_and_send_without_metadata(wasm, api, signer, wasmWallet, transaction, network);
+            const res = await sign_and_send_without_metadata(wasm, api, signer, wasmWallet, transaction, network);
             console.log("📜to_private done");
+            return res;
         }
     } catch (error) {
         console.error('Transaction failed', error);
@@ -517,8 +520,9 @@ async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet:
         const signResult = await sign_transaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network);
         return signResult;
     } else {
-        await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
+        const res = await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
         console.log("📜finish to public transfer.");
+        return res;
     }
 }
 
@@ -549,8 +553,9 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
         const signResult = await sign_transaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network);
         return signResult;
     } else {
-        await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
+        const res = await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
         console.log("📜finish private transfer.");
+        return res;
     }
 }
 

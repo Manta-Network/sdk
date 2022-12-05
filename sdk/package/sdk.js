@@ -297,12 +297,13 @@ var MantaSdk = /** @class */ (function () {
     /// Executes a "To Private" transaction for any fungible token, using the post method.
     MantaSdk.prototype.toPrivatePost = function (asset_id, amount) {
         return __awaiter(this, void 0, void 0, function () {
+            var res;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, to_private_by_post(this.wasm, this.wasmWallet, asset_id, amount, this.network)];
                     case 1:
-                        _a.sent();
-                        return [2 /*return*/];
+                        res = _a.sent();
+                        return [2 /*return*/, res];
                 }
             });
         });
@@ -658,9 +659,7 @@ function getPrivateAddress(wasm, wallet, network) {
                     return [4 /*yield*/, wallet.address(networkType)];
                 case 1:
                     privateAddressRaw = _a.sent();
-                    console.log("privateAddressRaw:" + JSON.stringify(privateAddressRaw));
                     privateAddressBytes = __spreadArray([], privateAddressRaw.receiving_key, true);
-                    console.log("privateAddressBytes:" + JSON.stringify(privateAddressBytes));
                     privateAddress = base58Encode(privateAddressBytes);
                     return [2 /*return*/, privateAddress];
             }
@@ -753,7 +752,7 @@ function to_private_by_post(wasm, wasmWallet, asset_id, to_private_amount, netwo
                 case 2:
                     res = _a.sent();
                     console.log("📜to_private result:" + res);
-                    return [3 /*break*/, 4];
+                    return [2 /*return*/, res];
                 case 3:
                     error_3 = _a.sent();
                     console.error('Transaction failed', error_3);
@@ -769,7 +768,7 @@ function to_private_by_post(wasm, wasmWallet, asset_id, to_private_amount, netwo
 /// the transaction without posting it to the ledger.
 function to_private_by_sign(api, signer, wasm, wasmWallet, asset_id, to_private_amount, network, onlySign) {
     return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, txJson, transaction, signResult, error_4;
+        var asset_id_arr, txJson, transaction, signResult, res, error_4;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -787,9 +786,9 @@ function to_private_by_sign(api, signer, wasm, wasmWallet, asset_id, to_private_
                     return [2 /*return*/, signResult];
                 case 3: return [4 /*yield*/, sign_and_send_without_metadata(wasm, api, signer, wasmWallet, transaction, network)];
                 case 4:
-                    _a.sent();
+                    res = _a.sent();
                     console.log("📜to_private done");
-                    _a.label = 5;
+                    return [2 /*return*/, res];
                 case 5: return [3 /*break*/, 7];
                 case 6:
                     error_4 = _a.sent();
@@ -805,7 +804,7 @@ function to_private_by_sign(api, signer, wasm, wasmWallet, asset_id, to_private_
 /// the transaction without posting it to the ledger.
 function to_public(api, signer, wasm, wasmWallet, asset_id, transfer_amount, network, onlySign) {
     return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, txJson, transaction, assetIdNumber, asset_meta, json, jsonObj, decimals, symbol, assetMetadataJson, signResult;
+        var asset_id_arr, txJson, transaction, assetIdNumber, asset_meta, json, jsonObj, decimals, symbol, assetMetadataJson, signResult, res;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -832,10 +831,9 @@ function to_public(api, signer, wasm, wasmWallet, asset_id, transfer_amount, net
                     return [2 /*return*/, signResult];
                 case 3: return [4 /*yield*/, sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network)];
                 case 4:
-                    _a.sent();
+                    res = _a.sent();
                     console.log("📜finish to public transfer.");
-                    _a.label = 5;
-                case 5: return [2 /*return*/];
+                    return [2 /*return*/, res];
             }
         });
     });
@@ -843,7 +841,7 @@ function to_public(api, signer, wasm, wasmWallet, asset_id, transfer_amount, net
 /// private transfer transaction
 function private_transfer(api, signer, wasm, wasmWallet, asset_id, private_transfer_amount, to_private_address, network, onlySign) {
     return __awaiter(this, void 0, void 0, function () {
-        var addressJson, asset_id_arr, txJson, transaction, assetIdNumber, asset_meta, json, jsonObj, decimals, symbol, assetMetadataJson, signResult;
+        var addressJson, asset_id_arr, txJson, transaction, assetIdNumber, asset_meta, json, jsonObj, decimals, symbol, assetMetadataJson, signResult, res;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -872,10 +870,9 @@ function private_transfer(api, signer, wasm, wasmWallet, asset_id, private_trans
                     return [2 /*return*/, signResult];
                 case 3: return [4 /*yield*/, sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network)];
                 case 4:
-                    _a.sent();
+                    res = _a.sent();
                     console.log("📜finish private transfer.");
-                    _a.label = 5;
-                case 5: return [2 /*return*/];
+                    return [2 /*return*/, res];
             }
         });
     });
