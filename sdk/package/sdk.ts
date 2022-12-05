@@ -391,7 +391,7 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
     const privateAddressRaw = await wallet.address(
         networkType
     );
-    console.log("privateAddressRaw:" + JSON.stringify(privateAddressRaw));
+    //console.log("privateAddressRaw:" + JSON.stringify(privateAddressRaw));
     // const privateAddressRaw = keys[0];
     // const privateAddressBytes = [
     //     ...privateAddressRaw.spend,
@@ -400,7 +400,7 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
     const privateAddressBytes = [
         ...privateAddressRaw.receiving_key
     ];
-    console.log("privateAddressBytes:" + JSON.stringify(privateAddressBytes));
+    //console.log("privateAddressBytes:" + JSON.stringify(privateAddressBytes));
     const privateAddress = base58Encode(privateAddressBytes);
     return privateAddress;
 };
