@@ -55,9 +55,7 @@ var rpc = config.RPC;
 var types = config.TYPES;
 var DEFAULT_PULL_SIZE = config.DEFAULT_PULL_SIZE;
 var SIGNER_URL = config.SIGNER_URL;
-/// TODO: NFT stuff
-var PRIVATE_ASSET_PREFIX = "p";
-var NFT_AMOUNT = 1000000000000;
+
 /// The Envrionment that the sdk is configured to run for, if development
 /// is selected then it will attempt to connect to a local node instance.
 /// If production is selected it will attempt to connect to actual node.
