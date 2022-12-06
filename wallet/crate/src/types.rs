@@ -32,7 +32,7 @@ where
 
 pub type RawAssetId = [u8; 32];
 
-pub type RawAssetValue = u128;
+pub type RawAssetValue = [u8; 16];
 
 pub type RawUtxoCommitment = [u8; 32];
 
@@ -67,7 +67,7 @@ impl TryFrom<RawAsset> for config::Asset {
     fn try_from(asset: RawAsset) -> Result<Self, Self::Error> {
         Ok(Self {
             id: fp_decode(asset.id.to_vec())?,
-            value: asset.value,
+            value: u128::from_le_bytes(asset.value),
         })
     }
 }
