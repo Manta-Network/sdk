@@ -58,7 +58,7 @@
         },
         "Asset": {
             "id": "[u8; 32]",
-            "value": "u128"
+            "value": "[u8; 16]"
         },
         "Utxo": {
             "is_transparent": "bool",
@@ -86,7 +86,8 @@
         "PullResponse": {
             "should_continue": "bool",
             "receivers": "Vec<(Utxo, FullIncomingNote)>",
-            "senders": "Vec<([u8; 32], OutgoingNote)>"
+            "senders": "Vec<([u8; 32], OutgoingNote)>",
+            "senders_receivers_total": "[u8; 16]"
         },
         "AuthorizationSignature": {
             "authorization_key": "[u8; 32]",

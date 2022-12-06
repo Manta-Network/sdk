@@ -50,7 +50,6 @@ import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-da
 // @ts-ignore
 import Api, { ApiConfig } from 'manta-wasm-wallet-api';
 import axios from 'axios';
-import BN from 'bn.js';
 import config from './manta-config.json';
 var rpc = config.RPC;
 var types = config.TYPES;
@@ -840,8 +839,12 @@ function mapPostToTransaction(post, api) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    post.sources = post.sources.map(function (source) { return new BN(source); });
-                    post.sinks = post.sinks.map(function (sink) { return new BN(sink); });
+                    // console.log("");
+                    // post.sources = post.sources.map((source:any) => {
+                    //     new Array(source)
+                    // });
+                    // post.sinks = post.sinks.map((sink:any) => new Array(sink));
+                    console.log("new source:" + JSON.stringify(post.sources));
                     sources = post.sources.length;
                     senders = post.sender_posts.length;
                     receivers = post.receiver_posts.length;
@@ -946,6 +949,13 @@ var transfer_post = function (post) {
         x.nullifier_commitment = nullifier;
         delete x.nullifier;
     });
+    // json.sources.map((x: any) => {
+    //     console.log("x:" + x);
+    //     const source = Array.from(x);
+    //     console.log("source:" + source);
+    //     x = source;    
+    // });
+    console.log("origin sources:" + JSON.stringify(json.sources));
     return json;
 };
 /// Convert uint8Array to number

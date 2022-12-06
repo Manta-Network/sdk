@@ -261,6 +261,8 @@ pub struct RawPullResponse {
 
     /// Sender Data
     pub senders: Vec<(RawUtxoCommitment, RawOutgoingNote)>,
+
+    pub senders_receivers_total: [u8; 16],
 }
 
 impl TryFrom<RawPullResponse> for ReadResponse<SyncData<config::Config>> {

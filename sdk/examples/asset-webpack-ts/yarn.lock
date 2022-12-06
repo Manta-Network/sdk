@@ -1730,9 +1730,9 @@ bindings@^1.3.0, bindings@^1.5.0:
   dependencies:
     file-uri-to-path "1.0.0"
 
-"bip32-ed25519@git+https://github.com/Zondax/bip32-ed25519.git":
+"bip32-ed25519@https://github.com/Zondax/bip32-ed25519":
   version "0.0.4"
-  resolved "git+https://github.com/Zondax/bip32-ed25519.git#0949df01b5c93885339bc28116690292088f6134"
+  resolved "https://github.com/Zondax/bip32-ed25519#0949df01b5c93885339bc28116690292088f6134"
   dependencies:
     bn.js "^5.1.1"
     elliptic "^6.4.1"
@@ -3966,8 +3966,8 @@ make-fetch-happen@^9.1.0:
     "@polkadot/util-crypto" "8.1.2"
     axios "^0.27.2"
     bn.js "^5.2.0"
-    manta-wasm-wallet "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-e371339a-2fda-4a1a-a23f-cf51029a08d2-1670267438787/wallet/crate/pkg"
-    manta-wasm-wallet-api "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-e371339a-2fda-4a1a-a23f-cf51029a08d2-1670267438787/wallet/api"
+    manta-wasm-wallet "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-c4cc2d01-eced-4014-a3fb-7e920433ed27-1670343348539/wallet/crate/pkg"
+    manta-wasm-wallet-api "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-c4cc2d01-eced-4014-a3fb-7e920433ed27-1670343348539/wallet/api"
 
 md5.js@^1.3.4:
   version "1.3.5"

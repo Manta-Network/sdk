@@ -90,6 +90,7 @@ export default class Api {
   // Converts an `utxo` into a JSON object.
   _utxo_to_json(utxo) {
     let asset_id = Array.from(utxo.public_asset.id.toU8a()); // hex -> [u8; 32]
+    console.log("utxo public value:" + JSON.stringify(utxo.public_asset));
     let asset_value = Array.from(utxo.public_asset.value.toU8a()); // to [u8; 16]
     return {
       is_transparent: utxo.is_transparent,

@@ -540,8 +540,12 @@ const sign_and_send = async (api: ApiPromise, signer: string, wasm: any, wasmWal
 
 /// Maps a given `post` to a known transaction type, either Mint, Private Transfer or Reclaim.
 async function mapPostToTransaction(post: any, api: ApiPromise): Promise<SubmittableExtrinsic<"promise", any>> {
-    post.sources = post.sources.map((source:any) => new BN(source));
-    post.sinks = post.sinks.map((sink:any) => new BN(sink));
+    // console.log("");
+    // post.sources = post.sources.map((source:any) => {
+    //     new Array(source)
+    // });
+    // post.sinks = post.sinks.map((sink:any) => new Array(sink));
+    console.log("new source:" + JSON.stringify(post.sources));
 
     let sources = post.sources.length;
     let senders = post.sender_posts.length;
@@ -634,6 +638,14 @@ const transfer_post = (post:any): any => {
         x.nullifier_commitment = nullifier;
         delete x.nullifier;
     });
+
+    // json.sources.map((x: any) => {
+    //     console.log("x:" + x);
+    //     const source = Array.from(x);
+    //     console.log("source:" + source);
+    //     x = source;    
+    // });
+    console.log("origin sources:" + JSON.stringify(json.sources));
     return json
 }
 
