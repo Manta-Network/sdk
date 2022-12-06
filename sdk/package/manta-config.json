@@ -103,11 +103,11 @@
         },
         "TransferPost": {
             "authorization_signature": "Option<AuthorizationSignature>",
-            "asset_id": "[u8; 32]",
-            "sources": "Option<u128>",
+            "asset_id": "Option<[u8; 32]>",
+            "sources": "Vec<[u8; 16]>",
             "sender_posts": "Vec<SenderPost>",
             "receiver_posts": "Vec<ReceiverPost>",
-            "sinks": "Vec<u128>",
+            "sinks": "Vec<[u8; 16]>",
             "proof": "[u8; 128]"
         }
     }
