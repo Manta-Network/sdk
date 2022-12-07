@@ -2,6 +2,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 // TODO: remove this dependency with better signer integration
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
+// @ts-ignore
 import Api, {ApiConfig } from 'manta-wasm-wallet-api';
 import axios from 'axios';
 import BN from 'bn.js';
@@ -283,6 +284,31 @@ export class MantaSdk implements IMantaSdk {
         const res = await allNFTsInCollection(this.api, collectionId, targetAddress);
         return res;
     }
+
+    /// Returns the address of the owner of an NFT with a particular assetId
+    async getNFTOwner(assetId: AssetId): Promise<string> {
+
+        const assetIdNumber = this.assetIdArrayToNumber(assetId);
+
+        try {
+            const assetIdMetadata = await this.api.query.assetManager.assetIdMetadata(assetIdNumber);
+
+            // assetId does not exist.
+            if (!assetIdMetadata) {
+                return "";
+            }
+            const readableAssetIdMetadata: any = assetIdMetadata.toHuman();
+            const collectionId = readableAssetIdMetadata["NonFungible"]["collectionId"];
+            const itemId = readableAssetIdMetadata["NonFungible"]["itemId"];
+            const uniquesAssetMetadata = await this.api.query.uniques.asset(parseInt(collectionId),parseInt(itemId));
+            const readableUniquesAssetMetadata: any = uniquesAssetMetadata.toHuman();
+            return readableUniquesAssetMetadata["owner"];
+        } catch (e) {
+            console.error(e);
+        }
+
+    }
+    
 }
 
 // Initializes the MantaSdk class, given an optional address, this will be used
