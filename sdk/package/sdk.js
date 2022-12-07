@@ -50,6 +50,7 @@ import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-da
 // @ts-ignore
 import Api, { ApiConfig } from 'manta-wasm-wallet-api';
 import axios from 'axios';
+import BN from 'bn.js';
 import config from './manta-config.json';
 var rpc = config.RPC;
 var types = config.TYPES;
@@ -931,6 +932,7 @@ var transfer_post = function (post) {
         x.note.light_incoming_note.ephemeral_public_key = light_pk;
         x.note.light_incoming_note.ciphertext = [light_ciper0, light_ciper1, light_ciper2];
         delete x.note.light_incoming_note.header;
+        x.utxo.public_asset.value = new BN(x.utxo.public_asset.value).toArray('le', 16);
         x.full_incoming_note = x.note;
         delete x.note;
     });

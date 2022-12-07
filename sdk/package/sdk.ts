@@ -486,9 +486,7 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
 /// Using sign on wallet and using signAndSend to polkadot.js transaction
 /// This version is using `null` asset metdata. Only meaningful for to_private.
 const sign_and_send_without_metadata = async (wasm: any, api: ApiPromise, signer: string, wasmWallet: Wallet, transaction: any, network: Network): Promise<void> => {
-
     const signed_transaction = await sign_transaction(api,wasm,wasmWallet,null,transaction,network);
-
     for (let i = 0; i < signed_transaction.txs.length; i++) {
         try {
             await signed_transaction.txs[i].signAndSend(signer, (status, events) => { });
@@ -540,13 +538,6 @@ const sign_and_send = async (api: ApiPromise, signer: string, wasm: any, wasmWal
 
 /// Maps a given `post` to a known transaction type, either Mint, Private Transfer or Reclaim.
 async function mapPostToTransaction(post: any, api: ApiPromise): Promise<SubmittableExtrinsic<"promise", any>> {
-    // console.log("");
-    // post.sources = post.sources.map((source:any) => {
-    //     new Array(source)
-    // });
-    // post.sinks = post.sinks.map((sink:any) => new Array(sink));
-    console.log("new source:" + JSON.stringify(post.sources));
-
     let sources = post.sources.length;
     let senders = post.sender_posts.length;
     let receivers = post.receiver_posts.length;
@@ -619,6 +610,9 @@ const transfer_post = (post:any): any => {
         x.note.light_incoming_note.ciphertext = [light_ciper0, light_ciper1, light_ciper2];
         delete x.note.light_incoming_note.header;
 
+        // convert asset value to [u8; 16]
+        x.utxo.public_asset.value = new BN(x.utxo.public_asset.value).toArray('le', 16);
+
         x.full_incoming_note = x.note;
         delete x.note;
     });
@@ -639,12 +633,6 @@ const transfer_post = (post:any): any => {
         delete x.nullifier;
     });
 
-    // json.sources.map((x: any) => {
-    //     console.log("x:" + x);
-    //     const source = Array.from(x);
-    //     console.log("source:" + source);
-    //     x = source;    
-    // });
     console.log("origin sources:" + JSON.stringify(json.sources));
     return json
 }
