@@ -223,7 +223,7 @@ export class MantaSdk implements IMantaSdk {
     
     /// Executes a "To Private" transaction for any non-fungible token.
     async toPrivateNFT(asset_id: AssetId): Promise<void> {
-        await to_private_nft(this.wasm, this.wasmWallet, asset_id, this.network);
+        await to_private_nft(this.signer, this.api, this.wasm, this.wasmWallet, asset_id, this.network);
     }
 
     /// Executes a "Private Transfer" transaction for any non-fungible token.
@@ -288,13 +288,16 @@ export class MantaSdk implements IMantaSdk {
     /// Returns the address of the owner of an NFT with a particular assetId
     async getNFTOwner(assetId: AssetId): Promise<string> {
 
-        const assetIdNumber = this.assetIdArrayToNumber(assetId);
-
+        const assetIdNumber = this.assetIdArrayToNumber(assetId);        
         try {
+            const nextAssetId = await this.api.query.assetManager.nextAssetId();
+            if (assetIdNumber >= nextAssetId.toHuman()) {
+                return "";
+            }
             const assetIdMetadata = await this.api.query.assetManager.assetIdMetadata(assetIdNumber);
 
             // assetId does not exist.
-            if (!assetIdMetadata) {
+            if (assetIdMetadata.isEmpty) {
                 return "";
             }
             const readableAssetIdMetadata: any = assetIdMetadata.toHuman();
@@ -669,14 +672,16 @@ async function allNFTsInCollection(api: ApiPromise, collectionId: number, addres
 
 /// to_private transaction for NFT
 /// TODO: fixed amount value
-async function to_private_nft(wasm: any, wasmWallet: Wallet, asset_id: AssetId, network: Network): Promise<void> {
+async function to_private_nft(signer:string, api: ApiPromise, wasm: any, wasmWallet: Wallet, asset_id: AssetId, network: Network): Promise<void> {
     console.log("to_private NFT transaction...");
     const asset_id_arr = Array.from(asset_id);
-    const txJson = `{ "ToPrivate": { "id": [${asset_id_arr}], "value": "${NFT_AMOUNT}" }}`;
+    const txJson = `{ "ToPrivate": { "id": [${asset_id_arr}], "value": ${NFT_AMOUNT} }}`;
     const transaction = wasm.Transaction.from_string(txJson);
-    const networkType = wasm.Network.from_string(`"${network}"`);
+    console.log("transaction:" + JSON.stringify(transaction));
+    //const networkType = wasm.Network.from_string(`"${network}"`);
     try {
-        const res = await wasmWallet.post(transaction, null, networkType);
+        //const res = await wasmWallet.post(transaction, null, networkType);
+        const res = await sign_and_send_without_metadata(wasm,api,signer,wasmWallet,transaction, network);
         console.log("📜to_private NFT result:" + res);
     } catch (error) {
         console.error('Transaction failed', error);
@@ -689,7 +694,7 @@ async function private_transfer_nft(api: ApiPromise, signer: string, wasm: any, 
     console.log("private_transfer NFT transaction...");
     const addressJson = privateAddressToJson(to_private_address);
     const asset_id_arr = Array.from(asset_id);
-    const txJson = `{ "PrivateTransfer": [{ "id": [${asset_id_arr}], "value": "${NFT_AMOUNT}" }, ${addressJson} ]}`;
+    const txJson = `{ "PrivateTransfer": [{ "id": [${asset_id_arr}], "value": ${NFT_AMOUNT} }, ${addressJson} ]}`;
     const transaction = wasm.Transaction.from_string(txJson);
 
     // TODO: symbol query from chain storage.
@@ -722,7 +727,7 @@ async function publicTransferNFT(api: ApiPromise, signer: string, assetId:AssetI
 async function to_public_nft(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, network: Network): Promise<void> {
     console.log("to_public NFT transaction...");
     const asset_id_arr = Array.from(asset_id);
-    const txJson = `{ "ToPublic": { "id": [${asset_id_arr}], "value": "${NFT_AMOUNT}" }}`;
+    const txJson = `{ "ToPublic": { "id": [${asset_id_arr}], "value": ${NFT_AMOUNT} }}`;
     const transaction = wasm.Transaction.from_string(txJson);
     const assetMetadataJson = `{ "decimals": 12 , "symbol": "pNFT" }`;
 
