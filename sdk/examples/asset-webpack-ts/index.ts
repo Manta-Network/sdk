@@ -33,18 +33,19 @@ const create_nft_test = async () => {
     // collection_id: 4369(0x1111), item_id: 1(0x0001), asset_id: 0x11110001=286326785
 
     const collectionId = 0;
-    const itemId = 2;
-    const assetIdNumber = 10;
+    const itemId = 0;
+    const assetIdNumber = 8;
     const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
     const metadata = "https://ipfs.io/";
     const aliceAddress = "dmyjURuBeJwFo4Nvf2GZ8f5E2Asz98JY2d7UcaDykqYm1zpoi";
+    const to_private_address = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
 
     await mantaSdk.initalWalletSync();
 
     let privateBalance = await mantaSdk.privateBalance(assetId);
-
+    console.log("The current balance of the private NFT with asset ID 8 is ", privateBalance);
     
-    await mantaSdk.toPublicNFT(assetId);
+    await mantaSdk.privateTransferNFT(assetId, to_private_address);
 
     while (true) {
 
