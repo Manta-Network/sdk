@@ -4,6 +4,7 @@ import { Environment, Network } from './sdk';
 
 export type Version = string;
 export type Address = string;
+export type TransferAmount = string;
 
 // Must be a uint8Array of length 32.
 export type AssetId = Uint8Array;
@@ -29,6 +30,7 @@ export interface IMantaSdk {
   environment: Environment;
   wasmApi: any;
 
+  convertPrivateAddressToJson(address: string): any
   numberToAssetIdArray(assetIdNumber: number): AssetId;
   assetIdArrayToNumber(assetId: AssetId): number;
   networks(): any;
@@ -40,10 +42,12 @@ export interface IMantaSdk {
   signerVersion(): Promise<Version>;
   assetMetaData(asset_id: AssetId): Promise<any>;
   privateBalance(asset_id: AssetId): Promise<string>;
-  toPrivatePost(asset_id: AssetId, amount: number): Promise<void>;
-  toPrivateSign(asset_id: AssetId, amount: number, onlySign: boolean): Promise<any>;
-  privateTransfer(asset_id: AssetId, amount: number, address: Address, onlySign: boolean): Promise<any>;
-  toPublic(asset_id: AssetId, amount: number, onlySign: boolean): Promise<any>;
+  toPrivatePost(asset_id: AssetId, amount: TransferAmount): Promise<void>;
+  toPrivateSign(asset_id: AssetId, amount: TransferAmount, onlySign: boolean): Promise<any>;
+  privateTransfer(asset_id: AssetId, amount: TransferAmount, address: Address, onlySign: boolean): Promise<any>;
+  toPublic(asset_id: AssetId, amount: TransferAmount, onlySign: boolean): Promise<any>;
+  publicTransfer(asset_id: AssetId, amount: TransferAmount, address: Address): Promise<any>
+  publicBalance(asset_id: AssetId, address:string): Promise<any>;
   toPrivateNFT(asset_id: AssetId): Promise<void>;
   privateTransferNFT(asset_id: AssetId, address: Address): Promise<void>;
   toPublicNFT(asset_id: AssetId): Promise<void>;
