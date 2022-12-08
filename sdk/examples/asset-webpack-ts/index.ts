@@ -77,7 +77,6 @@ const ft_test_to_private = async () => {
     console.log("The private address is: ", privateAddress);
 
     const amount = "1000000000000000000"; // 1 unit
-    // const amount = "1000000000000000000000000"; // 1000000 unit
     const asset_id_number = 1; // DOL
     const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
