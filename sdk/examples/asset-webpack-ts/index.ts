@@ -5,13 +5,16 @@ import * as sdk from 'manta.js';
 // const to_private_address = "64nmibscb1UdWGMWnRQAYx6hS4TA2iyFqiS897cFRWvNTmjad85p6yD9ud7cyVPhyNPDrSMs2eZxTfovxZbJdFqH";
 const to_private_address = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
 const NFT_AMOUNT = 1000000000000;
+const amount = "1000000000000000000"; // 10 unit
+
 async function main() {
 
     const publicPolkadotJsAddress = "5HifovYZVQSD4rKLVMo1Rqtv45jfPhCUiGYbf4gPEtKyc1PS"
-    await ft_test_to_private();
-    // await ft_test_to_public();
-
+    // await ft_test_to_private();
+    await ft_test_to_public();
     // await public_transfer_test();
+    
+    await create_nft_test();
 
     console.log("END");
 }
@@ -23,6 +26,32 @@ const public_transfer_test = async () => {
 
     const asset_id_number = 1; // DOL
     const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
+
+    const dest_address = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
+
+    const sender_balance = await mantaSdk.publicBalance(asset_id);
+    console.log("Sender Balance:" + JSON.stringify(sender_balance));
+
+    const dest_balance = await mantaSdk.publicBalance(asset_id, dest_address);
+    console.log("Dest Balance:" + JSON.stringify(dest_balance));
+    
+    const amount = "1000000000000000000"; // 1 unit
+
+    await mantaSdk.publicTransfer(asset_id, amount, dest_address);
+
+    const sender_balance2 = await mantaSdk.publicBalance(asset_id);
+    console.log("Sender Balance After:" + JSON.stringify(sender_balance2));
+
+    const dest_balance2 = await mantaSdk.publicBalance(asset_id, dest_address);
+    console.log("Dest Balance After:" + JSON.stringify(dest_balance2));   
+}
+
+/// Note: This test requires Manta node with uniques pallet integrated.
+const create_nft_test = async () => {
+    const env = sdk.Environment.Development;
+    const net = sdk.Network.Dolphin;
+    const mantaSdk = await sdk.init(env,net);
+
 
     // collection_id: 4369(0x1111), item_id: 1(0x0001), asset_id: 0x11110001=286326785
 
@@ -62,18 +91,13 @@ const public_transfer_test = async () => {
 
     //const n = await mantaSdk.assetIdArrayToNumber(collectionIdRes);
 
-    const sender_balance = await mantaSdk.publicBalance(asset_id);
-    console.log("Sender Balance:" + JSON.stringify(sender_balance));
+    //const nft_register = await mantaSdk.mintNFT(collectionId, itemId);
 
-    const dest_balance = await mantaSdk.publicBalance(asset_id, dest_address);
-    console.log("Dest Balance:" + JSON.stringify(dest_balance));
-    
-    const amount = "1000000000000000000"; // 1 unit
+    //await mantaSdk.updateNFTMetadata(collectionId,itemId,metadata);
 
-    await mantaSdk.publicTransfer(asset_id, amount, dest_address);
+    //const stored_metadata = await mantaSdk.getNFTMetadata(collectionId,itemId);
 
-    const sender_balance2 = await mantaSdk.publicBalance(asset_id);
-    console.log("Sender Balance After:" + JSON.stringify(sender_balance2));
+    //await mantaSdk.publicTransferNFT(assetId,aliceAddress);
 
     //const all_nfts = await mantaSdk.viewAllNFTsInCollection(collectionId);
     //console.log(all_nfts)
@@ -115,7 +139,6 @@ const ft_test_to_private = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = "1000000000000000000"; // 1 unit
     const asset_id_number = 1; // DOL
     const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
@@ -150,12 +173,11 @@ const ft_test_to_public = async () => {
 
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net);
+    const mantaSdk = await sdk.init(env,net, "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
 
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = "1000000000000000000"; // 1 unit
     const asset_id_number = 1; // DOL
     const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
