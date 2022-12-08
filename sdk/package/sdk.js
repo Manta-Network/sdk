@@ -605,6 +605,30 @@ var MantaSdk = /** @class */ (function () {
             });
         });
     };
+    /// Returns the Asset ID of the NFT associated with the given `collectionId` and `itemId`.
+    MantaSdk.prototype.assetIdFromCollectionAndItemId = function (collectionId, itemId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var metadata, registeredAssetId, e_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        metadata = {
+                            "NonFungible": [collectionId, itemId]
+                        };
+                        return [4 /*yield*/, this.api.query.assetManager.registeredAssetId(metadata)];
+                    case 1:
+                        registeredAssetId = _a.sent();
+                        return [2 /*return*/, registeredAssetId.toHuman()];
+                    case 2:
+                        e_2 = _a.sent();
+                        console.error(e_2);
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
     return MantaSdk;
 }());
 export { MantaSdk };
@@ -774,7 +798,7 @@ function get_private_balance(wasmWallet, asset_id) {
 }
 function get_public_balance(api, asset_id, targetAddress) {
     return __awaiter(this, void 0, void 0, function () {
-        var assetIdNumber, account, e_2;
+        var assetIdNumber, account, e_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -793,9 +817,9 @@ function get_public_balance(api, asset_id, targetAddress) {
                     }
                     return [3 /*break*/, 4];
                 case 3:
-                    e_2 = _a.sent();
+                    e_3 = _a.sent();
                     console.log("Failed to fetch public balance.");
-                    console.error(e_2);
+                    console.error(e_3);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -1014,7 +1038,7 @@ function private_transfer(api, signer, wasm, wasmWallet, asset_id, private_trans
 /// of the fungible token with AssetId `asset_id`.
 function public_transfer(api, signer, asset_id, address, amount) {
     return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, amountBN, tx, e_3;
+        var asset_id_arr, amountBN, tx, e_4;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1029,9 +1053,9 @@ function public_transfer(api, signer, asset_id, address, amount) {
                     _a.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    e_3 = _a.sent();
+                    e_4 = _a.sent();
                     console.log("Failed to execture public transfer.");
-                    console.error(e_3);
+                    console.error(e_4);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -1042,7 +1066,7 @@ function public_transfer(api, signer, asset_id, address, amount) {
 /// Returns Collection Id of newly created collection.
 function createNFTCollection(api, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var collectionId, submitExtrinsic, e_4;
+        var collectionId, submitExtrinsic, e_5;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1058,9 +1082,9 @@ function createNFTCollection(api, signer) {
                     _a.sent();
                     return [2 /*return*/, collectionId.toHuman()];
                 case 4:
-                    e_4 = _a.sent();
+                    e_5 = _a.sent();
                     console.log("Failed to create NFT collection");
-                    console.error(e_4);
+                    console.error(e_5);
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/];
             }
@@ -1071,7 +1095,7 @@ function createNFTCollection(api, signer) {
 /// Returns the Asset ID of the newly created NFT.
 function createNFT(api, collectionId, itemId, address, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var metadata, assetId, mintExtrinsic, registerAssetExtrinsic, batchTx, e_5;
+        var metadata, assetId, mintExtrinsic, registerAssetExtrinsic, batchTx, e_6;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1101,9 +1125,9 @@ function createNFT(api, collectionId, itemId, address, signer) {
                     _a.sent();
                     return [2 /*return*/, assetId.toHuman()];
                 case 6:
-                    e_5 = _a.sent();
+                    e_6 = _a.sent();
                     console.log("Failed to create NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-                    console.error(e_5);
+                    console.error(e_6);
                     return [3 /*break*/, 7];
                 case 7: return [2 /*return*/];
             }
@@ -1113,7 +1137,7 @@ function createNFT(api, collectionId, itemId, address, signer) {
 /// Update NFT metadata
 function updateMetadata(api, collectionId, itemId, metadata, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var submitExtrinsic, e_6;
+        var submitExtrinsic, e_7;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1126,9 +1150,9 @@ function updateMetadata(api, collectionId, itemId, metadata, signer) {
                     _a.sent();
                     return [2 /*return*/];
                 case 3:
-                    e_6 = _a.sent();
+                    e_7 = _a.sent();
                     console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-                    console.error(e_6);
+                    console.error(e_7);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -1138,7 +1162,7 @@ function updateMetadata(api, collectionId, itemId, metadata, signer) {
 /// Mint NFT and set metadata in one call.
 function createNFTAndSetMetadata(api, collectionId, itemId, targetAddress, signer, metadata) {
     return __awaiter(this, void 0, void 0, function () {
-        var assetManagerMetadata, assetId, mintExtrinsic, registerAssetExtrinsic, setMetadataExtrinsic, batchTx, e_7;
+        var assetManagerMetadata, assetId, mintExtrinsic, registerAssetExtrinsic, setMetadataExtrinsic, batchTx, e_8;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1171,9 +1195,9 @@ function createNFTAndSetMetadata(api, collectionId, itemId, targetAddress, signe
                     _a.sent();
                     return [2 /*return*/, assetId.toHuman()];
                 case 7:
-                    e_7 = _a.sent();
+                    e_8 = _a.sent();
                     console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-                    console.error(e_7);
+                    console.error(e_8);
                     return [3 /*break*/, 8];
                 case 8: return [2 /*return*/];
             }
@@ -1183,7 +1207,7 @@ function createNFTAndSetMetadata(api, collectionId, itemId, targetAddress, signe
 /// View NFT metadata
 function viewMetadata(api, collectionId, itemId) {
     return __awaiter(this, void 0, void 0, function () {
-        var metadata, e_8;
+        var metadata, e_9;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1193,9 +1217,9 @@ function viewMetadata(api, collectionId, itemId) {
                     metadata = _a.sent();
                     return [2 /*return*/, metadata.toHuman()];
                 case 2:
-                    e_8 = _a.sent();
+                    e_9 = _a.sent();
                     console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-                    console.error(e_8);
+                    console.error(e_9);
                     return [3 /*break*/, 3];
                 case 3: return [2 /*return*/];
             }
@@ -1205,25 +1229,71 @@ function viewMetadata(api, collectionId, itemId) {
 /// View all NFTs an account owns of a particular collection
 function allNFTsInCollection(api, collectionId, address) {
     return __awaiter(this, void 0, void 0, function () {
-        var nfts, readableNfts, i, e_9;
+        var CALAMARI_PRIVATE_SS58_ADDRESS, publicOwnedNfts, allPrivateNftsInCollection, publicOwnedNFTs, privateNFTsInCollection, i, readableResult, metadata, formatted, i, readableResult, metadata, formatted, result, e_10;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 2, , 3]);
+                    _a.trys.push([0, 11, , 12]);
+                    CALAMARI_PRIVATE_SS58_ADDRESS = config.CALAMARI_PRIVATE_SS58_ADDRESS;
                     return [4 /*yield*/, api.query.uniques.account.keys(address, collectionId)];
                 case 1:
-                    nfts = _a.sent();
-                    readableNfts = [];
-                    for (i = 0; i < nfts.length; i++) {
-                        readableNfts.push(nfts[i].toHuman());
-                    }
-                    return [2 /*return*/, readableNfts];
+                    publicOwnedNfts = _a.sent();
+                    return [4 /*yield*/, api.query.uniques.account.keys(CALAMARI_PRIVATE_SS58_ADDRESS, collectionId)];
                 case 2:
-                    e_9 = _a.sent();
-                    console.log("Failed to view all NFTs of Collection ID: " + collectionId);
-                    console.error(e_9);
+                    allPrivateNftsInCollection = _a.sent();
+                    publicOwnedNFTs = [];
+                    privateNFTsInCollection = [];
+                    i = 0;
+                    _a.label = 3;
+                case 3:
+                    if (!(i < publicOwnedNfts.length)) return [3 /*break*/, 6];
+                    readableResult = publicOwnedNfts[i].toHuman();
+                    return [4 /*yield*/, viewMetadata(api, readableResult[1], readableResult[2])];
+                case 4:
+                    metadata = _a.sent();
+                    formatted = {
+                        owner: readableResult[0],
+                        collectionId: readableResult[1],
+                        itemId: readableResult[2],
+                        metadata: metadata
+                    };
+                    publicOwnedNFTs.push(formatted);
+                    _a.label = 5;
+                case 5:
+                    i++;
                     return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
+                case 6:
+                    i = 0;
+                    _a.label = 7;
+                case 7:
+                    if (!(i < allPrivateNftsInCollection.length)) return [3 /*break*/, 10];
+                    readableResult = allPrivateNftsInCollection[i].toHuman();
+                    return [4 /*yield*/, viewMetadata(api, readableResult[1], readableResult[2])];
+                case 8:
+                    metadata = _a.sent();
+                    formatted = {
+                        owner: readableResult[0],
+                        collectionId: readableResult[1],
+                        itemId: readableResult[2],
+                        metadata: metadata
+                    };
+                    privateNFTsInCollection.push(formatted);
+                    _a.label = 9;
+                case 9:
+                    i++;
+                    return [3 /*break*/, 7];
+                case 10:
+                    result = {
+                        publicOwnedNFTs: publicOwnedNFTs,
+                        privateNFTsInCollection: privateNFTsInCollection
+                    };
+                    return [2 /*return*/, result];
+                case 11:
+                    e_10 = _a.sent();
+                    console.log("Failed to view all NFTs of Collection ID: " + collectionId);
+                    console.error(e_10);
+                    return [3 /*break*/, 12];
+                case 12: return [2 /*return*/];
             }
         });
     });
@@ -1284,7 +1354,7 @@ function private_transfer_nft(api, signer, wasm, wasmWallet, asset_id, to_privat
 /// Transfer an nft publicly using the uniques pallet.
 function publicTransferNFT(api, signer, assetId, address) {
     return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, tx, batchTx, e_10;
+        var asset_id_arr, tx, batchTx, e_11;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1301,9 +1371,9 @@ function publicTransferNFT(api, signer, assetId, address) {
                     _a.sent();
                     return [3 /*break*/, 5];
                 case 4:
-                    e_10 = _a.sent();
+                    e_11 = _a.sent();
                     console.log("Failed to transfer NFT item of Asset ID: " + assetId + " to address: " + address);
-                    console.error(e_10);
+                    console.error(e_11);
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/];
             }

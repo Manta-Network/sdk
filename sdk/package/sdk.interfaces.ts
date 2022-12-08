@@ -59,4 +59,5 @@ export interface IMantaSdk {
   viewAllNFTsInCollection(collectionId:number, address:string): Promise<any>;
   getNFTOwner(assetId: AssetId): Promise<string>;
   mintNFTAndSetMetadata(collectionId: number, itemId: number, address: string, metadata: any): Promise<any>;
+  assetIdFromCollectionAndItemId(collectionId: number, itemId: number): Promise<any>;
 }

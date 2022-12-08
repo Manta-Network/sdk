@@ -89,8 +89,8 @@ const create_nft_test = async () => {
     }
     */
 
-    const assetIdResult = await mantaSdk.mintNFTAndSetMetadata(collectionId,itemId,"",metadata);
-    console.log(assetIdResult);
+    //const assetIdResult = await mantaSdk.mintNFTAndSetMetadata(collectionId,itemId,"",metadata);
+    //console.log(assetIdResult);
 
 
     //const collectionIdRes = await mantaSdk.createCollection();
@@ -107,6 +107,14 @@ const create_nft_test = async () => {
 
     //const all_nfts = await mantaSdk.viewAllNFTsInCollection(collectionId);
     //console.log(all_nfts)
+
+    const metadata2: any = {
+        "NonFungible": [collectionId, itemId]
+    }
+
+    const registeredAssetId = await mantaSdk.api.query.assetManager.registeredAssetId(metadata2);
+    console.log(registeredAssetId.toHuman());
+
 
     //const owner_address = await mantaSdk.getNFTOwner(assetId);
     //console.log(owner_address);

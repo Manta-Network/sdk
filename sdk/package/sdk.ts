@@ -340,6 +340,19 @@ export class MantaSdk implements IMantaSdk {
         }
 
     }
+
+    /// Returns the Asset ID of the NFT associated with the given `collectionId` and `itemId`.
+    async assetIdFromCollectionAndItemId(collectionId: number, itemId: number): Promise<any> {
+        try {
+            const metadata: any = {
+                "NonFungible": [collectionId, itemId]
+            }
+            const registeredAssetId = await this.api.query.assetManager.registeredAssetId(metadata);
+            return registeredAssetId.toHuman();
+        } catch (e) {
+            console.error(e);
+        }
+    }
     
 }
 
@@ -752,12 +765,38 @@ async function viewMetadata(api: ApiPromise, collectionId: number, itemId: numbe
 /// View all NFTs an account owns of a particular collection
 async function allNFTsInCollection(api: ApiPromise, collectionId: number, address:string): Promise<any> {
     try {
-        const nfts = await api.query.uniques.account.keys(address,collectionId);
-        const readableNfts = [];
-        for (let i = 0; i < nfts.length; i++) {
-            readableNfts.push(nfts[i].toHuman());
+        const CALAMARI_PRIVATE_SS58_ADDRESS = config.CALAMARI_PRIVATE_SS58_ADDRESS;
+        const publicOwnedNfts: any = await api.query.uniques.account.keys(address,collectionId);
+        const allPrivateNftsInCollection: any = await api.query.uniques.account.keys(CALAMARI_PRIVATE_SS58_ADDRESS, collectionId);
+        const publicOwnedNFTs: any = [];
+        const privateNFTsInCollection: any = [];
+        for (let i = 0; i < publicOwnedNfts.length; i++) {
+            const readableResult = publicOwnedNfts[i].toHuman();
+            const metadata = await viewMetadata(api,readableResult[1], readableResult[2]);
+            const formatted = {
+                owner: readableResult[0],
+                collectionId: readableResult[1],
+                itemId: readableResult[2],
+                metadata
+            }   
+            publicOwnedNFTs.push(formatted);
         }
-        return readableNfts;
+        for (let i = 0; i < allPrivateNftsInCollection.length; i++) {
+            const readableResult = allPrivateNftsInCollection[i].toHuman();
+            const metadata = await viewMetadata(api,readableResult[1], readableResult[2]);
+            const formatted = {
+                owner: readableResult[0],
+                collectionId: readableResult[1],
+                itemId: readableResult[2],
+                metadata
+            }   
+            privateNFTsInCollection.push(formatted);
+        }
+        const result = {
+            publicOwnedNFTs,
+            privateNFTsInCollection
+        }
+        return result;
     } catch (e) {
         console.log("Failed to view all NFTs of Collection ID: " + collectionId);
         console.error(e);
