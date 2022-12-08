@@ -11,7 +11,37 @@ async function main() {
     await ft_test_to_private();
     // await ft_test_to_public();
 
+    // await public_transfer_test();
+
     console.log("END");
+}
+
+const public_transfer_test = async () => {
+    const env = sdk.Environment.Development;
+    const net = sdk.Network.Dolphin;
+    const mantaSdk = await sdk.init(env,net, "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
+
+    const asset_id_number = 1; // DOL
+    const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
+
+    const dest_address = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
+
+    const sender_balance = await mantaSdk.publicBalance(asset_id);
+    console.log("Sender Balance:" + JSON.stringify(sender_balance));
+
+    const dest_balance = await mantaSdk.publicBalance(asset_id, dest_address);
+    console.log("Dest Balance:" + JSON.stringify(dest_balance));
+    
+    const amount = "1000000000000000000"; // 1 unit
+
+    await mantaSdk.publicTransfer(asset_id, amount, dest_address);
+
+    const sender_balance2 = await mantaSdk.publicBalance(asset_id);
+    console.log("Sender Balance After:" + JSON.stringify(sender_balance2));
+
+    const dest_balance2 = await mantaSdk.publicBalance(asset_id, dest_address);
+    console.log("Dest Balance After:" + JSON.stringify(dest_balance2));
+    
 }
 
 const ft_test_to_private_only_sign = async () => {
@@ -23,7 +53,7 @@ const ft_test_to_private_only_sign = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = 10000000000000000000; // 10 units
+    const amount = "10000000000000000000"; // 10 units
     const asset_id_number = 1; // DOL
     const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
@@ -46,7 +76,8 @@ const ft_test_to_private = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = 1000000000000000000; // 1 unit
+    const amount = "1000000000000000000"; // 1 unit
+    // const amount = "1000000000000000000000000"; // 1000000 unit
     const asset_id_number = 1; // DOL
     const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
@@ -86,7 +117,7 @@ const ft_test_to_public = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = 1000000000000000000; // 1 unit
+    const amount = "1000000000000000000"; // 1 unit
     const asset_id_number = 1; // DOL
     const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 

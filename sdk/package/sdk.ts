@@ -359,6 +359,8 @@ function get_private_balance(wasmWallet: Wallet, asset_id: AssetId): string {
 async function get_public_balance(api: ApiPromise, asset_id:AssetId, targetAddress:string): Promise<any> {
     try {
         const assetIdNumber = await uint8ArrayToNumber(asset_id);
+        // TODO: assets is only for non native token
+        // For native token(DOL,KMA), should query system.balance(address)
         const account: any = await api.query.assets.account(assetIdNumber, targetAddress);
         if (account.value.isEmpty) {
             return "0"
@@ -526,13 +528,12 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
 async function public_transfer(api: ApiPromise, signer:string, asset_id:AssetId, address:string, amount:TransferAmount): Promise<any> {
     try {
         const asset_id_arr = Array.from(asset_id);
-        const amountBN = new BN(amount);
+        const amountBN = new BN(amount).toArray('le', 16);
         const tx = await api.tx.mantaPay.publicTransfer(
             { id: asset_id_arr, value: amountBN },
             address
-          );
-          const batchTx = await api.tx.utility.batch([tx]);
-          await batchTx.signAndSend(signer);
+        );
+        await tx.signAndSend(signer);
     } catch (e) {
         console.log("Failed to execture public transfer.");
         console.error(e);

@@ -13,7 +13,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -803,29 +803,27 @@ function private_transfer(api, signer, wasm, wasmWallet, asset_id, private_trans
 /// of the fungible token with AssetId `asset_id`.
 function public_transfer(api, signer, asset_id, address, amount) {
     return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, amountBN, tx, batchTx, e_2;
+        var asset_id_arr, amountBN, tx, e_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 4, , 5]);
+                    _a.trys.push([0, 3, , 4]);
                     asset_id_arr = Array.from(asset_id);
-                    amountBN = new BN(amount);
+                    amountBN = new BN(amount).toArray('le', 16);
+                    console.log("amount:" + amountBN);
                     return [4 /*yield*/, api.tx.mantaPay.publicTransfer({ id: asset_id_arr, value: amountBN }, address)];
                 case 1:
                     tx = _a.sent();
-                    return [4 /*yield*/, api.tx.utility.batch([tx])];
+                    return [4 /*yield*/, tx.signAndSend(signer)];
                 case 2:
-                    batchTx = _a.sent();
-                    return [4 /*yield*/, batchTx.signAndSend(signer)];
-                case 3:
                     _a.sent();
-                    return [3 /*break*/, 5];
-                case 4:
+                    return [3 /*break*/, 4];
+                case 3:
                     e_2 = _a.sent();
                     console.log("Failed to execture public transfer.");
                     console.error(e_2);
-                    return [3 /*break*/, 5];
-                case 5: return [2 /*return*/];
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
             }
         });
     });
