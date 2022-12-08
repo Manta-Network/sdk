@@ -23,7 +23,7 @@ const ft_test_to_private_only_sign = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = 10000000000000000000; // 10 units
+    const amount = "10000000000000000000"; // 10 units
     const asset_id_number = 1; // DOL
     const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
@@ -46,7 +46,7 @@ const ft_test_to_private = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = 1000000000000000000; // 1 unit
+    const amount = "1000000000000000000"; // 1 unit
     const asset_id_number = 1; // DOL
     const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
@@ -86,7 +86,7 @@ const ft_test_to_public = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = 1000000000000000000; // 1 unit
+    const amount = "1000000000000000000"; // 1 unit
     const asset_id_number = 1; // DOL
     const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
