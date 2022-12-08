@@ -10,8 +10,8 @@ const amount = "1000000000000000000"; // 10 unit
 async function main() {
 
     const publicPolkadotJsAddress = "5HifovYZVQSD4rKLVMo1Rqtv45jfPhCUiGYbf4gPEtKyc1PS"
-    // await ft_test_to_private();
-    await ft_test_to_public();
+    //await ft_test_to_private();
+    //await ft_test_to_public();
     // await public_transfer_test();
     
     await create_nft_test();
@@ -56,19 +56,21 @@ const create_nft_test = async () => {
     // collection_id: 4369(0x1111), item_id: 1(0x0001), asset_id: 0x11110001=286326785
 
     const collectionId = 0;
-    const itemId = 0;
+    const itemId = 2;
     const assetIdNumber = 8;
     const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
     const metadata = "https://ipfs.io/";
     const aliceAddress = "dmyjURuBeJwFo4Nvf2GZ8f5E2Asz98JY2d7UcaDykqYm1zpoi";
     const to_private_address = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
 
+
+    /*
     await mantaSdk.initalWalletSync();
 
     let privateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The current balance of the private NFT with asset ID 8 is ", privateBalance);
     
-    await mantaSdk.privateTransferNFT(assetId, to_private_address);
+    await mantaSdk.toPublicNFT(assetId);
 
     while (true) {
 
@@ -85,8 +87,12 @@ const create_nft_test = async () => {
             break;
         }
     }
+    */
 
-    
+    const assetIdResult = await mantaSdk.mintNFTAndSetMetadata(collectionId,itemId,"",metadata);
+    console.log(assetIdResult);
+
+
     //const collectionIdRes = await mantaSdk.createCollection();
 
     //const n = await mantaSdk.assetIdArrayToNumber(collectionIdRes);
@@ -134,7 +140,7 @@ const ft_test_to_private = async () => {
 
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net, "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
+    const mantaSdk = await sdk.init(env,net);
 
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);

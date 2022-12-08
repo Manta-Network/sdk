@@ -285,6 +285,16 @@ export class MantaSdk implements IMantaSdk {
         await updateMetadata(this.api, collectionId, itemId, metadata, this.signer);
     }
 
+    /// Executes a batch transaction of minting the NFT and setting the metadata at once.
+    async mintNFTAndSetMetadata(collectionId: number, itemId: number, address: string="", metadata: any): Promise<void> {
+        let targetAddress = address;
+        if (!address) {
+            targetAddress = this.signer;
+        }
+        const res = await createNFTAndSetMetadata(this.api, collectionId, itemId, targetAddress, this.signer, metadata);
+        return res;
+    }
+
     /// Returns the metadata associated with a particular NFT of with collection id of
     /// `collectionId` and item Id of `itemId`.
     async getNFTMetadata(collectionId: number, itemId: number): Promise<any> {
@@ -696,6 +706,32 @@ async function updateMetadata(api: ApiPromise, collectionId: number, itemId: num
         const submitExtrinsic = await api.tx.uniques.setMetadata(collectionId,itemId,metadata,false);
         await submitExtrinsic.signAndSend(signer);
         return;
+    } catch (e) {
+        console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
+        console.error(e);
+    }
+}
+
+/// Mint NFT and set metadata in one call.
+async function createNFTAndSetMetadata(api: ApiPromise, collectionId: number, itemId: number, targetAddress:string, signer:string, metadata:any): Promise<any> {
+    try {
+        const assetManagerMetadata = {
+            "NonFungible": {
+                "name": "",
+                "info": "",
+                "collection_id": collectionId,
+                "item_id": itemId,
+            }
+        }
+        
+        const assetId = await api.query.assetManager.nextAssetId();
+        const mintExtrinsic = await api.tx.uniques.mint(collectionId,itemId,targetAddress);
+        const registerAssetExtrinsic = await api.tx.assetManager.registerAsset(targetAddress,assetManagerMetadata);
+        const setMetadataExtrinsic = await api.tx.uniques.setMetadata(collectionId,itemId,metadata,false);
+        const batchTx = await api.tx.utility.batch([mintExtrinsic, registerAssetExtrinsic,setMetadataExtrinsic]);
+        await batchTx.signAndSend(signer);
+        return assetId.toHuman();
+
     } catch (e) {
         console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
         console.error(e);
