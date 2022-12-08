@@ -264,7 +264,7 @@ pub struct TransferPost {
     asset_id: Option<AssetId>,
 
     /// Sources
-    sources: Vec<String>,
+    sources: Vec<RawAssetValue>,
 
     /// Sender Posts
     sender_posts: Vec<config::SenderPost>,
@@ -273,7 +273,7 @@ pub struct TransferPost {
     receiver_posts: Vec<config::ReceiverPost>,
 
     /// Sinks
-    sinks: Vec<String>,
+    sinks: Vec<RawAssetValue>,
 
     /// Validity Proof
     proof: config::Proof,
@@ -287,10 +287,10 @@ impl TransferPost {
     pub fn new(
         authorization_signature: Option<JsString>,
         asset_id: Option<String>,
-        sources: Vec<JsString>,
+        sources: Vec<JsValue>,
         sender_posts: Vec<JsValue>,
         receiver_posts: Vec<JsValue>,
-        sinks: Vec<JsString>,
+        sinks: Vec<JsValue>,
         proof: JsValue,
     ) -> Self {
         Self {
@@ -304,10 +304,10 @@ impl TransferPost {
                         .expect("Decoding a field element from [u8; 32] is not allowed to fail"),
                 )
             }), // TODO: Are all [u8; 32] allowed?
-            sources: sources.into_iter().map(Into::into).collect(),
+            sources: sources.into_iter().map(from_js).collect(),
             sender_posts: sender_posts.into_iter().map(from_js).collect(),
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
-            sinks: sinks.into_iter().map(Into::into).collect(),
+            sinks: sinks.into_iter().map(from_js).collect(),
             proof: from_js(proof),
         }
     }
@@ -323,11 +323,11 @@ impl From<config::TransferPost> for TransferPost {
                 .body
                 .sources
                 .into_iter()
-                .map(|s| s.to_string())
+                .map(|s| s.to_le_bytes())
                 .collect(),
             sender_posts: post.body.sender_posts,
             receiver_posts: post.body.receiver_posts,
-            sinks: post.body.sinks.into_iter().map(|s| s.to_string()).collect(),
+            sinks: post.body.sinks.into_iter().map(|s| s.to_le_bytes()).collect(),
             proof: post.body.proof,
         }
     }

@@ -1005,9 +1005,9 @@
   integrity sha512-ZxOhsSyxYwLJj3pLZCefNitxsj093tb2vq90mp2txoYeBqbcjDjqFhyM8eUjq/uFm6zJ+mUuqxlS2FkuSY1MTA==
 
 "@substrate/ss58-registry@^1.23.0":
-  version "1.35.0"
-  resolved "https://registry.yarnpkg.com/@substrate/ss58-registry/-/ss58-registry-1.35.0.tgz#8afc88ddc15cc0ae3ae1dfdb8e7d3fbae646c3c3"
-  integrity sha512-cIY3J7RlT4mfPNFwd2mv1q9vTp/shImw2gN2y2outMhOcagH/HG+W8/JohpifjxPC/1pbQ0Z8nxfL5Td3EchcA==
+  version "1.36.0"
+  resolved "https://registry.yarnpkg.com/@substrate/ss58-registry/-/ss58-registry-1.36.0.tgz#22b59fa85cacc0bdf40aa5d8131a377c1b5a8dd8"
+  integrity sha512-YfQIpe2bIvGg/XWNByycznbOiAknMvpYaUpQJ2sLmNT/OwPx7XjEXk7dLShccuiQDoOQt3trTtF3Frz/Tjv6Fg==
 
 "@tootallnate/once@1":
   version "1.1.2"
@@ -3966,8 +3966,13 @@ make-fetch-happen@^9.1.0:
     "@polkadot/util-crypto" "8.1.2"
     axios "^0.27.2"
     bn.js "^5.2.0"
+<<<<<<< HEAD
     manta-wasm-wallet "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-8de4b5fa-64c4-4844-95f6-32a8f2f6351e-1670395632976/wallet/crate/pkg"
     manta-wasm-wallet-api "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-8de4b5fa-64c4-4844-95f6-32a8f2f6351e-1670395632976/wallet/api"
+=======
+    manta-wasm-wallet "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-aeef3730-a16f-4144-b9da-afdfbfb31495-1670475173330/wallet/crate/pkg"
+    manta-wasm-wallet-api "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-aeef3730-a16f-4144-b9da-afdfbfb31495-1670475173330/wallet/api"
+>>>>>>> feat/mantapay-v1-update
 
 md5.js@^1.3.4:
   version "1.3.5"

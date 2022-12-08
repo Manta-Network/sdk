@@ -13,7 +13,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -295,6 +295,27 @@ var MantaSdk = /** @class */ (function () {
             });
         });
     };
+    /// Returns the public balance associated with an account for a given `asset_id`.
+    /// If no address is provided, the balance will be returned for this.signer.
+    MantaSdk.prototype.publicBalance = function (asset_id, address) {
+        if (address === void 0) { address = ""; }
+        return __awaiter(this, void 0, void 0, function () {
+            var targetAddress, balance;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        targetAddress = address;
+                        if (!targetAddress) {
+                            targetAddress = this.signer;
+                        }
+                        return [4 /*yield*/, get_public_balance(this.api, asset_id, targetAddress)];
+                    case 1:
+                        balance = _a.sent();
+                        return [2 /*return*/, balance];
+                }
+            });
+        });
+    };
     /// Executes a "To Private" transaction for any fungible token, using the post method.
     MantaSdk.prototype.toPrivatePost = function (asset_id, amount) {
         return __awaiter(this, void 0, void 0, function () {
@@ -336,6 +357,21 @@ var MantaSdk = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, private_transfer(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount, address, this.network, onlySign)];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result];
+                }
+            });
+        });
+    };
+    /// Executes a public transfer of `asset_id` for an amount of `amount` from the address
+    /// of this.signer to `address`.
+    MantaSdk.prototype.publicTransfer = function (asset_id, amount, address) {
+        return __awaiter(this, void 0, void 0, function () {
+            var result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, public_transfer(this.api, this.signer, asset_id, address, amount)];
                     case 1:
                         result = _a.sent();
                         return [2 /*return*/, result];
@@ -716,6 +752,36 @@ function get_private_balance(wasmWallet, asset_id) {
     console.log("\uD83D\uDCB0private asset ".concat(asset_id, " balance:") + balance);
     return balance;
 }
+function get_public_balance(api, asset_id, targetAddress) {
+    return __awaiter(this, void 0, void 0, function () {
+        var assetIdNumber, account, e_2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    return [4 /*yield*/, uint8ArrayToNumber(asset_id)];
+                case 1:
+                    assetIdNumber = _a.sent();
+                    return [4 /*yield*/, api.query.assets.account(assetIdNumber, targetAddress)];
+                case 2:
+                    account = _a.sent();
+                    if (account.value.isEmpty) {
+                        return [2 /*return*/, "0"];
+                    }
+                    else {
+                        return [2 /*return*/, account.value.balance.toString()];
+                    }
+                    return [3 /*break*/, 4];
+                case 3:
+                    e_2 = _a.sent();
+                    console.log("Failed to fetch public balance.");
+                    console.error(e_2);
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
 /// Converts a given zkAddress to json.
 function privateAddressToJson(privateAddress) {
     var bytes = base58Decode(privateAddress);
@@ -776,13 +842,14 @@ function sync(wasm, wasmWallet, network) {
 /// connected wallet.
 function to_private_by_post(wasm, wasmWallet, asset_id, to_private_amount, network) {
     return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, txJson, transaction, networkType, res, error_3;
+        var amountBN, asset_id_arr, txJson, transaction, networkType, res, error_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     console.log("to_private transaction...");
+                    amountBN = new BN(to_private_amount);
                     asset_id_arr = Array.from(asset_id);
-                    txJson = "{ \"ToPrivate\": { \"id\": [".concat(asset_id_arr, "], \"value\": ").concat(to_private_amount, " }}");
+                    txJson = "{ \"ToPrivate\": { \"id\": [".concat(asset_id_arr, "], \"value\": ").concat(amountBN, " }}");
                     console.log("txJson:" + txJson);
                     transaction = wasm.Transaction.from_string(txJson);
                     console.log("transaction:" + JSON.stringify(transaction));
@@ -810,13 +877,14 @@ function to_private_by_post(wasm, wasmWallet, asset_id, to_private_amount, netwo
 /// the transaction without posting it to the ledger.
 function to_private_by_sign(api, signer, wasm, wasmWallet, asset_id, to_private_amount, network, onlySign) {
     return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, txJson, transaction, signResult, res, error_4;
+        var amountBN, asset_id_arr, txJson, transaction, signResult, res, error_4;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     console.log("to_private transaction...");
+                    amountBN = new BN(to_private_amount);
                     asset_id_arr = Array.from(asset_id);
-                    txJson = "{ \"ToPrivate\": { \"id\": [".concat(asset_id_arr, "], \"value\": ").concat(to_private_amount, " }}");
+                    txJson = "{ \"ToPrivate\": { \"id\": [".concat(asset_id_arr, "], \"value\": ").concat(amountBN, " }}");
                     transaction = wasm.Transaction.from_string(txJson);
                     _a.label = 1;
                 case 1:
@@ -846,13 +914,14 @@ function to_private_by_sign(api, signer, wasm, wasmWallet, asset_id, to_private_
 /// the transaction without posting it to the ledger.
 function to_public(api, signer, wasm, wasmWallet, asset_id, transfer_amount, network, onlySign) {
     return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, txJson, transaction, assetIdNumber, asset_meta, json, jsonObj, decimals, symbol, assetMetadataJson, signResult, res;
+        var amountBN, asset_id_arr, txJson, transaction, assetIdNumber, asset_meta, json, jsonObj, decimals, symbol, assetMetadataJson, signResult, res;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     console.log("to_public transaction of asset_id:" + asset_id);
+                    amountBN = new BN(transfer_amount);
                     asset_id_arr = Array.from(asset_id);
-                    txJson = "{ \"ToPublic\": { \"id\": [".concat(asset_id_arr, "], \"value\": ").concat(transfer_amount, " }}");
+                    txJson = "{ \"ToPublic\": { \"id\": [".concat(asset_id_arr, "], \"value\": ").concat(amountBN, " }}");
                     transaction = wasm.Transaction.from_string(txJson);
                     console.log("sdk transaction:" + txJson + ", " + JSON.stringify(transaction));
                     assetIdNumber = uint8ArrayToNumber(asset_id);
@@ -862,8 +931,8 @@ function to_public(api, signer, wasm, wasmWallet, asset_id, transfer_amount, net
                     json = JSON.stringify(asset_meta.toHuman());
                     jsonObj = JSON.parse(json);
                     console.log("asset metadata:" + json);
-                    decimals = jsonObj["Fungible"]["metadata"]["decimals"];
-                    symbol = jsonObj["Fungible"]["metadata"]["symbol"];
+                    decimals = jsonObj["metadata"]["decimals"];
+                    symbol = jsonObj["metadata"]["symbol"];
                     assetMetadataJson = "{ \"decimals\": ".concat(decimals, ", \"symbol\": \"").concat(PRIVATE_ASSET_PREFIX).concat(symbol, "\" }");
                     console.log("📜asset metadata:" + assetMetadataJson);
                     if (!onlySign) return [3 /*break*/, 3];
@@ -883,15 +952,16 @@ function to_public(api, signer, wasm, wasmWallet, asset_id, transfer_amount, net
 /// private transfer transaction
 function private_transfer(api, signer, wasm, wasmWallet, asset_id, private_transfer_amount, to_private_address, network, onlySign) {
     return __awaiter(this, void 0, void 0, function () {
-        var addressJson, asset_id_arr, txJson, transaction, assetIdNumber, asset_meta, json, jsonObj, decimals, symbol, assetMetadataJson, signResult, res;
+        var addressJson, amountBN, asset_id_arr, txJson, transaction, assetIdNumber, asset_meta, json, jsonObj, decimals, symbol, assetMetadataJson, signResult, res;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     console.log("private_transfer transaction of asset_id:" + asset_id);
                     addressJson = privateAddressToJson(to_private_address);
                     console.log("to zkAddress:" + JSON.stringify(addressJson));
+                    amountBN = new BN(private_transfer_amount);
                     asset_id_arr = Array.from(asset_id);
-                    txJson = "{ \"PrivateTransfer\": [{ \"id\": [".concat(asset_id_arr, "], \"value\": ").concat(private_transfer_amount, " }, ").concat(addressJson, " ]}");
+                    txJson = "{ \"PrivateTransfer\": [{ \"id\": [".concat(asset_id_arr, "], \"value\": ").concat(amountBN, " }, ").concat(addressJson, " ]}");
                     transaction = wasm.Transaction.from_string(txJson);
                     console.log("sdk transaction:" + txJson + ", " + JSON.stringify(transaction));
                     assetIdNumber = uint8ArrayToNumber(asset_id);
@@ -901,8 +971,9 @@ function private_transfer(api, signer, wasm, wasmWallet, asset_id, private_trans
                     json = JSON.stringify(asset_meta.toHuman());
                     jsonObj = JSON.parse(json);
                     console.log("asset metadata:" + json);
-                    decimals = jsonObj["Fungible"]["metadata"]["decimals"];
-                    symbol = jsonObj["Fungible"]["metadata"]["symbol"];
+                    console.log("asset JSON:" + jsonObj);
+                    decimals = jsonObj["metadata"]["decimals"];
+                    symbol = jsonObj["metadata"]["symbol"];
                     assetMetadataJson = "{ \"decimals\": ".concat(decimals, ", \"symbol\": \"").concat(PRIVATE_ASSET_PREFIX).concat(symbol, "\" }");
                     console.log("📜asset metadata:" + assetMetadataJson);
                     if (!onlySign) return [3 /*break*/, 3];
@@ -919,11 +990,39 @@ function private_transfer(api, signer, wasm, wasmWallet, asset_id, private_trans
         });
     });
 }
+/// Executes a public transfer from the address of `signer` to the address of `address`,
+/// of the fungible token with AssetId `asset_id`.
+function public_transfer(api, signer, asset_id, address, amount) {
+    return __awaiter(this, void 0, void 0, function () {
+        var asset_id_arr, amountBN, tx, e_3;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    asset_id_arr = Array.from(asset_id);
+                    amountBN = new BN(amount).toArray('le', 16);
+                    return [4 /*yield*/, api.tx.mantaPay.publicTransfer({ id: asset_id_arr, value: amountBN }, address)];
+                case 1:
+                    tx = _a.sent();
+                    return [4 /*yield*/, tx.signAndSend(signer)];
+                case 2:
+                    _a.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    e_3 = _a.sent();
+                    console.log("Failed to execture public transfer.");
+                    console.error(e_3);
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
 /// Create NFT collection
 /// Returns Collection Id of newly created collection.
 function createNFTCollection(api, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var collectionId, submitExtrinsic, e_2;
+        var collectionId, submitExtrinsic, e_4;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -939,9 +1038,9 @@ function createNFTCollection(api, signer) {
                     _a.sent();
                     return [2 /*return*/, collectionId.toHuman()];
                 case 4:
-                    e_2 = _a.sent();
+                    e_4 = _a.sent();
                     console.log("Failed to create NFT collection");
-                    console.error(e_2);
+                    console.error(e_4);
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/];
             }
@@ -952,7 +1051,7 @@ function createNFTCollection(api, signer) {
 /// Returns the Asset ID of the newly created NFT.
 function createNFT(api, collectionId, itemId, address, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var metadata, assetId, mintExtrinsic, registerAssetExtrinsic, batchTx, e_3;
+        var metadata, assetId, mintExtrinsic, registerAssetExtrinsic, batchTx, e_5;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -982,9 +1081,9 @@ function createNFT(api, collectionId, itemId, address, signer) {
                     _a.sent();
                     return [2 /*return*/, assetId.toHuman()];
                 case 6:
-                    e_3 = _a.sent();
+                    e_5 = _a.sent();
                     console.log("Failed to create NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-                    console.error(e_3);
+                    console.error(e_5);
                     return [3 /*break*/, 7];
                 case 7: return [2 /*return*/];
             }
@@ -994,7 +1093,7 @@ function createNFT(api, collectionId, itemId, address, signer) {
 /// Update NFT metadata
 function updateMetadata(api, collectionId, itemId, metadata, signer) {
     return __awaiter(this, void 0, void 0, function () {
-        var submitExtrinsic, e_4;
+        var submitExtrinsic, e_6;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1007,9 +1106,9 @@ function updateMetadata(api, collectionId, itemId, metadata, signer) {
                     _a.sent();
                     return [2 /*return*/];
                 case 3:
-                    e_4 = _a.sent();
+                    e_6 = _a.sent();
                     console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-                    console.error(e_4);
+                    console.error(e_6);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -1019,7 +1118,7 @@ function updateMetadata(api, collectionId, itemId, metadata, signer) {
 /// View NFT metadata
 function viewMetadata(api, collectionId, itemId) {
     return __awaiter(this, void 0, void 0, function () {
-        var metadata, e_5;
+        var metadata, e_7;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1029,9 +1128,9 @@ function viewMetadata(api, collectionId, itemId) {
                     metadata = _a.sent();
                     return [2 /*return*/, metadata.toHuman()];
                 case 2:
-                    e_5 = _a.sent();
+                    e_7 = _a.sent();
                     console.log("Failed to update NFT item of Collection ID: " + collectionId + " and Item ID: " + itemId);
-                    console.error(e_5);
+                    console.error(e_7);
                     return [3 /*break*/, 3];
                 case 3: return [2 /*return*/];
             }
@@ -1041,7 +1140,7 @@ function viewMetadata(api, collectionId, itemId) {
 /// View all NFTs an account owns of a particular collection
 function allNFTsInCollection(api, collectionId, address) {
     return __awaiter(this, void 0, void 0, function () {
-        var nfts, readableNfts, i, e_6;
+        var nfts, readableNfts, i, e_8;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1055,9 +1154,9 @@ function allNFTsInCollection(api, collectionId, address) {
                     }
                     return [2 /*return*/, readableNfts];
                 case 2:
-                    e_6 = _a.sent();
+                    e_8 = _a.sent();
                     console.log("Failed to view all NFTs of Collection ID: " + collectionId);
-                    console.error(e_6);
+                    console.error(e_8);
                     return [3 /*break*/, 3];
                 case 3: return [2 /*return*/];
             }
@@ -1120,7 +1219,7 @@ function private_transfer_nft(api, signer, wasm, wasmWallet, asset_id, to_privat
 /// Transfer an nft publicly using the uniques pallet.
 function publicTransferNFT(api, signer, assetId, address) {
     return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, tx, batchTx, e_7;
+        var asset_id_arr, tx, batchTx, e_9;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1137,9 +1236,9 @@ function publicTransferNFT(api, signer, assetId, address) {
                     _a.sent();
                     return [3 /*break*/, 5];
                 case 4:
-                    e_7 = _a.sent();
+                    e_9 = _a.sent();
                     console.log("Failed to transfer NFT item of Asset ID: " + assetId + " to address: " + address);
-                    console.error(e_7);
+                    console.error(e_9);
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/];
             }
@@ -1280,8 +1379,6 @@ function mapPostToTransaction(post, api) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    post.sources = post.sources.map(function (source) { return new BN(source); });
-                    post.sinks = post.sinks.map(function (sink) { return new BN(sink); });
                     sources = post.sources.length;
                     senders = post.sender_posts.length;
                     receivers = post.receiver_posts.length;
@@ -1368,6 +1465,8 @@ var transfer_post = function (post) {
         x.note.light_incoming_note.ephemeral_public_key = light_pk;
         x.note.light_incoming_note.ciphertext = [light_ciper0, light_ciper1, light_ciper2];
         delete x.note.light_incoming_note.header;
+        // convert asset value to [u8; 16]
+        x.utxo.public_asset.value = new BN(x.utxo.public_asset.value).toArray('le', 16);
         x.full_incoming_note = x.note;
         delete x.note;
     });
@@ -1386,6 +1485,7 @@ var transfer_post = function (post) {
         x.nullifier_commitment = nullifier;
         delete x.nullifier;
     });
+    console.log("origin sources:" + JSON.stringify(json.sources));
     return json;
 };
 /// Convert uint8Array to number
