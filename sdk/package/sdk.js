@@ -1354,13 +1354,14 @@ function private_transfer_nft(api, signer, wasm, wasmWallet, asset_id, to_privat
 /// Transfer an nft publicly using the uniques pallet.
 function publicTransferNFT(api, signer, assetId, address) {
     return __awaiter(this, void 0, void 0, function () {
-        var asset_id_arr, tx, batchTx, e_11;
+        var asset_id_arr, u8ArrayNFTAmount, tx, batchTx, e_11;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 4, , 5]);
                     asset_id_arr = Array.from(assetId);
-                    return [4 /*yield*/, api.tx.mantaPay.publicTransfer({ id: asset_id_arr, value: NFT_AMOUNT }, address)];
+                    u8ArrayNFTAmount = numberToUint8Array(NFT_AMOUNT);
+                    return [4 /*yield*/, api.tx.mantaPay.publicTransfer({ id: asset_id_arr, value: u8ArrayNFTAmount }, address)];
                 case 1:
                     tx = _a.sent();
                     return [4 /*yield*/, api.tx.utility.batch([tx])];

@@ -57,7 +57,7 @@ const create_nft_test = async () => {
 
     const collectionId = 0;
     const itemId = 2;
-    const assetIdNumber = 8;
+    const assetIdNumber = 12;
     const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
     const metadata = "https://ipfs.io/";
     const aliceAddress = "dmyjURuBeJwFo4Nvf2GZ8f5E2Asz98JY2d7UcaDykqYm1zpoi";
@@ -108,12 +108,12 @@ const create_nft_test = async () => {
     //const all_nfts = await mantaSdk.viewAllNFTsInCollection(collectionId);
     //console.log(all_nfts)
 
-    const metadata2: any = {
-        "NonFungible": [collectionId, itemId]
-    }
+    //const metadata2: any = {
+    //    "NonFungible": [collectionId, itemId]
+    //}
 
-    const registeredAssetId = await mantaSdk.api.query.assetManager.registeredAssetId(metadata2);
-    console.log(registeredAssetId.toHuman());
+    //const registeredAssetId = await mantaSdk.api.query.assetManager.registeredAssetId(metadata2);
+    //console.log(registeredAssetId.toHuman());
 
 
     //const owner_address = await mantaSdk.getNFTOwner(assetId);

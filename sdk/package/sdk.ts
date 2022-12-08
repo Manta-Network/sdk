@@ -843,8 +843,9 @@ async function private_transfer_nft(api: ApiPromise, signer: string, wasm: any, 
 async function publicTransferNFT(api: ApiPromise, signer: string, assetId:AssetId, address: string): Promise<void> {
     try {
         const asset_id_arr = Array.from(assetId);
+        const u8ArrayNFTAmount = numberToUint8Array(NFT_AMOUNT);
         const tx = await api.tx.mantaPay.publicTransfer(
-            { id: asset_id_arr, value: NFT_AMOUNT },
+            { id: asset_id_arr, value: u8ArrayNFTAmount },
             address
           );
           const batchTx = await api.tx.utility.batch([tx]);
