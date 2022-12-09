@@ -481,7 +481,6 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
 function get_private_balance(wasmWallet: Wallet, asset_id: AssetId): string {
     const assetIdNumber = uint8ArrayToNumber(asset_id);
     const balance = wasmWallet.balance(assetIdNumber);
-    console.log(`💰private asset ${asset_id} balance:` + balance);
     return balance;
 }
 
