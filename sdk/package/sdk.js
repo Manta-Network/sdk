@@ -13,7 +13,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -793,7 +793,6 @@ function getPrivateAddress(wasm, wallet, network) {
 function get_private_balance(wasmWallet, asset_id) {
     var assetIdNumber = uint8ArrayToNumber(asset_id);
     var balance = wasmWallet.balance(assetIdNumber);
-    console.log("\uD83D\uDCB0private asset ".concat(asset_id, " balance:") + balance);
     return balance;
 }
 function get_public_balance(api, asset_id, targetAddress) {
