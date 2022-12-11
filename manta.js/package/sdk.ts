@@ -3,7 +3,7 @@ import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 // TODO: remove this dependency with better signer integration
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 // @ts-ignore
-import Api, {ApiConfig } from 'manta-wasm-wallet-api';
+import Api, {ApiConfig} from 'manta-wasm-wallet-api';
 import axios from 'axios';
 import BN from 'bn.js';
 import config from './manta-config.json';

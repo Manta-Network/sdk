@@ -2,7 +2,7 @@
   "name": "manta.js",
   "version": "1.0.0",
   "description": "manta.js sdk",
-  "main": "sdk.js",
+  "main": "sdk.ts",
   "dependencies": {
     "@polkadot/api": "6.8.1",
     "@polkadot/extension-dapp": "0.39.3",
