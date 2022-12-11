@@ -20,7 +20,7 @@ export interface InitWasmResult {
   wasmApi: any
 }
 
-export interface IMantaSdk {
+export interface IMantaPrivateWallet {
 
   api: ApiPromise;
   signer: string;
@@ -34,8 +34,6 @@ export interface IMantaSdk {
   numberToAssetIdArray(assetIdNumber: number): AssetId;
   assetIdArrayToNumber(assetId: AssetId): number;
   networks(): any;
-  setNetwork(network: Network): Promise<void>
-  setEnvironment(environment: Environment): Promise<void>
   privateAddress(): Promise<Address>;
   initalWalletSync(): Promise<void>;
   walletSync(): Promise<void>;

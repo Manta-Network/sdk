@@ -41,7 +41,6 @@ use manta_accounting::{
     },
 };
 use manta_crypto::signature::schnorr;
-// use manta_accounting::transfer::AuthorizationSignature;
 use manta_pay::{
     config::{self, utxo},
     signer,

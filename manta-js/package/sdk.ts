@@ -9,7 +9,7 @@ import BN from 'bn.js';
 import config from './manta-config.json';
 import { Transaction, Wallet } from 'manta-wasm-wallet';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { Version, Address, AssetId, InitApiResult, InitWasmResult, IMantaSdk, TransferAmount } from "./sdk.interfaces";
+import { Version, Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, TransferAmount } from "./sdk.interfaces";
 
 const rpc = config.RPC;
 const types = config.TYPES;
@@ -32,8 +32,8 @@ export enum Network {
     Manta = "Manta"
 }
 
-/// MantaSdk class
-export class MantaSdk implements IMantaSdk {
+/// MantaPrivateWallet class
+export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     api: ApiPromise;
     signer: string;
@@ -76,42 +76,6 @@ export class MantaSdk implements IMantaSdk {
         return privateAddressToJson(address);
     }
 
-    /// Switches MantaSdk environment.
-    /// Requirements: Must call initialWalletSync() after switching to a different
-    /// environment, to pull the latest data before calling any other methods.
-    async setEnvironment(environment: Environment): Promise<void> {
-
-        if (environment === this.environment) {
-            return;
-        }
-
-        const sdk = init(environment,this.network,this.signer);
-        this.api = (await sdk).api;
-        this.signer = (await sdk).signer;
-        this.wasm = (await sdk).wasm;
-        this.wasmWallet = (await sdk).wasmWallet;
-        this.wasmApi = (await sdk).wasmApi;
-        this.environment = environment;
-    }
-
-    /// Switches MantaSdk to a different network.
-    /// Requirements: Must call initialWalletSync() after switching to a different
-    /// network, to pull the latest data before calling any other methods.
-    async setNetwork(network: Network): Promise<void> {
-
-        if (network === this.network) {
-            return;
-        }
-
-        const sdk = init(this.environment,network,this.signer);
-        this.api = (await sdk).api;
-        this.signer = (await sdk).signer;
-        this.wasm = (await sdk).wasm;
-        this.wasmWallet = (await sdk).wasmWallet;
-        this.wasmApi = (await sdk).wasmApi;
-        this.network = network;
-    }
-
     /// Returns information about the currently supported networks.
     networks(): any {
         return config.NETWORKS;
@@ -136,7 +100,7 @@ export class MantaSdk implements IMantaSdk {
     /// performs a synchronization against the signer and ledger to catch up to
     /// the current checkpoint and balance state.
     ///
-    /// Requirements: Must be called once after creating an instance of MantaSdk 
+    /// Requirements: Must be called once after creating an instance of MantaPrivateWallet 
     /// and must be called before walletSync(). Must also be called after every 
     /// time the network is changed.
     async initalWalletSync(): Promise<void> {
@@ -227,13 +191,13 @@ export class MantaSdk implements IMantaSdk {
     }
 }
 
-// Initializes the MantaSdk class, given an optional address, this will be used
+// Initializes the MantaPrivateWallet class, given an optional address, this will be used
 // for specifying which polkadot.js address to use upon initialization if there are several.
 // If no address is specified then the first polkadot.js address will be used.
-export async function init(env: Environment, network: Network, address: string=""): Promise<MantaSdk> {
+export async function init(env: Environment, network: Network, address: string=""): Promise<MantaPrivateWallet> {
     const {api, signer} = await init_api(env, address.toLowerCase(), network);
     const {wasm, wasmWallet, wasmApi} = await init_wasm_sdk(api, signer);
-    const sdk = new MantaSdk(api,signer,wasm,wasmWallet,network,env,wasmApi);
+    const sdk = new MantaPrivateWallet(api,signer,wasm,wasmWallet,network,env,wasmApi);
     return sdk
 }
 
@@ -275,7 +239,6 @@ async function init_api(env: Environment, address: string, network: Network): Pr
         address = address.toLowerCase();
         for (let i = 0; i < allAccounts.length; i++) {
             if (allAccounts[i].address.toLowerCase() === address) {
-                console.log("Account with selected address found!");
                 account = allAccounts[i];
                 break;
             }
@@ -334,16 +297,9 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
     const privateAddressRaw = await wallet.address(
         networkType
     );
-    //console.log("privateAddressRaw:" + JSON.stringify(privateAddressRaw));
-    // const privateAddressRaw = keys[0];
-    // const privateAddressBytes = [
-    //     ...privateAddressRaw.spend,
-    //     ...privateAddressRaw.view
-    // ];
     const privateAddressBytes = [
         ...privateAddressRaw.receiving_key
     ];
-    //console.log("privateAddressBytes:" + JSON.stringify(privateAddressBytes));
     const privateAddress = base58Encode(privateAddressBytes);
     return privateAddress;
 };
@@ -352,7 +308,6 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
 function get_private_balance(wasmWallet: Wallet, asset_id: AssetId): string {
     const assetIdNumber = uint8ArrayToNumber(asset_id);
     const balance = wasmWallet.balance(assetIdNumber);
-    console.log(`💰private asset ${asset_id} balance:` + balance);
     return balance;
 }
 
@@ -377,8 +332,6 @@ async function get_public_balance(api: ApiPromise, asset_id:AssetId, targetAddre
 function privateAddressToJson(privateAddress: Address): Address {
     const bytes = base58Decode(privateAddress);
     return JSON.stringify({
-        // spend: Array.from(bytes.slice(0, 32)),
-        // view: Array.from(bytes.slice(32))
         receiving_key: Array.from(bytes)
     });
 };
@@ -412,19 +365,14 @@ async function sync(wasm: any, wasmWallet: Wallet, network: Network): Promise<vo
 /// Attempts to execute a "To Private" transaction by a post on the currently
 /// connected wallet.
 async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: TransferAmount, network: Network): Promise<any> {
-    console.log("to_private transaction...");
-    // let asset = asset_id.toU8a(); // [u8; 32]
-    // const asset_arr = Array.from(uint8);
     const amountBN = new BN(to_private_amount);
     const asset_id_arr = Array.from(asset_id);
     const txJson = `{ "ToPrivate": { "id": [${asset_id_arr}], "value": ${amountBN} }}`;
-    console.log("txJson:" + txJson);
     const transaction = wasm.Transaction.from_string(txJson);
-    console.log("transaction:" + JSON.stringify(transaction));
     const networkType = wasm.Network.from_string(`"${network}"`);
     try {
         const res = await wasmWallet.post(transaction, null, networkType);
-        console.log("📜to_private result:" + res);
+        console.log("To Private finished.");
         return res;
     } catch (error) {
         console.error('Transaction failed', error);
@@ -436,7 +384,6 @@ async function to_private_by_post(wasm: any, wasmWallet: Wallet, asset_id: Asset
 /// Optional: The `onlySign` flag allows for the ability to sign and return
 /// the transaction without posting it to the ledger.
 async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, to_private_amount: TransferAmount, network: Network, onlySign: boolean): Promise<any> {
-    console.log("to_private transaction...");
     const amountBN = new BN(to_private_amount);
     const asset_id_arr = Array.from(asset_id);
     const txJson = `{ "ToPrivate": { "id": [${asset_id_arr}], "value": ${amountBN} }}`;
@@ -447,7 +394,7 @@ async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wa
             return signResult;
         } else {
             const res = await sign_and_send_without_metadata(wasm, api, signer, wasmWallet, transaction, network);
-            console.log("📜to_private done");
+            console.log("To Private finished.");
             return res;
         }
     } catch (error) {
@@ -459,12 +406,10 @@ async function to_private_by_sign(api: ApiPromise, signer: string, wasm: any, wa
 /// Optional: The `onlySign` flag allows for the ability to sign and return
 /// the transaction without posting it to the ledger.
 async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, transfer_amount: TransferAmount, network: Network, onlySign: boolean): Promise<any> {
-    console.log("to_public transaction of asset_id:" + asset_id);
     const amountBN = new BN(transfer_amount);
     const asset_id_arr = Array.from(asset_id);
     const txJson = `{ "ToPublic": { "id": [${asset_id_arr}], "value": ${amountBN} }}`;
     const transaction = wasm.Transaction.from_string(txJson);
-    console.log("sdk transaction:" + txJson + ", " + JSON.stringify(transaction));
 
     // construct asset metadata json by query api
     const assetIdNumber = uint8ArrayToNumber(asset_id);
@@ -472,53 +417,45 @@ async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet:
 
     const json = JSON.stringify(asset_meta.toHuman());
     const jsonObj = JSON.parse(json);
-    console.log("asset metadata:" + json);
     const decimals = jsonObj["metadata"]["decimals"];
     const symbol = jsonObj["metadata"]["symbol"];
     const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
-    console.log("📜asset metadata:" + assetMetadataJson);
 
     if (onlySign) {
         const signResult = await sign_transaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network);
         return signResult;
     } else {
         const res = await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
-        console.log("📜finish to public transfer.");
+        console.log("Public transfer finished.");
         return res;
     }
 }
 
 /// private transfer transaction
 async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: AssetId, private_transfer_amount: TransferAmount, to_private_address: Address, network: Network, onlySign: boolean): Promise<any> {
-    console.log("private_transfer transaction of asset_id:" + asset_id);
     const addressJson = privateAddressToJson(to_private_address);
-    console.log("to zkAddress:" + JSON.stringify(addressJson));
     // asset_id: [u8; 32]
     const amountBN = new BN(private_transfer_amount);
     const asset_id_arr = Array.from(asset_id);
     const txJson = `{ "PrivateTransfer": [{ "id": [${asset_id_arr}], "value": ${amountBN} }, ${addressJson} ]}`;
     const transaction = wasm.Transaction.from_string(txJson);
-    console.log("sdk transaction:" + txJson + ", " + JSON.stringify(transaction));
 
     // construct asset metadata json by query api
     const assetIdNumber = uint8ArrayToNumber(asset_id);
     const asset_meta = await api.query.assetManager.assetIdMetadata(assetIdNumber);
-    // console.log(asset_meta.toHuman());
+
     const json = JSON.stringify(asset_meta.toHuman());
     const jsonObj = JSON.parse(json);
-    console.log("asset metadata:" + json);
-    console.log("asset JSON:" + jsonObj);
     const decimals = jsonObj["metadata"]["decimals"];
     const symbol = jsonObj["metadata"]["symbol"];
     const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
-    console.log("📜asset metadata:" + assetMetadataJson);
 
     if (onlySign) {
         const signResult = await sign_transaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network);
         return signResult;
     } else {
         const res = await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
-        console.log("📜finish private transfer.");
+        console.log("Private Transfer finished.");
         return res;
     }
 }
@@ -535,7 +472,7 @@ async function public_transfer(api: ApiPromise, signer:string, asset_id:AssetId,
         );
         await tx.signAndSend(signer);
     } catch (e) {
-        console.log("Failed to execture public transfer.");
+        console.log("Failed to execute public transfer.");
         console.error(e);
     }
 }
@@ -564,11 +501,8 @@ const sign_transaction = async (api: ApiPromise, wasm: any, wasmWallet: Wallet, 
     const posts = await wasmWallet.sign(transaction, assetMetadata, networkType);
     const transactions = [];
     for (let i = 0; i < posts.length; i++) {
-        console.log("post" + i + ":" + JSON.stringify(posts[i]));
         const convertedPost = transfer_post(posts[i]);
-        console.log("convert post:" + JSON.stringify(convertedPost));
         const transaction = await mapPostToTransaction(convertedPost, api);
-        console.log("transaction:" + JSON.stringify(transaction));
         transactions.push(transaction);
     }
     const txs = await transactionsToBatches(transactions, api);
@@ -646,7 +580,7 @@ const transfer_post = (post:any): any => {
     // transfer receiver_posts to match runtime side
     json.receiver_posts.map((x:any) => {
         // `message` is [[[..],[..],[..]]], change to [[..], [..], [..]]
-        var arr1 = x.note.incoming_note.ciphertext.ciphertext.message.flatMap(
+        const arr1 = x.note.incoming_note.ciphertext.ciphertext.message.flatMap(
             function(item: any,index:any,a: any){
             return item;
         });
@@ -690,7 +624,6 @@ const transfer_post = (post:any): any => {
         delete x.nullifier;
     });
 
-    console.log("origin sources:" + JSON.stringify(json.sources));
     return json
 }
 
@@ -708,15 +641,15 @@ const uint8ArrayToNumber = (uint8array: AssetId): number => {
 /// @TODO: Proper implementation of this function
 const numberToUint8Array = (assetIdNumber: number): AssetId => {
     // @TODO: the `number` type has value limitation, should change to `string` type.
-    var bn = assetIdNumber.toString();
-    var hex = BigInt(bn).toString(16);
+    let bn = assetIdNumber.toString();
+    let hex = BigInt(bn).toString(16);
     if (hex.length % 2) { hex = '0' + hex; }
   
-    var len = 32;
-    var u8a = new Uint8Array(len);
+    let len = 32;
+    let u8a = new Uint8Array(len);
   
-    var i = 0;
-    var j = 0;
+    let i = 0;
+    let j = 0;
     while (i < len) {
       u8a[i] = parseInt(hex.slice(j, j+2), 16);
       i += 1;
