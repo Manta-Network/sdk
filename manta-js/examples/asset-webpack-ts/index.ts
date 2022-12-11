@@ -91,7 +91,7 @@ const toPrivateOnlySignTest = async () => {
     const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    const signResult = await mantaSdk.toPrivateSign(assetId, amount, true);
+    const signResult = await mantaSdk.toPrivate(assetId, amount, true);
 
     console.log("The result of the signing: ", signResult);
 }
@@ -116,7 +116,7 @@ const toPrivateTest = async () => {
     const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    await mantaSdk.toPrivateSign(assetId, amount);
+    await mantaSdk.toPrivate(assetId, amount);
 
     while (true) {
 

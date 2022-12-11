@@ -162,7 +162,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Executes a "To Private" transaction for any fungible token.
     /// Optional: The `onlySign` flag allows for the ability to sign and return
     /// the transaction without posting it to the ledger.
-    async toPrivateSign(asset_id: AssetId, amount: TransferAmount, onlySign: boolean = false): Promise<any> {
+    async toPrivate(asset_id: AssetId, amount: TransferAmount, onlySign: boolean = false): Promise<any> {
         const result = await to_private_by_sign(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount, this.network, onlySign);
         return result;
     }

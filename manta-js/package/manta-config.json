@@ -5,11 +5,12 @@
     "NETWORKS": {
         "Dolphin": {
             "name": "Dolphin",
-            "ws": "wss://ws.rococo.dolphin.engineering",
+            "ws": "wss://ws.calamari.seabird.systems",
             "ws_local": "ws://127.0.0.1:9944",
             "parachainId": 2084,
-            "decimals": 18,
-            "subscanUrl": "https://dolphin.subscan.io"
+            "decimals": 12,
+            "subscanUrl": "https://dolphin.subscan.io",
+            "SS58_ENCODING": 78
         },
         "Calamari": {
             "name": "Calamari",
@@ -17,7 +18,8 @@
             "ws_local": "ws://127.0.0.1:9944",
             "parachainId": 2084,
             "decimals": 12,
-            "subscanUrl": "https://calamari.subscan.io"
+            "subscanUrl": "https://calamari.subscan.io",
+            "SS58_ENCODING": 78
         },
         "Manta": {
             "name": "Manta",
@@ -25,10 +27,11 @@
             "ws_local": null,
             "parachainId": null,
             "decimals": null,
-            "subscanUrl": null
+            "subscanUrl": null,
+            "SS58_ENCODING": null
         }
     },
-    "PUBLIC_SS58_ADDRESS_CALAMARI_PRIVATE_LEDGER_ACCOUNT": "dmwQify37LiZkBEYP4jRd1BGDqxGb1Zax1gKUi3kQxCyaPwdF",
+    "PRIVATE_LEDGER_ACCOUNT_PUBLIC_KEY": "0x6d6f646c6d616e74617061790000000000000000000000000000000000000000",
     "DEFAULT_PULL_SIZE": 4096,
     "RPC": {
         "mantaPay": {

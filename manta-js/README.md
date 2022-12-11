@@ -49,7 +49,7 @@ After initialization, as well as switching between networks or environments, `in
 After every single transaction, to get the latest data from the ledger, `walletSync()` must be called.
 
 Below is an example of how to transact using fungible tokens, it contains three main methods that `manta-pay` provided:
-- toPrivateSign(asset, amount)
+- toPrivate(asset, amount)
 - privateTransfer(asset, amount, receiver)
 - toPublic(asset, amount)
 
@@ -79,7 +79,7 @@ const publicAddress = await mantaSdk.publicAddress();
 const privateBalance = await mantaSdk.privateBalance(asset_id);
 
 // Privatize 10 DOL to 10 pDOL
-await mantaSdk.toPrivateSign(asset_id, amount_10);
+await mantaSdk.toPrivate(asset_id, amount_10);
 
 // Sync to get latest data after transaction and check that it was successful.
 await mantaSdk.walletSync();
@@ -174,7 +174,7 @@ await mantaSdk.initalWalletSync();
 const initalPrivateBalance = await mantaSdk.privateBalance(asset_id);
 console.log("The inital private balance is: ", initalPrivateBalance);
 
-const signResult = await mantaSdk.toPrivateSign(asset_id, amount, onlySign);
+const signResult = await mantaSdk.toPrivate(asset_id, amount, onlySign);
 
 console.log("The result of the signing: ", JSON.stringify(signResult.transactions));
 ```
@@ -182,7 +182,7 @@ console.log("The result of the signing: ", JSON.stringify(signResult.transaction
 You can get other transaction type result:
 
 ```javascript
-const signResult = await mantaSdk.toPrivateSign(asset_id, amount, onlySign);
+const signResult = await mantaSdk.toPrivate(asset_id, amount, onlySign);
 const signResult = await mantaSdk.toPublic(asset_id, amount, onlySign);
 const signResult = await mantaSdk.privateTransfer(asset_id, amount, address, onlySign);
 ```
