@@ -1,4 +1,4 @@
-# Manta Api
+# Manta JS
 
 This package implements a Javascript SDK for connecting with the Manta Network.
 
