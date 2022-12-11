@@ -1,50 +1,79 @@
-// TODO: should use published npm package
-// import * as sdk from '../../sdk/sdk';
 import * as sdk from 'manta.js';
 
-// const to_private_address = "64nmibscb1UdWGMWnRQAYx6hS4TA2iyFqiS897cFRWvNTmjad85p6yD9ud7cyVPhyNPDrSMs2eZxTfovxZbJdFqH";
-const to_private_address = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
-
 async function main() {
-
-    const publicPolkadotJsAddress = "5HifovYZVQSD4rKLVMo1Rqtv45jfPhCUiGYbf4gPEtKyc1PS"
-    await ft_test_to_private();
-    // await ft_test_to_public();
-
-    // await public_transfer_test();
-
+    await toPrivateOnlySignTest();
+    await toPrivateTest();
+    await privateTransferTest();
+    await publicTransferTest();
+    await toPublicTest();
     console.log("END");
 }
 
-const public_transfer_test = async () => {
+/// Test to publicly transfer 1 DOL.
+const publicTransferTest = async () => {
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net, "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
+    const mantaSdk = await sdk.init(env,net);
 
-    const asset_id_number = 1; // DOL
-    const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
-
-    const dest_address = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
-
-    const sender_balance = await mantaSdk.publicBalance(asset_id);
-    console.log("Sender Balance:" + JSON.stringify(sender_balance));
-
-    const dest_balance = await mantaSdk.publicBalance(asset_id, dest_address);
-    console.log("Dest Balance:" + JSON.stringify(dest_balance));
-    
+    const assetIdNumber = 1; // DOL
     const amount = "1000000000000000000"; // 1 unit
+    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
 
-    await mantaSdk.publicTransfer(asset_id, amount, dest_address);
+    const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
 
-    const sender_balance2 = await mantaSdk.publicBalance(asset_id);
-    console.log("Sender Balance After:" + JSON.stringify(sender_balance2));
+    const senderBalance = await mantaSdk.publicBalance(assetId);
+    console.log("Sender Balance:" + JSON.stringify(senderBalance));
 
-    const dest_balance2 = await mantaSdk.publicBalance(asset_id, dest_address);
-    console.log("Dest Balance After:" + JSON.stringify(dest_balance2));
-    
+    const destinationBalance = await mantaSdk.publicBalance(assetId, destinationAddress);
+    console.log("Destination Balance:" + JSON.stringify(destinationBalance));
+
+    await mantaSdk.publicTransfer(assetId, amount, destinationAddress);
+
+    const senderBalanceAfterTrasnfer = await mantaSdk.publicBalance(assetId);
+    console.log("Sender Balance After:" + JSON.stringify(senderBalanceAfterTrasnfer));
+
+    const destinationBalanceAfterTransfer = await mantaSdk.publicBalance(assetId, destinationAddress);
+    console.log("Dest Balance After:" + JSON.stringify(destinationBalanceAfterTransfer));
 }
 
-const ft_test_to_private_only_sign = async () => {
+/// Test to privately transfer 1 pDOL.
+const privateTransferTest = async () => {
+    const env = sdk.Environment.Development;
+    const net = sdk.Network.Dolphin;
+    const mantaSdk = await sdk.init(env,net);
+
+    const assetIdNumber = 1; // DOL
+    const amount = "1000000000000000000"; // 1 unit
+    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
+    const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
+
+    await mantaSdk.initalWalletSync();
+
+    const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
+    console.log("The inital private balance is: ", initalPrivateBalance);
+
+    await mantaSdk.privateTransfer(assetId, amount, toPrivateTestAddress);
+
+    while (true) {
+
+        await new Promise(r => setTimeout(r, 5000));
+        console.log("Syncing with ledger...");
+        await mantaSdk.walletSync();
+        let newPrivateBalance = await mantaSdk.privateBalance(assetId);
+        console.log("Private Balance after sync: ", newPrivateBalance);
+
+        if (initalPrivateBalance !== newPrivateBalance) {
+            console.log("Detected balance change after sync!");
+            console.log("Old balance: ", initalPrivateBalance);
+            console.log("New balance: ", newPrivateBalance);
+            break;
+        }
+    }   
+}
+
+/// Test to sign a transaction that converts 10 DOL to pDOL,
+/// without publishing the transaction.
+const toPrivateOnlySignTest = async () => {
 
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
@@ -53,48 +82,48 @@ const ft_test_to_private_only_sign = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
+    const assetIdNumber = 1; // DOL
     const amount = "10000000000000000000"; // 10 units
-    const asset_id_number = 1; // DOL
-    const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
+    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
 
     await mantaSdk.initalWalletSync();
 
-    const initalPrivateBalance = await mantaSdk.privateBalance(asset_id);
+    const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    const signResult = await mantaSdk.toPrivateSign(asset_id, amount, true);
+    const signResult = await mantaSdk.toPrivateSign(assetId, amount, true);
 
     console.log("The result of the signing: ", signResult);
 }
 
-const ft_test_to_private = async () => {
+/// Test to execute a `ToPrivate` transaction.
+/// Convert 1 DOL to 1 pDOL.
+const toPrivateTest = async () => {
 
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net, "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
+    const mantaSdk = await sdk.init(env,net);
 
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = "1000000000000000000"; // 1 unit
-    const asset_id_number = 1; // DOL
-    const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
+    const assetIdNumber = 1; // DOL
+    const amount = "1000000000000000000"; // 10 units
+    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
 
     await mantaSdk.initalWalletSync();
 
-    const initalPrivateBalance = await mantaSdk.privateBalance(asset_id);
+    const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    await mantaSdk.toPrivateSign(asset_id, amount);
-    // await mantaSdk.privateTransfer(asset_id, private_amount, to_private_address);
-    // await mantaSdk.toPublic(asset_id, private_amount);
+    await mantaSdk.toPrivateSign(assetId, amount);
 
     while (true) {
 
         await new Promise(r => setTimeout(r, 5000));
         console.log("Syncing with ledger...");
         await mantaSdk.walletSync();
-        let newPrivateBalance = await mantaSdk.privateBalance(asset_id);
+        let newPrivateBalance = await mantaSdk.privateBalance(assetId);
         console.log("Private Balance after sync: ", newPrivateBalance);
 
         if (initalPrivateBalance !== newPrivateBalance) {
@@ -106,8 +135,9 @@ const ft_test_to_private = async () => {
     }
 }
 
-
-const ft_test_to_public = async () => {
+/// Test to execute a `ToPublic` transaction.
+/// Convert 1 pDOL to 1 DOL.
+const toPublicTest = async () => {
 
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
@@ -116,26 +146,26 @@ const ft_test_to_public = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const amount = "1000000000000000000"; // 1 unit
-    const asset_id_number = 1; // DOL
-    const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
+    const assetIdNumber = 1; // DOL
+    const amount = "10000000000000000000"; // 10 units
+    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
 
     await mantaSdk.initalWalletSync();
 
-    const initalPrivateBalance = await mantaSdk.privateBalance(asset_id);
+    const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    await mantaSdk.toPublic(asset_id, amount);
+    await mantaSdk.toPublic(assetId, amount);
 
     await mantaSdk.walletSync();
-    let privateBalance = await mantaSdk.privateBalance(asset_id);
+    let privateBalance = await mantaSdk.privateBalance(assetId);
 
     while (true) {
 
         await new Promise(r => setTimeout(r, 5000));
         console.log("Syncing with ledger...");
         await mantaSdk.walletSync();
-        let newPrivateBalance = await mantaSdk.privateBalance(asset_id);
+        let newPrivateBalance = await mantaSdk.privateBalance(assetId);
         console.log("Private Balance after sync: ", newPrivateBalance);
 
         if (privateBalance !== newPrivateBalance) {
@@ -145,7 +175,6 @@ const ft_test_to_public = async () => {
             break;
         }
     }
-
 }
 
-main()
+main();
