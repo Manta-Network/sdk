@@ -61,10 +61,8 @@ This example made 10 public asset(i.e. DOL) to private asset(i.e. pDOL).
 
 ```javascript
 // DOL token
-const assetId = 1;
-const asset_id = mantaSdk.numberToAssetIdArray(assetId);
-
-const amount = "10000000000000000000";
+const asset_id = new BN("1");
+const amount = new BN("10000000000000000000");
 
 // Sync with most recent ledger state. 
 await mantaSdk.initialWalletSync();
@@ -79,7 +77,7 @@ const publicAddress = await mantaSdk.publicAddress();
 const privateBalance = await mantaSdk.privateBalance(asset_id);
 
 // Privatize 10 DOL to 10 pDOL
-await mantaSdk.toPrivate(asset_id, amount_10);
+await mantaSdk.toPrivate(asset_id, amount);
 
 // Sync to get latest data after transaction and check that it was successful.
 await mantaSdk.walletSync();
@@ -93,10 +91,8 @@ This example transfer 5 private asset(i.e. pDOL) to other one.
 
 ```javascript
 // DOL token
-const assetId = 1;
-const asset_id = mantaSdk.numberToAssetIdArray(assetId);
-
-const amount = "5000000000000000000";
+const asset_id = new BN("1");
+const amount = new BN("10000000000000000000");
 
 // Sync with most recent ledger state. 
 await mantaSdk.initialWalletSync();
@@ -109,7 +105,7 @@ const publicAddress = await mantaSdk.publicAddress();
 
 // Private Transfer of 5 pDOL to another private address
 const examplePrivateAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
-await mantaSdk.privateTransfer(asset_id, amount_3, examplePrivateAddress);
+await mantaSdk.privateTransfer(asset_id, amount, examplePrivateAddress);
 
 // Sync to get latest data after transaction and check that it was successful.
 await mantaSdk.walletSync();
@@ -122,10 +118,8 @@ This example made 5 private asset(i.e. pDOL) to public asset(i.e. DOL).
 
 ```javascript
 // DOL token
-const assetId = 1;
-const asset_id = mantaSdk.numberToAssetIdArray(assetId);
-
-const amount = "5000000000000000000";
+const asset_id = new BN("1");
+const amount = new BN("5000000000000000000");
 
 // Sync with most recent ledger state. 
 await mantaSdk.initialWalletSync();
@@ -157,7 +151,8 @@ This example get sign result of `ToPrivate` 10 DOL.
 // To only sign the transaction without sending it to the ledger
 const onlySign = true;
 
-const amount = "10000000000000000000";
+const asset_id = new BN("1");
+const amount = new BN("10000000000000000000");
 
 const env = sdk.Environment.Development;
 const net = sdk.Network.Dolphin;
@@ -165,9 +160,6 @@ const mantaSdk = await sdk.init(env,net, ALICE);
 
 const privateAddress = await mantaSdk.privateAddress();
 console.log("The private address is: ", privateAddress);
-
-const asset_id_number = 1; // DOL
-const asset_id = mantaSdk.numberToAssetIdArray(asset_id_number);
 
 await mantaSdk.initalWalletSync();
 
