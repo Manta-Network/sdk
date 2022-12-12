@@ -452,9 +452,8 @@ impl Wallet {
 
     /// Returns the current balance associated with this `id`.
     #[inline]
-    pub fn balance(&self, id: u32) -> String {
-        // TODO: make id parameter type as u128?
-        let asset_id = Some(id as u128);
+    pub fn balance(&self, id: String) -> String {
+        let asset_id = id.parse::<u128>().ok();
         let asset_id_type = asset_id
             .map(|id| field_from_id_u128(id))
             .map(|x| {

@@ -13,6 +13,7 @@
   "dependencies": {
     "@types/node": "^18.11.9",
     "@types/webpack": "^5.28.0",
+    "bn.js": "^5.2.0",
     "buffer": "^6.0.3",
     "clean-webpack-plugin": "^4.0.0",
     "copy-webpack-plugin": "^11.0.0",

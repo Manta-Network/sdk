@@ -1,10 +1,10 @@
 import { ApiPromise } from '@polkadot/api';
 import { Wallet } from 'manta-wasm-wallet';
 import { Environment, Network } from './sdk';
+import BN from 'bn.js';
 
 export type Version = string;
 export type Address = string;
-export type TransferAmount = string;
 
 // Must be a uint8Array of length 32.
 export type AssetId = Uint8Array;
@@ -31,19 +31,16 @@ export interface IMantaPrivateWallet {
   wasmApi: any;
 
   convertPrivateAddressToJson(address: string): any
-  numberToAssetIdArray(assetIdNumber: number): AssetId;
-  assetIdArrayToNumber(assetId: AssetId): number;
   networks(): any;
   privateAddress(): Promise<Address>;
   initalWalletSync(): Promise<void>;
   walletSync(): Promise<void>;
   signerVersion(): Promise<Version>;
-  assetMetaData(asset_id: AssetId): Promise<any>;
-  privateBalance(asset_id: AssetId): Promise<string>;
-  toPrivatePost(asset_id: AssetId, amount: TransferAmount): Promise<void>;
-  toPrivate(asset_id: AssetId, amount: TransferAmount, onlySign: boolean): Promise<any>;
-  privateTransfer(asset_id: AssetId, amount: TransferAmount, address: Address, onlySign: boolean): Promise<any>;
-  toPublic(asset_id: AssetId, amount: TransferAmount, onlySign: boolean): Promise<any>;
-  publicTransfer(asset_id: AssetId, amount: TransferAmount, address: Address): Promise<any>
-  publicBalance(asset_id: AssetId, address:string): Promise<any>;
+  assetMetaData(asset_id: BN): Promise<any>;
+  privateBalance(asset_id: BN): Promise<string>;
+  toPrivate(asset_id: BN, amount: BN, onlySign: boolean): Promise<any>;
+  privateTransfer(asset_id: BN, amount: BN, address: Address, onlySign: boolean): Promise<any>;
+  toPublic(asset_id: BN, amount: BN, onlySign: boolean): Promise<any>;
+  publicTransfer(asset_id: BN, amount: BN, address: Address): Promise<any>
+  publicBalance(asset_id: BN, address:string): Promise<any>;
 }

@@ -1,11 +1,12 @@
 import * as sdk from 'manta.js';
+import BN from 'bn.js';
 
 async function main() {
     await toPrivateOnlySignTest();
     await toPrivateTest();
     await privateTransferTest();
-    await publicTransferTest();
     await toPublicTest();
+    await publicTransferTest();
     console.log("END");
 }
 
@@ -15,9 +16,8 @@ const publicTransferTest = async () => {
     const net = sdk.Network.Dolphin;
     const mantaSdk = await sdk.init(env,net);
 
-    const assetIdNumber = 1; // DOL
-    const amount = "1000000000000000000"; // 1 unit
-    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
+    const assetId = new BN("1"); // DOL
+    const amount = new BN("10000000000000000000"); // 10 units
 
     const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
 
@@ -42,9 +42,9 @@ const privateTransferTest = async () => {
     const net = sdk.Network.Dolphin;
     const mantaSdk = await sdk.init(env,net);
 
-    const assetIdNumber = 1; // DOL
-    const amount = "1000000000000000000"; // 1 unit
-    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
+    const assetId = new BN("1"); // DOL
+    const amount = new BN("5000000000000000000"); // 5 units
+
     const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
 
     await mantaSdk.initalWalletSync();
@@ -82,9 +82,8 @@ const toPrivateOnlySignTest = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const assetIdNumber = 1; // DOL
-    const amount = "10000000000000000000"; // 10 units
-    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
+    const assetId = new BN("1"); // DOL
+    const amount = new BN("10000000000000000000"); // 10 units
 
     await mantaSdk.initalWalletSync();
 
@@ -107,9 +106,8 @@ const toPrivateTest = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const assetIdNumber = 1; // DOL
-    const amount = "1000000000000000000"; // 10 units
-    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
+    const assetId = new BN("1"); // DOL
+    const amount = new BN("10000000000000000000"); // 10 units
 
     await mantaSdk.initalWalletSync();
 
@@ -146,9 +144,8 @@ const toPublicTest = async () => {
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
 
-    const assetIdNumber = 1; // DOL
-    const amount = "10000000000000000000"; // 10 units
-    const assetId = mantaSdk.numberToAssetIdArray(assetIdNumber);
+    const assetId = new BN("1"); // DOL
+    const amount = new BN("5000000000000000000"); // 5 units
 
     await mantaSdk.initalWalletSync();
 
