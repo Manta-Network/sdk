@@ -54,6 +54,85 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     ///
+    /// MantaPrivateWallet Initialization
+    ///
+
+    /// Initializes the MantaPrivateWallet class, given an optional address, this will be used
+    /// for specifying which polkadot.js address to use upon initialization if there are several.
+    /// If no address is specified then the first polkadot.js address will be used.
+    static async init(env: Environment, network: Network, address: string=""): Promise<MantaPrivateWallet> {
+        const {api, signer} = await MantaPrivateWallet._init_api(env, address.toLowerCase(), network);
+        const {wasm, wasmWallet, wasmApi} = await MantaPrivateWallet._init_wasm_sdk(api, signer);
+        const sdk = new MantaPrivateWallet(api,signer,wasm,wasmWallet,network,env,wasmApi);
+        return sdk
+    }
+
+    /// Private helper method for internal use to initialize the Polkadot.js API with web3Extension.
+    static async _init_api(env: Environment, address: string, network: Network): Promise<InitApiResult> {
+        const provider = new WsProvider(env_url(env, network));
+        const api = await ApiPromise.create({ provider, types, rpc });
+        const [chain, nodeName, nodeVersion] = await Promise.all([
+            api.rpc.system.chain(),
+            api.rpc.system.name(),
+            api.rpc.system.version()
+        ]);
+        
+        console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
+
+        const extensions = await web3Enable('Polkadot App');
+        if (extensions.length === 0) {
+            throw new Error("Polkadot browser extension missing. https://polkadot.js.org/extension/");
+        }
+        const allAccounts = await web3Accounts();
+        let account: any;
+
+        if (!address) {
+            account = allAccounts[0];
+        } else {
+            // need to check that argument `address` exists in `allAccounts` if an address was
+            // specified.
+            address = address.toLowerCase();
+            for (let i = 0; i < allAccounts.length; i++) {
+                if (allAccounts[i].address.toLowerCase() === address) {
+                    account = allAccounts[i];
+                    break;
+                }
+            }
+
+            if (!account) {
+                const errorString = "Unable to find account with specified address: " + address + " in Polkadot JS.";
+                throw new Error(errorString);
+            }
+        }
+
+        const injector = await web3FromSource(account.meta.source);
+        const signer = account.address;
+        console.log("address:" + account.address);
+        api.setSigner(injector.signer)
+        return {
+            api,
+            signer
+        };
+    }
+
+    /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
+    static async _init_wasm_sdk(api: ApiPromise, signer: string): Promise<InitWasmResult> {
+        const wasm = await import('manta-wasm-wallet');
+        const wasmSigner = new wasm.Signer(SIGNER_URL);
+        const wasmApiConfig = new ApiConfig(
+            api, signer, DEFAULT_PULL_SIZE, DEFAULT_PULL_SIZE
+        );
+        const wasmApi = new Api(wasmApiConfig);
+        const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
+        const wasmWallet = new wasm.Wallet(wasmLedger, wasmSigner);
+        return {
+            wasm,
+            wasmWallet,
+            wasmApi
+        }
+    }
+
+    ///
     /// SDK methods
     ///
 
@@ -170,16 +249,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 }
 
-// Initializes the MantaPrivateWallet class, given an optional address, this will be used
-// for specifying which polkadot.js address to use upon initialization if there are several.
-// If no address is specified then the first polkadot.js address will be used.
-export async function init(env: Environment, network: Network, address: string=""): Promise<MantaPrivateWallet> {
-    const {api, signer} = await init_api(env, address.toLowerCase(), network);
-    const {wasm, wasmWallet, wasmApi} = await init_wasm_sdk(api, signer);
-    const sdk = new MantaPrivateWallet(api,signer,wasm,wasmWallet,network,env,wasmApi);
-    return sdk
-}
-
 /// Returns the corresponding blockchain connection URL from Environment
 /// and Network values. 
 function env_url(env: Environment, network: Network): string {
@@ -188,72 +257,6 @@ function env_url(env: Environment, network: Network): string {
         url = config.NETWORKS[network].ws;
     }
     return url;
-}
-
-// Polkadot.js API with web3Extension
-async function init_api(env: Environment, address: string, network: Network): Promise<InitApiResult> {
-    const provider = new WsProvider(env_url(env, network));
-    const api = await ApiPromise.create({ provider, types, rpc });
-    const [chain, nodeName, nodeVersion] = await Promise.all([
-        api.rpc.system.chain(),
-        api.rpc.system.name(),
-        api.rpc.system.version()
-    ]);
-    
-    console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
-
-    // TODO: Better handling signer
-    const extensions = await web3Enable('Polkadot App');
-    if (extensions.length === 0) {
-        throw new Error("Polkadot browser extension missing. https://polkadot.js.org/extension/");
-    }
-    const allAccounts = await web3Accounts();
-    let account: any;
-
-    if (!address) {
-        account = allAccounts[0];
-    } else {
-        // need to check that argument `address` exists in `allAccounts` if an address was
-        // specified.
-        address = address.toLowerCase();
-        for (let i = 0; i < allAccounts.length; i++) {
-            if (allAccounts[i].address.toLowerCase() === address) {
-                account = allAccounts[i];
-                break;
-            }
-        }
-
-        if (!account) {
-            const errorString = "Unable to find account with specified address: " + address + " in Polkadot JS.";
-            throw new Error(errorString);
-        }
-    }
-
-    const injector = await web3FromSource(account.meta.source);
-    const signer = account.address;
-    console.log("address:" + account.address);
-    api.setSigner(injector.signer)
-    return {
-        api,
-        signer
-    };
-}
-
-// Initialize wasm wallet sdk
-async function init_wasm_sdk(api: ApiPromise, signer: string): Promise<InitWasmResult> {
-    const wasm = await import('manta-wasm-wallet');
-    const wasmSigner = new wasm.Signer(SIGNER_URL);
-    const wasmApiConfig = new ApiConfig(
-        api, signer, DEFAULT_PULL_SIZE, DEFAULT_PULL_SIZE
-    );
-    const wasmApi = new Api(wasmApiConfig);
-    const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
-    const wasmWallet = new wasm.Wallet(wasmLedger, wasmSigner);
-    return {
-        wasm,
-        wasmWallet,
-        wasmApi
-    }
 }
 
 /// Returns the version of the currently connected manta-signer instance.
