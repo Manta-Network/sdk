@@ -488,6 +488,52 @@ async function transactionsToBatches(transactions: any, api: ApiPromise): Promis
     return batches;
 }
 
+// convert receiver_posts to match runtime side
+const convertReceiverPost = (x:any) => {
+    const arr1 = x.note.incoming_note.ciphertext.ciphertext.message.flatMap(
+        function(item: any,index:any,a: any){
+        return item;
+    });
+    const tag = x.note.incoming_note.ciphertext.ciphertext.tag; 
+    const pk = x.note.incoming_note.ciphertext.ephemeral_public_key; 
+    x.note.incoming_note.tag = tag;
+    x.note.incoming_note.ephemeral_public_key = pk;
+    x.note.incoming_note.ciphertext = arr1;
+    delete x.note.incoming_note.header;
+
+    const lightPk = x.note.light_incoming_note.ciphertext.ephemeral_public_key; 
+    // ciphertext is [u8; 96] on manta-rs, but runtime side is [[u8; 32]; 3]
+    const lightCipher = x.note.light_incoming_note.ciphertext.ciphertext;
+    const lightCiper0 = lightCipher.slice(0, 32);
+    const lightCiper1 = lightCipher.slice(32, 64);
+    const lightCiper2 = lightCipher.slice(64, 96);
+    x.note.light_incoming_note.ephemeral_public_key = lightPk;
+    x.note.light_incoming_note.ciphertext = [lightCiper0, lightCiper1, lightCiper2];
+    delete x.note.light_incoming_note.header;
+
+    // convert asset value to [u8; 16]
+    x.utxo.public_asset.value = new BN(x.utxo.public_asset.value).toArray('le', 16);
+
+    x.full_incoming_note = x.note;
+    delete x.note;
+}
+
+// convert sender_posts to match runtime side
+const convertSenderPost = (x:any) => {
+    const pk = x.nullifier.outgoing_note.ciphertext.ephemeral_public_key;
+    const cipher = x.nullifier.outgoing_note.ciphertext.ciphertext; 
+    const ciper0 = cipher.slice(0, 32);
+    const ciper1 = cipher.slice(32, 64);
+    const outgoing = {
+        ephemeral_public_key: pk,
+        ciphertext: [ciper0, ciper1]
+    };
+    x.outgoing_note = outgoing;
+    const nullifier = x.nullifier.nullifier.commitment;
+    x.nullifier_commitment = nullifier;
+    delete x.nullifier;
+}
+
 /// NOTE: `post` from manta-rs sign result should match runtime side data structure type.
 const transferPost = (post:any): any => {
     let json = JSON.parse(JSON.stringify(post));
@@ -501,49 +547,12 @@ const transferPost = (post:any): any => {
 
     // transfer receiver_posts to match runtime side
     json.receiver_posts.map((x:any) => {
-        // `message` is [[[..],[..],[..]]], change to [[..], [..], [..]]
-        const arr1 = x.note.incoming_note.ciphertext.ciphertext.message.flatMap(
-            function(item: any,index:any,a: any){
-            return item;
-        });
-        const tag = x.note.incoming_note.ciphertext.ciphertext.tag; 
-        const pk = x.note.incoming_note.ciphertext.ephemeral_public_key; 
-        x.note.incoming_note.tag = tag;
-        x.note.incoming_note.ephemeral_public_key = pk;
-        x.note.incoming_note.ciphertext = arr1;
-        delete x.note.incoming_note.header;
-
-        const lightPk = x.note.light_incoming_note.ciphertext.ephemeral_public_key; 
-        // ciphertext is [u8; 96] on manta-rs, but runtime side is [[u8; 32]; 3]
-        const lightCipher = x.note.light_incoming_note.ciphertext.ciphertext;
-        const lightCiper0 = lightCipher.slice(0, 32);
-        const lightCiper1 = lightCipher.slice(32, 64);
-        const lightCiper2 = lightCipher.slice(64, 96);
-        x.note.light_incoming_note.ephemeral_public_key = lightPk;
-        x.note.light_incoming_note.ciphertext = [lightCiper0, lightCiper1, lightCiper2];
-        delete x.note.light_incoming_note.header;
-
-        // convert asset value to [u8; 16]
-        x.utxo.public_asset.value = new BN(x.utxo.public_asset.value).toArray('le', 16);
-
-        x.full_incoming_note = x.note;
-        delete x.note;
+        convertReceiverPost(x);
     });
 
     // transfer sender_posts to match runtime side
     json.sender_posts.map((x:any) => {
-        const pk = x.nullifier.outgoing_note.ciphertext.ephemeral_public_key;
-        const cipher = x.nullifier.outgoing_note.ciphertext.ciphertext; 
-        const ciper0 = cipher.slice(0, 32);
-        const ciper1 = cipher.slice(32, 64);
-        const outgoing = {
-            ephemeral_public_key: pk,
-            ciphertext: [ciper0, ciper1]
-        };
-        x.outgoing_note = outgoing;
-        const nullifier = x.nullifier.nullifier.commitment;
-        x.nullifier_commitment = nullifier;
-        delete x.nullifier;
+        convertSenderPost(x);
     });
 
     return json
