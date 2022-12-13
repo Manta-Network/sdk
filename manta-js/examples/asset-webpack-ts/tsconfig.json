@@ -1,15 +1,3 @@
 {
-  "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "noImplicitAny": true,
-    "skipLibCheck": true,
-    "module": "es2020",
-    "target": "es5",
-    "allowJs": true,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "noEmit": false
-  },
-  "exclude": ["node_modules"]
+  "extends": "../../tsconfig.json"
 }
