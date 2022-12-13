@@ -52,7 +52,7 @@ const privateTransferTest = async () => {
     const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    await mantaSdk.privateTransfer(assetId, amount, toPrivateTestAddress);
+    await mantaSdk.privateTransferSend(assetId, amount, toPrivateTestAddress);
 
     while (true) {
 
@@ -90,7 +90,7 @@ const toPrivateOnlySignTest = async () => {
     const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    const signResult = await mantaSdk.toPrivate(assetId, amount, true);
+    const signResult = await mantaSdk.toPrivateSend(assetId, amount, true);
 
     console.log("The result of the signing: ", signResult);
 }
@@ -114,7 +114,7 @@ const toPrivateTest = async () => {
     const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    await mantaSdk.toPrivate(assetId, amount);
+    await mantaSdk.toPrivateSend(assetId, amount);
 
     while (true) {
 
@@ -152,7 +152,7 @@ const toPublicTest = async () => {
     const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    await mantaSdk.toPublic(assetId, amount);
+    await mantaSdk.toPublicSend(assetId, amount);
 
     await mantaSdk.walletSync();
     let privateBalance = await mantaSdk.privateBalance(assetId);

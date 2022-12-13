@@ -38,9 +38,12 @@ export interface IMantaPrivateWallet {
   signerVersion(): Promise<Version>;
   assetMetaData(asset_id: BN): Promise<any>;
   privateBalance(asset_id: BN): Promise<string>;
-  toPrivate(asset_id: BN, amount: BN, onlySign: boolean): Promise<any>;
-  privateTransfer(asset_id: BN, amount: BN, address: Address, onlySign: boolean): Promise<any>;
-  toPublic(asset_id: BN, amount: BN, onlySign: boolean): Promise<any>;
+  toPrivateSend(asset_id: BN, amount: BN): Promise<any>;
+  toPrivateBuild(asset_id: BN, amount: BN): Promise<any>;
+  privateTransferSend(asset_id: BN, amount: BN, address: Address): Promise<any>;
+  privateTransferBuild(asset_id: BN, amount: BN, address: Address): Promise<any>;
+  toPublicSend(asset_id: BN, amount: BN): Promise<any>;
+  toPublicBuild(asset_id: BN, amount: BN): Promise<any>;
   publicTransfer(asset_id: BN, amount: BN, address: Address): Promise<any>
   publicBalance(asset_id: BN, address:string): Promise<any>;
 }
