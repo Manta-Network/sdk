@@ -5,14 +5,12 @@
 export class ApiConfig {
   constructor(
     api,
-    externalAccountSigner,
     maxReceiversPullSize,
     maxSendersPullSize,
     pullCallback = null,
     errorCallback = null
   ) {
     this.api = api;
-    this.externalAccountSigner = externalAccountSigner;
     this.maxReceiversPullSize = maxReceiversPullSize;
     this.maxSendersPullSize = maxSendersPullSize;
     this.pullCallback = pullCallback;
@@ -25,7 +23,7 @@ export default class Api {
   constructor(config) {
     this.config = config;
     this.api = this.config.api;
-    this.externalAccountSigner = this.config.externalAccountSigner;
+    this.externalAccountSigner = null;
     this.maxReceiversPullSize = this.config.maxReceiversPullSize;
     this.maxSendersPullSize = this.config.maxSendersPullSize;
     this.txResHandler = null;
@@ -37,6 +35,11 @@ export default class Api {
   setTxResHandler = (txResHandler) => {
     this.txResHandler = txResHandler;
   };
+
+  // Sets the externalAccountSigner to `signer`.
+  setExternalAccountSigner = (signer) => {
+    this.externalAccountSigner = signer;
+  }
 
   // Converts an `outgoing note` into a JSON object.
   _outgoing_note_to_json(note) {

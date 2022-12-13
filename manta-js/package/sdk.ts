@@ -1,15 +1,13 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
-// TODO: remove this dependency with better signer integration
-import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 // @ts-ignore
 import Api, {ApiConfig} from 'manta-wasm-wallet-api';
 import axios from 'axios';
 import BN from 'bn.js';
 import config from './manta-config.json';
 import { Transaction, Wallet } from 'manta-wasm-wallet';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { Version, Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction } from "./sdk.interfaces";
+import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
+import { Version, Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction, wasmApi } from "./sdk.interfaces";
 
 const rpc = config.RPC;
 const types = config.TYPES;
@@ -37,16 +35,14 @@ export enum Network {
 export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     api: ApiPromise;
-    signer: string;
     wasm: any;
     wasmWallet: Wallet;
     network: Network;
     environment: Environment;
-    wasmApi: any;
+    wasmApi: wasmApi;
 
-    constructor(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment, wasmApi: any) {
+    constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment, wasmApi: wasmApi) {
         this.api = api;
-        this.signer = signer;
         this.wasm = wasm;
         this.wasmWallet = wasmWallet;
         this.network = network;
@@ -61,15 +57,15 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Initializes the MantaPrivateWallet class, given an optional address, this will be used
     /// for specifying which polkadot.js address to use upon initialization if there are several.
     /// If no address is specified then the first polkadot.js address will be used.
-    static async init(env: Environment, network: Network, address: string=""): Promise<MantaPrivateWallet> {
-        const {api, signer} = await MantaPrivateWallet._initApi(env, address.toLowerCase(), network);
-        const {wasm, wasmWallet, wasmApi} = await MantaPrivateWallet._initWasmSdk(api, signer);
-        const sdk = new MantaPrivateWallet(api,signer,wasm,wasmWallet,network,env,wasmApi);
-        return sdk
+    static async init(env: Environment, network: Network): Promise<MantaPrivateWallet> {
+        const { api } = await MantaPrivateWallet._initApi(env, network);
+        const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet._initWasmSdk(api);
+        const sdk = new MantaPrivateWallet(api,wasm,wasmWallet,network,env,wasmApi);
+        return sdk;
     }
 
     /// Private helper method for internal use to initialize the Polkadot.js API with web3Extension.
-    static async _initApi(env: Environment, address: string, network: Network): Promise<InitApiResult> {
+    static async _initApi(env: Environment, network: Network): Promise<InitApiResult> {
         const provider = new WsProvider(envUrl(env, network));
         const api = await ApiPromise.create({ provider, types, rpc });
         const [chain, nodeName, nodeVersion] = await Promise.all([
@@ -80,48 +76,17 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         
         console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
 
-        const extensions = await web3Enable('Polkadot App');
-        if (extensions.length === 0) {
-            throw new Error("Polkadot browser extension missing. https://polkadot.js.org/extension/");
-        }
-        const allAccounts = await web3Accounts();
-        let account: any;
-
-        if (!address) {
-            account = allAccounts[0];
-        } else {
-            // need to check that argument `address` exists in `allAccounts` if an address was
-            // specified.
-            address = address.toLowerCase();
-            for (let i = 0; i < allAccounts.length; i++) {
-                if (allAccounts[i].address.toLowerCase() === address) {
-                    account = allAccounts[i];
-                    break;
-                }
-            }
-
-            if (!account) {
-                const errorString = "Unable to find account with specified address: " + address + " in Polkadot JS.";
-                throw new Error(errorString);
-            }
-        }
-
-        const injector = await web3FromSource(account.meta.source);
-        const signer = account.address;
-        console.log("address:" + account.address);
-        api.setSigner(injector.signer)
         return {
-            api,
-            signer
+            api
         };
     }
 
     /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
-    static async _initWasmSdk(api: ApiPromise, signer: string): Promise<InitWasmResult> {
+    static async _initWasmSdk(api: ApiPromise): Promise<InitWasmResult> {
         const wasm = await import('manta-wasm-wallet');
         const wasmSigner = new wasm.Signer(SIGNER_URL);
         const wasmApiConfig = new ApiConfig(
-            api, signer, DEFAULT_PULL_SIZE, DEFAULT_PULL_SIZE
+            api, DEFAULT_PULL_SIZE, DEFAULT_PULL_SIZE
         );
         const wasmApi = new Api(wasmApiConfig);
         const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
@@ -130,6 +95,17 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             wasm,
             wasmWallet,
             wasmApi
+        }
+    }
+
+    async _setPolkadotSigner(polkadotSigner: Signer, polkadotAddress:Address): Promise<void> {
+        try {
+
+            this.wasmApi.setExternalAccountSigner(polkadotAddress);
+            this.api.setSigner(polkadotSigner);
+
+        } catch (e) {
+            console.error("Unable to set polkadotJS signer.", e);
         }
     }
 
@@ -148,18 +124,13 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     ///
-    /// Signer methods
+    /// Manta Signer methods
     ///
 
     /// Returns the zkAddress of the currently connected manta-signer instance.
     async privateAddress(): Promise<Address> {
         const privateAddress = await getPrivateAddress(this.wasm, this.wasmWallet, this.network);
         return privateAddress
-    }
-
-    /// Returns the currently connected public polkadot.js address.
-    async publicAddress(): Promise<Address> {
-        return this.signer;
     }
 
     /// Performs full wallet recovery. Restarts `self` with an empty state and
@@ -208,65 +179,60 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     /// Returns the public balance associated with an account for a given `asset_id`.
     /// If no address is provided, the balance will be returned for this.signer.
-    async publicBalance(assetId: BN, address:string=""): Promise<any> {
-
-        let targetAddress = address;
-        if (!targetAddress) {
-            targetAddress = this.signer;
-        }
-        const balance = await getPublicBalance(this.api,assetId,targetAddress);
+    async publicBalance(assetId: BN, address:Address): Promise<any> {
+        const balance = await getPublicBalance(this.api,assetId,address);
         return balance;
     }
     
     /// Executes a "To Private" transaction for any fungible token.
-    async toPrivateSend(assetId: BN, amount: BN): Promise<any> {
-        const signed = await this.toPrivateBuild(assetId,amount);
-        const transactionResult = await sendTransaction(this.signer,signed);
-        return transactionResult;
+    async toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
+        const signed = await this.toPrivateBuild(assetId,amount,polkadotSigner, polkadotAddress);
+        await sendTransaction(polkadotAddress,signed);
     }
 
     /// Builds and signs a "To Private" transaction for any fungible token.
     /// Note: This transaction is not published to the ledger.
-    async toPrivateBuild(assetId: BN, amount: BN): Promise<any> {
+    async toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction> {
+        await this._setPolkadotSigner(polkadotSigner, polkadotAddress);
         const transaction = await toPrivateFungible(this.wasm, assetId, amount);
         const signResult = await signTransaction(this.api, this.wasm, this.wasmWallet, null, transaction, this.network);
         return signResult;
     }
 
     /// Executes a "Private Transfer" transaction for any fungible token.
-    async privateTransferSend(assetId: BN, amount: BN, address: Address): Promise<any> {
-        const signed = await this.privateTransferBuild(assetId,amount,address);
-        const transactionResult = await sendTransaction(this.signer,signed);
-        return transactionResult;
+    async privateTransferSend(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
+        const signed = await this.privateTransferBuild(assetId,amount,toPrivateAddress,polkadotSigner,polkadotAddress);
+        await sendTransaction(polkadotAddress,signed);
     }
 
     /// Builds a "Private Transfer" transaction for any fungible token.
     /// Note: This transaction is not published to the ledger.
-    async privateTransferBuild(assetId: BN, amount: BN, address: Address): Promise<any> {
-        const transaction = await privateFungibleTransfer(this.api, this.wasm, assetId, amount, address);
+    async privateTransferBuild(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction> {
+        await this._setPolkadotSigner(polkadotSigner, polkadotAddress);
+        const transaction = await privateFungibleTransfer(this.api, this.wasm, assetId, amount, toPrivateAddress);
         const signResult = await signTransaction(this.api, this.wasm, this.wasmWallet, transaction.assetMetadataJson, transaction.transaction, this.network);
         return signResult;
     }
 
     /// Executes a "To Public" transaction for any fungible token.
-    async toPublicSend(assetId: BN, amount: BN): Promise<any> {
-        const signed = await this.toPrivateBuild(assetId,amount);
-        const transactionResult = await sendTransaction(this.signer,signed);
-        return transactionResult;
+    async toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
+        const signed = await this.toPublicBuild(assetId,amount,polkadotSigner, polkadotAddress);
+        await sendTransaction(polkadotAddress,signed);
     }
 
     /// Builds and signs a "To Public" transaction for any fungible token.
     /// Note: This transaction is not published to the ledger.
-    async toPublicBuild(assetId: BN, amount: BN): Promise<any> {
+    async toPublicBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction> {
+        await this._setPolkadotSigner(polkadotSigner, polkadotAddress);
         const transaction = await toPublicFungible(this.api, this.wasm, assetId, amount);
         const signResult = await signTransaction(this.api, this.wasm, this.wasmWallet, transaction.assetMetadataJson, transaction.transaction, this.network);
         return signResult;
     }
 
     /// Executes a public transfer.
-    async publicTransfer(assetId: BN, amount: BN, address: Address): Promise<any> {
-        const result = await publicFungibleTransfer(this.api, this.signer, assetId, address, amount);
-        return result;
+    async publicTransfer(assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void> {
+        await this._setPolkadotSigner(polkadotSigner, senderAddress);
+        await publicFungibleTransfer(this.api, senderAddress, assetId, destinationAddress, amount);
     }
 }
 
@@ -313,7 +279,7 @@ function getPrivateBalance(wasmWallet: Wallet, assetId: BN): string {
 }
 
 /// Returns the public balance for a given Asset ID.
-async function getPublicBalance(api: ApiPromise, assetId: BN, targetAddress:string): Promise<any> {
+async function getPublicBalance(api: ApiPromise, assetId: BN, targetAddress:Address): Promise<any> {
     try {
         if (assetId.toString() === NATIVE_TOKEN_ASSET_ID) {
             const nativeBalance: any = await api.query.system.account(targetAddress);
@@ -429,37 +395,24 @@ async function privateFungibleTransfer(api: ApiPromise, wasm: any, assetId: BN, 
 
 /// Executes a public transfer from the address of `signer` to the address of `address`,
 /// of the fungible token with AssetId `asset_id`.
-async function publicFungibleTransfer(api: ApiPromise, signer:string, assetId:BN, address:string, amount:BN): Promise<any> {
+async function publicFungibleTransfer(api: ApiPromise, senderAddress:Address, assetId:BN, destinationAddress:Address, amount:BN): Promise<void> {
     try {
         const assetIdArray = Array.from(assetIdToUInt8Array(assetId));
         const amountBN = amount.toArray('le', 16);
         const tx = await api.tx.mantaPay.publicTransfer(
             { id: assetIdArray, value: amountBN },
-            address
+            destinationAddress
         );
-        await tx.signAndSend(signer);
+        await tx.signAndSend(senderAddress);
     } catch (e) {
         console.log("Failed to execute public transfer.");
         console.error(e);
     }
 }
 
-/// Using sign on wallet and using signAndSend to polkadot.js transaction
-/// This version is using `null` asset metdata. Only meaningful for ToPrivate.
-const signAndSendWithoutMetaData = async (wasm: any, api: ApiPromise, signer: string, wasmWallet: Wallet, transaction: any, network: Network): Promise<void> => {
-    const signedTransaction = await signTransaction(api,wasm,wasmWallet,null,transaction,network);
-    for (let i = 0; i < signedTransaction.txs.length; i++) {
-        try {
-            await signedTransaction.txs[i].signAndSend(signer, (_status: any, _events: any) => { });
-        } catch (error) {
-            console.error('Transaction failed', error);
-        }
-    }
-}
-
 /// Signs the a given transaction returning posts, transactions and batches.
 /// assetMetaDataJson is optional, pass in null if transaction should not contain any.
-const signTransaction = async (api: ApiPromise, wasm: any, wasmWallet: Wallet, assetMetadataJson: any, transaction: Transaction, network: Network): Promise<any> => {
+const signTransaction = async (api: ApiPromise, wasm: any, wasmWallet: Wallet, assetMetadataJson: any, transaction: Transaction, network: Network): Promise<SignedTransaction> => {
     try {
         let assetMetadata = null;
         if (assetMetadataJson) {
@@ -487,20 +440,6 @@ const signTransaction = async (api: ApiPromise, wasm: any, wasmWallet: Wallet, a
 /// This method sends a transaction to the public ledger after it has been signed
 /// by Manta Signer.
 const sendTransaction = async (signer: string, signedTransaction:SignedTransaction): Promise<void> => {
-    for (let i = 0; i < signedTransaction.txs.length; i++) {
-        try {
-            await signedTransaction.txs[i].signAndSend(signer, (_status:any, _events:any) => { });
-        } catch (error) {
-            console.error('Transaction failed', error);
-        }
-    }
-}
-
-/// Using sign on wallet and using signdAndSend to polkadot.js transaction
-const signAndSend = async (api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, assetMetadataJson: any, transaction: Transaction, network: Network): Promise<void> => {
-
-    const signedTransaction = await signTransaction(api,wasm,wasmWallet,assetMetadataJson,transaction,network);
-
     for (let i = 0; i < signedTransaction.txs.length; i++) {
         try {
             await signedTransaction.txs[i].signAndSend(signer, (_status:any, _events:any) => { });

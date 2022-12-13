@@ -11,6 +11,7 @@
     "watch": "webpack --watch"
   },
   "dependencies": {
+    "@polkadot/extension-dapp": "^0.44.6",
     "@types/node": "^18.11.9",
     "@types/webpack": "^5.28.0",
     "bn.js": "^5.2.0",
