@@ -16,6 +16,7 @@ const types = config.TYPES;
 const DEFAULT_PULL_SIZE = config.DEFAULT_PULL_SIZE;
 const SIGNER_URL = config.SIGNER_URL;
 const PRIVATE_ASSET_PREFIX = "p";
+const NATIVE_TOKEN_ASSET_ID = "1";
 
 /// The Envrionment that the sdk is configured to run for, if development
 /// is selected then it will attempt to connect to a local node instance.
@@ -291,15 +292,19 @@ function getPrivateBalance(wasmWallet: Wallet, assetId: BN): string {
     return wasmWallet.balance(assetId.toString());
 }
 
-async function getPublicBalance(api: ApiPromise, assetId:BN, targetAddress:string): Promise<any> {
+/// Returns the public balance for a given Asset ID.
+async function getPublicBalance(api: ApiPromise, assetId: BN, targetAddress:string): Promise<any> {
     try {
-        // TODO: assets is only for non native token
-        // For native token(DOL,KMA), should query system.balance(address)
-        const account: any = await api.query.assets.account(assetId, targetAddress);
-        if (account.value.isEmpty) {
-            return "0"
+        if (assetId.toString() === NATIVE_TOKEN_ASSET_ID) {
+            const nativeBalance: any = await api.query.system.account(targetAddress);
+            return nativeBalance.data.free.toHuman();
         } else {
-            return account.value.balance.toString();
+            const assetBalance: any = await api.query.assets.account(assetId, targetAddress);
+            if (assetBalance.value.isEmpty) {
+                return "0";
+            } else {
+                return assetBalance.value.balance.toString();
+            }
         }
     } catch (e) {
         console.log("Failed to fetch public balance.");

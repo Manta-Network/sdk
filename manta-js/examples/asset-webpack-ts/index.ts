@@ -14,7 +14,7 @@ async function main() {
 const publicTransferTest = async () => {
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net);
+    const mantaSdk = await sdk.MantaPrivateWallet.init(env,net);
 
     const assetId = new BN("1"); // DOL
     const amount = new BN("10000000000000000000"); // 10 units
@@ -40,7 +40,7 @@ const publicTransferTest = async () => {
 const privateTransferTest = async () => {
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net);
+    const mantaSdk = await sdk.MantaPrivateWallet.init(env,net);
 
     const assetId = new BN("1"); // DOL
     const amount = new BN("5000000000000000000"); // 5 units
@@ -77,7 +77,7 @@ const toPrivateOnlySignTest = async () => {
 
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net);
+    const mantaSdk = await sdk.MantaPrivateWallet.init(env,net);
 
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
@@ -101,7 +101,7 @@ const toPrivateTest = async () => {
 
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net);
+    const mantaSdk = await sdk.MantaPrivateWallet.init(env,net);
 
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
@@ -139,7 +139,7 @@ const toPublicTest = async () => {
 
     const env = sdk.Environment.Development;
     const net = sdk.Network.Dolphin;
-    const mantaSdk = await sdk.init(env,net);
+    const mantaSdk = await sdk.MantaPrivateWallet.init(env,net);
 
     const privateAddress = await mantaSdk.privateAddress();
     console.log("The private address is: ", privateAddress);
