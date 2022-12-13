@@ -61,15 +61,15 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// for specifying which polkadot.js address to use upon initialization if there are several.
     /// If no address is specified then the first polkadot.js address will be used.
     static async init(env: Environment, network: Network, address: string=""): Promise<MantaPrivateWallet> {
-        const {api, signer} = await MantaPrivateWallet._init_api(env, address.toLowerCase(), network);
-        const {wasm, wasmWallet, wasmApi} = await MantaPrivateWallet._init_wasm_sdk(api, signer);
+        const {api, signer} = await MantaPrivateWallet._initApi(env, address.toLowerCase(), network);
+        const {wasm, wasmWallet, wasmApi} = await MantaPrivateWallet._initWasmSdk(api, signer);
         const sdk = new MantaPrivateWallet(api,signer,wasm,wasmWallet,network,env,wasmApi);
         return sdk
     }
 
     /// Private helper method for internal use to initialize the Polkadot.js API with web3Extension.
-    static async _init_api(env: Environment, address: string, network: Network): Promise<InitApiResult> {
-        const provider = new WsProvider(env_url(env, network));
+    static async _initApi(env: Environment, address: string, network: Network): Promise<InitApiResult> {
+        const provider = new WsProvider(envUrl(env, network));
         const api = await ApiPromise.create({ provider, types, rpc });
         const [chain, nodeName, nodeVersion] = await Promise.all([
             api.rpc.system.chain(),
@@ -116,7 +116,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
-    static async _init_wasm_sdk(api: ApiPromise, signer: string): Promise<InitWasmResult> {
+    static async _initWasmSdk(api: ApiPromise, signer: string): Promise<InitWasmResult> {
         const wasm = await import('manta-wasm-wallet');
         const wasmSigner = new wasm.Signer(SIGNER_URL);
         const wasmApiConfig = new ApiConfig(
@@ -169,7 +169,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// and must be called before walletSync(). Must also be called after every 
     /// time the network is changed.
     async initalWalletSync(): Promise<void> {
-        await init_sync(this.wasm, this.wasmWallet, this.network);
+        await initSync(this.wasm, this.wasmWallet, this.network);
     }
 
     /// Pulls data from the ledger, synchronizing the currently connected wallet and
@@ -181,7 +181,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     /// Returns the version of the currently connected manta-signer instance.
     async signerVersion(): Promise<Version> {
-        const version = await get_signer_version();
+        const version = await getSignerVersion();
         return version;
     }
 
@@ -191,8 +191,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
  
     /// Returns the metadata for an asset with a given `asset_id` for the currently
     /// connected network.
-    async assetMetaData(asset_id: BN): Promise<any> {
-        const data = await this.api.query.assetManager.assetIdMetadata(asset_id);
+    async assetMetaData(assetId: BN): Promise<any> {
+        const data = await this.api.query.assetManager.assetIdMetadata(assetId);
         const json = JSON.stringify(data.toHuman());
         const jsonObj = JSON.parse(json);
         return jsonObj;
@@ -200,20 +200,20 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     
     /// Returns the private balance of the currently connected zkAddress for the currently
     /// connected network.
-    async privateBalance(asset_id: BN): Promise<string> {
-        const balance = await get_private_balance(this.wasmWallet, asset_id);
+    async privateBalance(assetId: BN): Promise<string> {
+        const balance = await getPrivateBalance(this.wasmWallet, assetId);
         return balance;
     }
 
     /// Returns the public balance associated with an account for a given `asset_id`.
     /// If no address is provided, the balance will be returned for this.signer.
-    async publicBalance(asset_id: BN, address:string=""): Promise<any> {
+    async publicBalance(assetId: BN, address:string=""): Promise<any> {
 
         let targetAddress = address;
         if (!targetAddress) {
             targetAddress = this.signer;
         }
-        const balance = await get_public_balance(this.api,asset_id,targetAddress);
+        const balance = await getPublicBalance(this.api,assetId,targetAddress);
         return balance;
     }
     
@@ -221,7 +221,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Optional: The `onlySign` flag allows for the ability to sign and return
     /// the transaction without posting it to the ledger.
     async toPrivate(asset_id: BN, amount: BN, onlySign: boolean = false): Promise<any> {
-        const result = await to_private(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount, this.network, onlySign);
+        const result = await toPrivateFungible(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount, this.network, onlySign);
         return result;
     }
 
@@ -229,14 +229,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Optional: The `onlySign` flag allows for the ability to sign and return
     /// the transaction without posting it to the ledger.
     async privateTransfer(asset_id: BN, amount: BN, address: Address, onlySign: boolean = false): Promise<any> {
-        const result = await private_transfer(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount, address, this.network, onlySign);
+        const result = await privateFungibleTransfer(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount, address, this.network, onlySign);
         return result;
     }
 
     /// Executes a public transfer of `asset_id` for an amount of `amount` from the address
     /// of this.signer to `address`.
     async publicTransfer(asset_id: BN, amount: BN, address: Address): Promise<any> {
-        const result = await public_transfer(this.api, this.signer, asset_id, address, amount);
+        const result = await publicFungibleTransfer(this.api, this.signer, asset_id, address, amount);
         return result;
     }
 
@@ -244,14 +244,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Optional: The `onlySign` flag allows for the ability to sign and return
     /// the transaction without posting it to the ledger.
     async toPublic(asset_id: BN, amount: BN, onlySign: boolean = false): Promise<any> {
-        const result = await to_public(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount, this.network, onlySign);
+        const result = await toPublicFungible(this.api, this.signer, this.wasm, this.wasmWallet, asset_id, amount, this.network, onlySign);
         return result
     }
 }
 
 /// Returns the corresponding blockchain connection URL from Environment
 /// and Network values. 
-function env_url(env: Environment, network: Network): string {
+function envUrl(env: Environment, network: Network): string {
     var url = config.NETWORKS[network].ws_local;
     if(env == Environment.Production) {
         url = config.NETWORKS[network].ws;
@@ -260,7 +260,7 @@ function env_url(env: Environment, network: Network): string {
 }
 
 /// Returns the version of the currently connected manta-signer instance.
-async function get_signer_version(): Promise<Version> {
+async function getSignerVersion(): Promise<Version> {
     try {
         const version_res = await axios.get(`${SIGNER_URL}version`, {
             timeout: 1500
@@ -287,15 +287,15 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
 };
 
 /// Returns private asset balance for a given `asset_id` for the associated zkAddress.
-function get_private_balance(wasmWallet: Wallet, asset_id: BN): string {
-    return wasmWallet.balance(asset_id.toString());
+function getPrivateBalance(wasmWallet: Wallet, assetId: BN): string {
+    return wasmWallet.balance(assetId.toString());
 }
 
-async function get_public_balance(api: ApiPromise, asset_id:BN, targetAddress:string): Promise<any> {
+async function getPublicBalance(api: ApiPromise, assetId:BN, targetAddress:string): Promise<any> {
     try {
         // TODO: assets is only for non native token
         // For native token(DOL,KMA), should query system.balance(address)
-        const account: any = await api.query.assets.account(asset_id, targetAddress);
+        const account: any = await api.query.assets.account(assetId, targetAddress);
         if (account.value.isEmpty) {
             return "0"
         } else {
@@ -316,7 +316,7 @@ function privateAddressToJson(privateAddress: Address): Address {
 };
 
 /// Initial synchronization with signer.
-async function init_sync(wasm: any, wasmWallet: Wallet, network: Network): Promise<void> {
+async function initSync(wasm: any, wasmWallet: Wallet, network: Network): Promise<void> {
     console.log('Beginning initial sync');
     const networkType = wasm.Network.from_string(`"${network}"`);
     const startTime = performance.now();
@@ -336,25 +336,25 @@ async function sync(wasm: any, wasmWallet: Wallet, network: Network): Promise<vo
         await wasmWallet.sync(networkType);
         const endTime = performance.now();
         console.log(`Sync finished in ${(endTime - startTime) / 1000} seconds`);
-      } catch (error) {
+    } catch (error) {
         console.error('Sync failed', error);
-      }
+    }
 }
 
-/// Attempts to execute a "To Private" transaction by a sign + sign_and_send on
+/// Attempts to execute a "To Private" transaction by a sign + signAndSend on
 /// the currently connected wallet.
 /// Optional: The `onlySign` flag allows for the ability to sign and return
 /// the transaction without posting it to the ledger.
-async function to_private(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: BN, to_private_amount: BN, network: Network, onlySign: boolean): Promise<any> {
-    const asset_id_arr = Array.from(assetIdToUInt8Array(asset_id));
-    const txJson = `{ "ToPrivate": { "id": [${asset_id_arr}], "value": ${to_private_amount} }}`;
+async function toPrivateFungible(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, assetId: BN, amount: BN, network: Network, onlySign: boolean): Promise<any> {
+    const assetIdArray = Array.from(assetIdToUInt8Array(assetId));
+    const txJson = `{ "ToPrivate": { "id": [${assetIdArray}], "value": ${amount} }}`;
     const transaction = wasm.Transaction.from_string(txJson);
     try {
         if (onlySign) {
-            const signResult = await sign_transaction(api, wasm, wasmWallet, null, transaction, network);
+            const signResult = await signTransaction(api, wasm, wasmWallet, null, transaction, network);
             return signResult;
         } else {
-            const res = await sign_and_send_without_metadata(wasm, api, signer, wasmWallet, transaction, network);
+            const res = await signAndSendWithoutMetaData(wasm, api, signer, wasmWallet, transaction, network);
             console.log("To Private finished.");
             return res;
         }
@@ -366,51 +366,51 @@ async function to_private(api: ApiPromise, signer: string, wasm: any, wasmWallet
 /// public transfer transaction
 /// Optional: The `onlySign` flag allows for the ability to sign and return
 /// the transaction without posting it to the ledger.
-async function to_public(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: BN, transfer_amount: BN, network: Network, onlySign: boolean): Promise<any> {
-    const asset_id_arr = Array.from(assetIdToUInt8Array(asset_id));
-    const txJson = `{ "ToPublic": { "id": [${asset_id_arr}], "value": ${transfer_amount} }}`;
+async function toPublicFungible(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, assetId: BN, amount: BN, network: Network, onlySign: boolean): Promise<any> {
+    const assetIdArray = Array.from(assetIdToUInt8Array(assetId));
+    const txJson = `{ "ToPublic": { "id": [${assetIdArray}], "value": ${amount} }}`;
     const transaction = wasm.Transaction.from_string(txJson);
 
     // construct asset metadata json by query api
-    const asset_meta = await api.query.assetManager.assetIdMetadata(asset_id);
+    const assetMeta = await api.query.assetManager.assetIdMetadata(assetId);
 
-    const json = JSON.stringify(asset_meta.toHuman());
+    const json = JSON.stringify(assetMeta.toHuman());
     const jsonObj = JSON.parse(json);
     const decimals = jsonObj["metadata"]["decimals"];
     const symbol = jsonObj["metadata"]["symbol"];
     const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
 
     if (onlySign) {
-        const signResult = await sign_transaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network);
+        const signResult = await signTransaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network);
         return signResult;
     } else {
-        const res = await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
+        const res = await signAndSend(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
         console.log("Public transfer finished.");
         return res;
     }
 }
 
 /// private transfer transaction
-async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, asset_id: BN, private_transfer_amount: BN, to_private_address: Address, network: Network, onlySign: boolean): Promise<any> {
-    const addressJson = privateAddressToJson(to_private_address);
-    const asset_id_arr = Array.from(assetIdToUInt8Array(asset_id));
-    const txJson = `{ "PrivateTransfer": [{ "id": [${asset_id_arr}], "value": ${private_transfer_amount} }, ${addressJson} ]}`;
+async function privateFungibleTransfer(api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, assetId: BN, amount: BN, toPrivateAddress: Address, network: Network, onlySign: boolean): Promise<any> {
+    const addressJson = privateAddressToJson(toPrivateAddress);
+    const assetIdArray = Array.from(assetIdToUInt8Array(assetId));
+    const txJson = `{ "PrivateTransfer": [{ "id": [${assetIdArray}], "value": ${amount} }, ${addressJson} ]}`;
     const transaction = wasm.Transaction.from_string(txJson);
 
     // construct asset metadata json by query api
-    const asset_meta = await api.query.assetManager.assetIdMetadata(asset_id);
+    const assetMeta = await api.query.assetManager.assetIdMetadata(assetId);
 
-    const json = JSON.stringify(asset_meta.toHuman());
+    const json = JSON.stringify(assetMeta.toHuman());
     const jsonObj = JSON.parse(json);
     const decimals = jsonObj["metadata"]["decimals"];
     const symbol = jsonObj["metadata"]["symbol"];
     const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
 
     if (onlySign) {
-        const signResult = await sign_transaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network);
+        const signResult = await signTransaction(api, wasm, wasmWallet, assetMetadataJson, transaction, network);
         return signResult;
     } else {
-        const res = await sign_and_send(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
+        const res = await signAndSend(api, signer, wasm, wasmWallet, assetMetadataJson, transaction, network);
         console.log("Private Transfer finished.");
         return res;
     }
@@ -418,12 +418,12 @@ async function private_transfer(api: ApiPromise, signer: string, wasm: any, wasm
 
 /// Executes a public transfer from the address of `signer` to the address of `address`,
 /// of the fungible token with AssetId `asset_id`.
-async function public_transfer(api: ApiPromise, signer:string, asset_id:BN, address:string, amount:BN): Promise<any> {
+async function publicFungibleTransfer(api: ApiPromise, signer:string, assetId:BN, address:string, amount:BN): Promise<any> {
     try {
-        const asset_id_arr = Array.from(assetIdToUInt8Array(asset_id));
+        const assetIdArray = Array.from(assetIdToUInt8Array(assetId));
         const amountBN = amount.toArray('le', 16);
         const tx = await api.tx.mantaPay.publicTransfer(
-            { id: asset_id_arr, value: amountBN },
+            { id: assetIdArray, value: amountBN },
             address
         );
         await tx.signAndSend(signer);
@@ -435,11 +435,11 @@ async function public_transfer(api: ApiPromise, signer:string, asset_id:BN, addr
 
 /// Using sign on wallet and using signAndSend to polkadot.js transaction
 /// This version is using `null` asset metdata. Only meaningful for to_private.
-const sign_and_send_without_metadata = async (wasm: any, api: ApiPromise, signer: string, wasmWallet: Wallet, transaction: any, network: Network): Promise<void> => {
-    const signed_transaction = await sign_transaction(api,wasm,wasmWallet,null,transaction,network);
-    for (let i = 0; i < signed_transaction.txs.length; i++) {
+const signAndSendWithoutMetaData = async (wasm: any, api: ApiPromise, signer: string, wasmWallet: Wallet, transaction: any, network: Network): Promise<void> => {
+    const signedTransaction = await signTransaction(api,wasm,wasmWallet,null,transaction,network);
+    for (let i = 0; i < signedTransaction.txs.length; i++) {
         try {
-            await signed_transaction.txs[i].signAndSend(signer, (status, events) => { });
+            await signedTransaction.txs[i].signAndSend(signer, (_status: any, _events: any) => { });
         } catch (error) {
             console.error('Transaction failed', error);
         }
@@ -448,7 +448,7 @@ const sign_and_send_without_metadata = async (wasm: any, api: ApiPromise, signer
 
 /// Signs the a given transaction returning posts, transactions and batches.
 /// assetMetaDataJson is optional, pass in null if transaction should not contain any.
-const sign_transaction = async (api: ApiPromise, wasm: any, wasmWallet: Wallet, assetMetadataJson: any, transaction: Transaction, network: Network) => {
+const signTransaction = async (api: ApiPromise, wasm: any, wasmWallet: Wallet, assetMetadataJson: any, transaction: Transaction, network: Network): Promise<any> => {
     let assetMetadata = null;
     if (assetMetadataJson) {
         assetMetadata = wasm.AssetMetadata.from_string(assetMetadataJson);
@@ -457,7 +457,7 @@ const sign_transaction = async (api: ApiPromise, wasm: any, wasmWallet: Wallet, 
     const posts = await wasmWallet.sign(transaction, assetMetadata, networkType);
     const transactions = [];
     for (let i = 0; i < posts.length; i++) {
-        const convertedPost = transfer_post(posts[i]);
+        const convertedPost = transferPost(posts[i]);
         const transaction = await mapPostToTransaction(convertedPost, api);
         transactions.push(transaction);
     }
@@ -470,13 +470,13 @@ const sign_transaction = async (api: ApiPromise, wasm: any, wasmWallet: Wallet, 
 }
 
 /// Using sign on wallet and using signdAndSend to polkadot.js transaction
-const sign_and_send = async (api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, assetMetadataJson: any, transaction: Transaction, network: Network): Promise<void> => {
+const signAndSend = async (api: ApiPromise, signer: string, wasm: any, wasmWallet: Wallet, assetMetadataJson: any, transaction: Transaction, network: Network): Promise<void> => {
 
-    const signed_transaction = await sign_transaction(api,wasm,wasmWallet,assetMetadataJson,transaction,network);
+    const signedTransaction = await signTransaction(api,wasm,wasmWallet,assetMetadataJson,transaction,network);
 
-    for (let i = 0; i < signed_transaction.txs.length; i++) {
+    for (let i = 0; i < signedTransaction.txs.length; i++) {
         try {
-            await signed_transaction.txs[i].signAndSend(signer, (_status, _events) => { });
+            await signedTransaction.txs[i].signAndSend(signer, (_status:any, _events:any) => { });
         } catch (error) {
             console.error('Transaction failed', error);
         }
@@ -491,14 +491,14 @@ async function mapPostToTransaction(post: any, api: ApiPromise): Promise<Submitt
     let sinks = post.sinks.length;
 
     if (sources == 1 && senders == 0 && receivers == 1 && sinks == 0) {
-        const mint_tx = await api.tx.mantaPay.toPrivate(post);
-        return mint_tx;
+        const mintTx = await api.tx.mantaPay.toPrivate(post);
+        return mintTx;
     } else if (sources == 0 && senders == 2 && receivers == 2 && sinks == 0) {
-        const private_transfer_tx = await api.tx.mantaPay.privateTransfer(post);
-        return private_transfer_tx;
+        const privateTransferTx = await api.tx.mantaPay.privateTransfer(post);
+        return privateTransferTx;
     } else if (sources == 0 && senders == 2 && receivers == 1 && sinks == 1) {
-        const reclaim_tx = await api.tx.mantaPay.toPublic(post);
-        return reclaim_tx;
+        const reclaimTx = await api.tx.mantaPay.toPublic(post);
+        return reclaimTx;
     } else {
         throw new Error(
             'Invalid transaction shape; there is no extrinsic for a transaction'
@@ -523,7 +523,7 @@ async function transactionsToBatches(transactions: any, api: ApiPromise): Promis
 }
 
 /// NOTE: `post` from manta-rs sign result should match runtime side data structure type.
-const transfer_post = (post:any): any => {
+const transferPost = (post:any): any => {
     let json = JSON.parse(JSON.stringify(post));
     
     // transfer authorization_signature format
@@ -547,14 +547,14 @@ const transfer_post = (post:any): any => {
         x.note.incoming_note.ciphertext = arr1;
         delete x.note.incoming_note.header;
 
-        const light_pk = x.note.light_incoming_note.ciphertext.ephemeral_public_key; 
+        const lightPk = x.note.light_incoming_note.ciphertext.ephemeral_public_key; 
         // ciphertext is [u8; 96] on manta-rs, but runtime side is [[u8; 32]; 3]
-        const light_cipher = x.note.light_incoming_note.ciphertext.ciphertext;
-        const light_ciper0 = light_cipher.slice(0, 32);
-        const light_ciper1 = light_cipher.slice(32, 64);
-        const light_ciper2 = light_cipher.slice(64, 96);
-        x.note.light_incoming_note.ephemeral_public_key = light_pk;
-        x.note.light_incoming_note.ciphertext = [light_ciper0, light_ciper1, light_ciper2];
+        const lightCipher = x.note.light_incoming_note.ciphertext.ciphertext;
+        const lightCiper0 = lightCipher.slice(0, 32);
+        const lightCiper1 = lightCipher.slice(32, 64);
+        const lightCiper2 = lightCipher.slice(64, 96);
+        x.note.light_incoming_note.ephemeral_public_key = lightPk;
+        x.note.light_incoming_note.ciphertext = [lightCiper0, lightCiper1, lightCiper2];
         delete x.note.light_incoming_note.header;
 
         // convert asset value to [u8; 16]
