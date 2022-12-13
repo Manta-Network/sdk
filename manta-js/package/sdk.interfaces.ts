@@ -2,6 +2,7 @@ import { ApiPromise } from '@polkadot/api';
 import { Wallet } from 'manta-wasm-wallet';
 import { Environment, Network } from './sdk';
 import BN from 'bn.js';
+import { SubmittableExtrinsic } from '@polkadot/api/types';
 
 export type Version = string;
 export type Address = string;
@@ -9,16 +10,22 @@ export type Address = string;
 // Must be a uint8Array of length 32.
 export type AssetId = Uint8Array;
 
-export interface InitApiResult {
+export type InitApiResult = {
   api: ApiPromise,
   signer: string
 }
 
-export interface InitWasmResult {
+export type InitWasmResult = {
   wasm: any,
   wasmWallet: Wallet,
   wasmApi: any
 }
+
+export type SignedTransaction = {
+  posts: any,
+  transactions: SubmittableExtrinsic<"promise", any>[],
+  txs: SubmittableExtrinsic<"promise", any>[]
+} 
 
 export interface IMantaPrivateWallet {
 

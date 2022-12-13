@@ -2,11 +2,11 @@ import * as sdk from 'manta.js';
 import BN from 'bn.js';
 
 async function main() {
-    await toPrivateOnlySignTest();
+    //await toPrivateOnlySignTest();
     await toPrivateTest();
-    await privateTransferTest();
-    await toPublicTest();
-    await publicTransferTest();
+    //await privateTransferTest();
+    //await toPublicTest();
+    //await publicTransferTest();
     console.log("END");
 }
 
@@ -90,7 +90,7 @@ const toPrivateOnlySignTest = async () => {
     const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
-    const signResult = await mantaSdk.toPrivateSend(assetId, amount, true);
+    const signResult = await mantaSdk.toPrivateSend(assetId, amount);
 
     console.log("The result of the signing: ", signResult);
 }
