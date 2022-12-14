@@ -31,7 +31,6 @@ export type SignedTransaction = {
 } 
 
 export interface IMantaPrivateWallet {
-
   api: ApiPromise;
   wasm: any;
   wasmWallet: Wallet;
@@ -45,8 +44,6 @@ export interface IMantaPrivateWallet {
   getZkAddress(): Promise<Address>;
   initalWalletSync(): Promise<void>;
   walletSync(): Promise<void>;
-  getSignerVersion(): Promise<Version>;
-  getAssetMetadata(assetId: BN): Promise<any>;
   getPrivateBalance(assetId: BN): Promise<string>;
   getPublicBalance(assetId: BN, address:Address): Promise<any>;
   toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;

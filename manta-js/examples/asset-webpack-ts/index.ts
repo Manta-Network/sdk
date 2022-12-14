@@ -41,18 +41,18 @@ const publicTransferTest = async () => {
 
     const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
 
-    const senderBalance = await privateWallet.publicBalance(assetId, polkadotConfig.polkadotAddress);
+    const senderBalance = await privateWallet.getPublicBalance(assetId, polkadotConfig.polkadotAddress);
     console.log("Sender Balance:" + JSON.stringify(senderBalance));
 
-    const destinationBalance = await privateWallet.publicBalance(assetId, destinationAddress);
+    const destinationBalance = await privateWallet.getPublicBalance(assetId, destinationAddress);
     console.log("Destination Balance:" + JSON.stringify(destinationBalance));
 
     await privateWallet.publicTransfer(assetId, amount, destinationAddress, polkadotConfig.polkadotAddress, polkadotConfig.polkadotSigner);
 
-    const senderBalanceAfterTrasnfer = await privateWallet.publicBalance(assetId,polkadotConfig.polkadotAddress);
+    const senderBalanceAfterTrasnfer = await privateWallet.getPublicBalance(assetId,polkadotConfig.polkadotAddress);
     console.log("Sender Balance After:" + JSON.stringify(senderBalanceAfterTrasnfer));
 
-    const destinationBalanceAfterTransfer = await privateWallet.publicBalance(assetId, destinationAddress);
+    const destinationBalanceAfterTransfer = await privateWallet.getPublicBalance(assetId, destinationAddress);
     console.log("Dest Balance After:" + JSON.stringify(destinationBalanceAfterTransfer));
 }
 
@@ -70,7 +70,7 @@ const privateTransferTest = async () => {
 
     await privateWallet.initalWalletSync();
 
-    const initalPrivateBalance = await privateWallet.privateBalance(assetId);
+    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
     await privateWallet.privateTransferSend(assetId, amount, toPrivateTestAddress, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
@@ -80,7 +80,7 @@ const privateTransferTest = async () => {
         await new Promise(r => setTimeout(r, 5000));
         console.log("Syncing with ledger...");
         await privateWallet.walletSync();
-        let newPrivateBalance = await privateWallet.privateBalance(assetId);
+        let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
         console.log("Private Balance after sync: ", newPrivateBalance);
 
         if (initalPrivateBalance !== newPrivateBalance) {
@@ -101,7 +101,7 @@ const toPrivateOnlySignTest = async () => {
     const mantaSdk = await sdk.MantaPrivateWallet.init(env,net);
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
-    const privateAddress = await mantaSdk.privateAddress();
+    const privateAddress = await mantaSdk.getZkAddress();
     console.log("The private address is: ", privateAddress);
 
     const assetId = new BN("1"); // DOL
@@ -109,7 +109,7 @@ const toPrivateOnlySignTest = async () => {
 
     await mantaSdk.initalWalletSync();
 
-    const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
+    const initalPrivateBalance = await mantaSdk.getPrivateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
     const signResult = await mantaSdk.toPrivateSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
@@ -127,7 +127,7 @@ const toPrivateTest = async () => {
     const privateWallet = await sdk.MantaPrivateWallet.init(env,net);
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
-    const privateAddress = await privateWallet.privateAddress();
+    const privateAddress = await privateWallet.getZkAddress();
     console.log("The private address is: ", privateAddress);
 
     const assetId = new BN("1"); // DOL
@@ -135,7 +135,7 @@ const toPrivateTest = async () => {
 
     await privateWallet.initalWalletSync();
 
-    const initalPrivateBalance = await privateWallet.privateBalance(assetId);
+    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
     await privateWallet.toPrivateSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
@@ -145,7 +145,7 @@ const toPrivateTest = async () => {
         await new Promise(r => setTimeout(r, 5000));
         console.log("Syncing with ledger...");
         await privateWallet.walletSync();
-        let newPrivateBalance = await privateWallet.privateBalance(assetId);
+        let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
         console.log("Private Balance after sync: ", newPrivateBalance);
 
         if (initalPrivateBalance !== newPrivateBalance) {
@@ -166,7 +166,7 @@ const toPublicTest = async () => {
     const privateWallet = await sdk.MantaPrivateWallet.init(env,net);
     const polkadotConfig = await getPolkadotSignerAndAddress();
     
-    const privateAddress = await privateWallet.privateAddress();
+    const privateAddress = await privateWallet.getZkAddress();
     console.log("The private address is: ", privateAddress);
 
     const assetId = new BN("1"); // DOL
@@ -174,20 +174,20 @@ const toPublicTest = async () => {
 
     await privateWallet.initalWalletSync();
 
-    const initalPrivateBalance = await privateWallet.privateBalance(assetId);
+    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance);
 
     await privateWallet.toPublicSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
     await privateWallet.walletSync();
-    let privateBalance = await privateWallet.privateBalance(assetId);
+    let privateBalance = await privateWallet.getPrivateBalance(assetId);
 
     while (true) {
 
         await new Promise(r => setTimeout(r, 5000));
         console.log("Syncing with ledger...");
         await privateWallet.walletSync();
-        let newPrivateBalance = await privateWallet.privateBalance(assetId);
+        let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
         console.log("Private Balance after sync: ", newPrivateBalance);
 
         if (privateBalance !== newPrivateBalance) {
