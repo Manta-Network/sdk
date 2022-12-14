@@ -81,7 +81,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     /// Returns the ZkAddress (Private Address) of the currently connected manta-signer instance.
     async getZkAddress(): Promise<Address> {
-        if (!this.walletIsBusy) {
+        try {
+            await this.waitForWallet();
             this.walletIsBusy = true;
             const networkType = this.wasm.Network.from_string(`"${this.network}"`);
             const privateAddressRaw = await this.wasmWallet.address(
@@ -93,8 +94,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             const privateAddress = base58Encode(privateAddressBytes);
             this.walletIsBusy = false;
             return privateAddress;
-        } else {
-            console.error("Wallet is currently busy!");
+        } catch (e) {
+            this.walletIsBusy = false;
+            console.error("Failed to fetch ZkAddress.",e);
         }
     }
 
@@ -105,24 +107,22 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Requirements: Must be called once after creating an instance of MantaPrivateWallet 
     /// and must be called before walletSync().
     async initalWalletSync(): Promise<void> {
-        if (!this.walletIsBusy) {
+        try {
+            await this.waitForWallet();
             this.walletIsBusy = true;
-            try {
-                console.log('Beginning initial sync');
-                const networkType = this.wasm.Network.from_string(`"${this.network}"`);
-                const startTime = performance.now();
-                await this.wasmWallet.restart(networkType);
-                const endTime = performance.now();
-                console.log(
-                    `Initial sync finished in ${(endTime - startTime) / 1000} seconds`
-                );
-                this.initialSyncIsFinished = true;
-            } catch (e) {
-                console.error('Inital Sync failed', e);
-            }
+            console.log('Beginning initial sync');
+            const networkType = this.wasm.Network.from_string(`"${this.network}"`);
+            const startTime = performance.now();
+            await this.wasmWallet.restart(networkType);
+            const endTime = performance.now();
+            console.log(
+                `Initial sync finished in ${(endTime - startTime) / 1000} seconds`
+            );
             this.walletIsBusy = false;
-        } else {
-            console.error("Wallet is currently busy!");
+            this.initialSyncIsFinished = true;
+        } catch (e) {
+            this.walletIsBusy = false;
+            console.error("Initial sync failed.",e);
         }
     }
 
@@ -130,36 +130,39 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// balance state. This method runs until all the ledger data has arrived at and
     /// has been synchronized with the wallet.
     async walletSync(): Promise<void> {
-        if (!this.initialSyncIsFinished) {
-            console.error("Must call initalWalletSync before walletSync!");
-        } else if (!this.walletIsBusy) {
-            this.walletIsBusy = true;
-            try {
-                console.log('Beginning sync');
-                const startTime = performance.now();
-                const networkType = this.wasm.Network.from_string(`"${this.network}"`);
-                await this.wasmWallet.sync(networkType);
-                const endTime = performance.now();
-                console.log(`Sync finished in ${(endTime - startTime) / 1000} seconds`);
-            } catch (error) {
-                console.error('Sync failed', error);
+        try {
+            if (!this.initialSyncIsFinished) {
+                console.error("Must call initalWalletSync before walletSync!");
             }
+            await this.waitForWallet();
+            this.walletIsBusy = true;
+            console.log('Beginning sync');
+            const networkType = this.wasm.Network.from_string(`"${this.network}"`);
+            const startTime = performance.now();
+            await this.wasmWallet.sync(networkType);
+            const endTime = performance.now();
+            console.log(
+                `Sync finished in ${(endTime - startTime) / 1000} seconds`
+            );
             this.walletIsBusy = false;
-        } else {
-            console.error("Wallet is currently busy!");
+        } catch (e) {
+            this.walletIsBusy = false;
+            console.error("Sync failed.",e);
         }
     }
     
     /// Returns the private balance of the currently connected zkAddress for the currently
     /// connected network.
     async getPrivateBalance(assetId: BN): Promise<string> {
-        if (!this.walletIsBusy) {
+        try {
+            await this.waitForWallet();
             this.walletIsBusy = true;
             const balance = await this.wasmWallet.balance(assetId.toString());
             this.walletIsBusy = false;
             return balance;
-        } else {
-            console.error("Wallet is currently busy!");
+        } catch (e) {
+            this.walletIsBusy = false;
+            console.error("Failed to fetch private balance.",e);
         }
     }
 
@@ -193,15 +196,17 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Builds and signs a "To Private" transaction for any fungible token.
     /// Note: This transaction is not published to the ledger.
     async toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction> {
-        if (!this.walletIsBusy) {
+        try {
+            await this.waitForWallet();
             this.walletIsBusy = true;
             await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
             const transaction = await this.toPrivateFungible(assetId, amount);
             const signResult = await this.signTransaction(null, transaction, this.network);
             this.walletIsBusy = false;
             return signResult;
-        } else {
-            console.error("Wallet is currently busy!");
+        } catch (e) {
+            this.walletIsBusy = false;
+            console.error("Failed to build transaction.",e);
         }
     }
 
@@ -214,15 +219,17 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Builds a "Private Transfer" transaction for any fungible token.
     /// Note: This transaction is not published to the ledger.
     async privateTransferBuild(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction> {
-        if (!this.walletIsBusy) {
+        try {
+            await this.waitForWallet();
             this.walletIsBusy = true;
             await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
             const transaction = await this.privateFungibleTransfer(assetId, amount, toPrivateAddress);
             const signResult = await this.signTransaction(transaction.assetMetadataJson, transaction.transaction, this.network);
             this.walletIsBusy = false;
             return signResult;
-        } else {
-            console.error("Wallet is currently busy!");
+        } catch (e) {
+            this.walletIsBusy = false;
+            console.error("Failed to build transaction.",e);
         }
     }
 
@@ -235,15 +242,17 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Builds and signs a "To Public" transaction for any fungible token.
     /// Note: This transaction is not published to the ledger.
     async toPublicBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction> {
-        if (!this.walletIsBusy) {
+        try {
+            await this.waitForWallet();
             this.walletIsBusy = true;
             await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
             const transaction = await this.toPublicFungible(assetId, amount);
             const signResult = await this.signTransaction(transaction.assetMetadataJson, transaction.transaction, this.network);
             this.walletIsBusy = false;
             return signResult;
-        } else {
-            console.error("Wallet is currently busy!");
+        } catch (e) {
+            this.walletIsBusy = false;
+            console.error("Failed to build transaction.",e);
         }
     }
 
@@ -267,6 +276,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     ///
     /// Private Methods
     ///
+
+    // WASM wallet doesn't allow you to call two methods at once, so before
+    // calling methods it is necessary to wait for a pending call to finish.
+    private async waitForWallet(): Promise<void> {
+        while (this.walletIsBusy === true) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+    };
 
     /// Private helper method for internal use to initialize the Polkadot.js API with web3Extension.
     private static async initApi(env: Environment, network: Network): Promise<InitApiResult> {
