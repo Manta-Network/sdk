@@ -37,6 +37,7 @@ const privateWallet = await MantaPrivateWallet.init(prodEnvironment,dolphinNetwo
 
 `MantaPrivateWallet.init` has several optional arguments:
 
+- `loggingEnabled`, whether or not non-error logging to console should occur, set by default to `false`.
 - `maxSendersPullSize`, set by default to 4096.
 - `maxReceiversPullSize`, set by default to 4096.
 - `pullCallback`, callback function after a pull has occured, set by default to `null`.
