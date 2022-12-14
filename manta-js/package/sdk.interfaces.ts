@@ -41,13 +41,14 @@ export interface IMantaPrivateWallet {
   walletIsBusy: boolean;
 
   convertPrivateAddressToJson(address: string): any
-  networks(): any;
-  privateAddress(): Promise<Address>;
+  getNetworks(): any;
+  getZkAddress(): Promise<Address>;
   initalWalletSync(): Promise<void>;
   walletSync(): Promise<void>;
-  signerVersion(): Promise<Version>;
-  assetMetaData(assetId: BN): Promise<any>;
-  privateBalance(assetId: BN): Promise<string>;
+  getSignerVersion(): Promise<Version>;
+  getAssetMetadata(assetId: BN): Promise<any>;
+  getPrivateBalance(assetId: BN): Promise<string>;
+  getPublicBalance(assetId: BN, address:Address): Promise<any>;
   toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
   toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction>;
   privateTransferSend(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
@@ -55,5 +56,4 @@ export interface IMantaPrivateWallet {
   toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
   toPublicBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction>;
   publicTransfer(assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void>;
-  publicBalance(assetId: BN, address:string): Promise<any>;
 }

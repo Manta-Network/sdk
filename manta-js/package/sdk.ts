@@ -56,9 +56,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// MantaPrivateWallet Initialization
     ///
 
-    /// Initializes the MantaPrivateWallet class, given an optional address, this will be used
-    /// for specifying which polkadot.js address to use upon initialization if there are several.
-    /// If no address is specified then the first polkadot.js address will be used.
+    /// Initializes the MantaPrivateWallet class, for a corresponding environment and network.
     static async init(env: Environment, network: Network): Promise<MantaPrivateWallet> {
         const { api } = await MantaPrivateWallet._initApi(env, network);
         const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet._initWasmSdk(api);
@@ -76,7 +74,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             api.rpc.system.version()
         ]);
         
-        console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
+        console.log(`MantaPrivateWallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
 
         return {
             api
@@ -101,14 +99,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     async _setPolkadotSigner(polkadotSigner: Signer, polkadotAddress:Address): Promise<void> {
-        try {
-
-            this.wasmApi.setExternalAccountSigner(polkadotAddress);
-            this.api.setSigner(polkadotSigner);
-
-        } catch (e) {
-            console.error("Unable to set polkadotJS signer.", e);
-        }
+        this.wasmApi.setExternalAccountSigner(polkadotAddress);
+        this.api.setSigner(polkadotSigner);
     }
 
     ///
@@ -121,22 +113,16 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     /// Returns information about the currently supported networks.
-    networks(): any {
+    getNetworks(): any {
         return config.NETWORKS;
-    }
-
-    /// Returns whether the current wasm wallet instance is busy. To avoid multiple
-    /// calls to wasmWallet simultaneously which causes a borrowMut rust error.
-    isWalletBusy(): boolean {
-        return this.walletIsBusy;
     }
 
     ///
     /// Manta Signer methods
     ///
 
-    /// Returns the zkAddress of the currently connected manta-signer instance.
-    async privateAddress(): Promise<Address> {
+    /// Returns the ZkAddress (Private Address) of the currently connected manta-signer instance.
+    async getZkAddress(): Promise<Address> {
         if (!this.walletIsBusy) {
             this.walletIsBusy = true;
             const privateAddress = await getPrivateAddress(this.wasm, this.wasmWallet, this.network);
@@ -178,8 +164,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     /// Returns the version of the currently connected manta-signer instance.
-    async signerVersion(): Promise<Version> {
-        const version = await getSignerVersion();
+    async getSignerVersion(): Promise<Version> {
+        const version = await fetchSignerVersion();
         return version;
     }
 
@@ -189,7 +175,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
  
     /// Returns the metadata for an asset with a given `asset_id` for the currently
     /// connected network.
-    async assetMetaData(assetId: BN): Promise<any> {
+    async getAssetMetadata(assetId: BN): Promise<any> {
         const data = await this.api.query.assetManager.assetIdMetadata(assetId);
         const json = JSON.stringify(data.toHuman());
         const jsonObj = JSON.parse(json);
@@ -198,10 +184,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     
     /// Returns the private balance of the currently connected zkAddress for the currently
     /// connected network.
-    async privateBalance(assetId: BN): Promise<string> {
+    async getPrivateBalance(assetId: BN): Promise<string> {
         if (!this.walletIsBusy) {
             this.walletIsBusy = true;
-            const balance = await getPrivateBalance(this.wasmWallet, assetId);
+            const balance = await fetchPrivateBalance(this.wasmWallet, assetId);
             this.walletIsBusy = false;
             return balance;
         } else {
@@ -211,8 +197,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     /// Returns the public balance associated with an account for a given `asset_id`.
     /// If no address is provided, the balance will be returned for this.signer.
-    async publicBalance(assetId: BN, address:Address): Promise<any> {
-        const balance = await getPublicBalance(this.api,assetId,address);
+    async getPublicBalance(assetId: BN, address:Address): Promise<any> {
+        const balance = await fetchPublicBalance(this.api,assetId,address);
         return balance;
     }
     
@@ -297,7 +283,7 @@ function envUrl(env: Environment, network: Network): string {
 }
 
 /// Returns the version of the currently connected manta-signer instance.
-async function getSignerVersion(): Promise<Version> {
+async function fetchSignerVersion(): Promise<Version> {
     try {
         const version_res = await axios.get(`${SIGNER_URL}version`, {
             timeout: 1500
@@ -324,12 +310,12 @@ async function getPrivateAddress(wasm: any, wallet:Wallet, network: Network): Pr
 };
 
 /// Returns private asset balance for a given `asset_id` for the associated zkAddress.
-function getPrivateBalance(wasmWallet: Wallet, assetId: BN): string {
+function fetchPrivateBalance(wasmWallet: Wallet, assetId: BN): string {
     return wasmWallet.balance(assetId.toString());
 }
 
 /// Returns the public balance for a given Asset ID.
-async function getPublicBalance(api: ApiPromise, assetId: BN, targetAddress:Address): Promise<any> {
+async function fetchPublicBalance(api: ApiPromise, assetId: BN, targetAddress:Address): Promise<any> {
     try {
         if (assetId.toString() === NATIVE_TOKEN_ASSET_ID) {
             const nativeBalance: any = await api.query.system.account(targetAddress);
