@@ -41,6 +41,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     environment: Environment;
     wasmApi: wasmApi;
     walletIsBusy: boolean;
+    initialSyncIsFinished: boolean;
 
     constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment, wasmApi: wasmApi) {
         this.api = api;
@@ -50,6 +51,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         this.environment = environment;
         this.wasmApi = wasmApi;
         this.walletIsBusy = false;
+        this.initialSyncIsFinished = false;
     }
 
     ///
@@ -101,8 +103,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// the current checkpoint and balance state.
     ///
     /// Requirements: Must be called once after creating an instance of MantaPrivateWallet 
-    /// and must be called before walletSync(). Must also be called after every 
-    /// time the network is changed.
+    /// and must be called before walletSync().
     async initalWalletSync(): Promise<void> {
         if (!this.walletIsBusy) {
             this.walletIsBusy = true;
@@ -115,6 +116,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
                 console.log(
                     `Initial sync finished in ${(endTime - startTime) / 1000} seconds`
                 );
+                this.initialSyncIsFinished = true;
             } catch (e) {
                 console.error('Inital Sync failed', e);
             }
@@ -128,7 +130,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// balance state. This method runs until all the ledger data has arrived at and
     /// has been synchronized with the wallet.
     async walletSync(): Promise<void> {
-        if (!this.walletIsBusy) {
+        if (!this.initialSyncIsFinished) {
+            console.error("Must call initalWalletSync before walletSync!");
+        } else if (!this.walletIsBusy) {
             this.walletIsBusy = true;
             try {
                 console.log('Beginning sync');
