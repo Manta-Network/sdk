@@ -39,6 +39,7 @@ export interface IMantaPrivateWallet {
   wasmApi: wasmApi;
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
+  loggingEnabled: boolean;
 
   convertPrivateAddressToJson(address: string): any
   getNetworks(): any;

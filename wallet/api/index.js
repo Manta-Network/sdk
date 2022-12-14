@@ -4,13 +4,11 @@
 
 export class ApiConfig {
   constructor(
-    api,
     maxReceiversPullSize,
     maxSendersPullSize,
     pullCallback = null,
     errorCallback = null
   ) {
-    this.api = api;
     this.maxReceiversPullSize = maxReceiversPullSize;
     this.maxSendersPullSize = maxSendersPullSize;
     this.pullCallback = pullCallback;
@@ -20,9 +18,9 @@ export class ApiConfig {
 
 export default class Api {
   // Constructs an API from a config
-  constructor(config) {
+  constructor(api,config) {
     this.config = config;
-    this.api = this.config.api;
+    this.api = api;
     this.externalAccountSigner = null;
     this.maxReceiversPullSize = this.config.maxReceiversPullSize;
     this.maxSendersPullSize = this.config.maxSendersPullSize;

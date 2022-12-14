@@ -42,8 +42,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     wasmApi: wasmApi;
     walletIsBusy: boolean;
     initialSyncIsFinished: boolean;
+    loggingEnabled: boolean;
 
-    constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment, wasmApi: wasmApi) {
+    constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment, wasmApi: wasmApi, loggingEnabled:boolean) {
         this.api = api;
         this.wasm = wasm;
         this.wasmWallet = wasmWallet;
@@ -52,6 +53,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         this.wasmApi = wasmApi;
         this.walletIsBusy = false;
         this.initialSyncIsFinished = false;
+        this.loggingEnabled = loggingEnabled;
     }
 
     ///
@@ -59,10 +61,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     ///
 
     /// Initializes the MantaPrivateWallet class, for a corresponding environment and network.
-    static async init(env: Environment, network: Network): Promise<MantaPrivateWallet> {
-        const { api } = await MantaPrivateWallet.initApi(env, network);
-        const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(api);
-        const sdk = new MantaPrivateWallet(api,wasm,wasmWallet,network,env,wasmApi);
+    static async init(env: Environment, network: Network, loggingEnabled:boolean=false, maxReceiversPullSize:number=DEFAULT_PULL_SIZE, maxSendersPullSize:number=DEFAULT_PULL_SIZE, pullCallback:any=null, errorCallback:any=null): Promise<MantaPrivateWallet> {
+        const { api } = await MantaPrivateWallet.initApi(env, network,loggingEnabled);
+        const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(api,maxReceiversPullSize,maxSendersPullSize,pullCallback,errorCallback);
+        const sdk = new MantaPrivateWallet(api,wasm,wasmWallet,network,env,wasmApi,loggingEnabled);
         return sdk;
     }
 
@@ -110,14 +112,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         try {
             await this.waitForWallet();
             this.walletIsBusy = true;
-            console.log('Beginning initial sync');
+            this.conditionalLog('Beginning initial sync');
             const networkType = this.wasm.Network.from_string(`"${this.network}"`);
             const startTime = performance.now();
             await this.wasmWallet.restart(networkType);
             const endTime = performance.now();
-            console.log(
-                `Initial sync finished in ${(endTime - startTime) / 1000} seconds`
-            );
+            this.conditionalLog(`Initial sync finished in ${(endTime - startTime) / 1000} seconds`);
             this.walletIsBusy = false;
             this.initialSyncIsFinished = true;
         } catch (e) {
@@ -136,14 +136,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             }
             await this.waitForWallet();
             this.walletIsBusy = true;
-            console.log('Beginning sync');
+            this.conditionalLog('Beginning sync');
             const networkType = this.wasm.Network.from_string(`"${this.network}"`);
             const startTime = performance.now();
             await this.wasmWallet.sync(networkType);
             const endTime = performance.now();
-            console.log(
-                `Sync finished in ${(endTime - startTime) / 1000} seconds`
-            );
+            this.conditionalLog(`Initial sync finished in ${(endTime - startTime) / 1000} seconds`);
             this.walletIsBusy = false;
         } catch (e) {
             this.walletIsBusy = false;
@@ -191,6 +189,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     async toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
         const signed = await this.toPrivateBuild(assetId,amount,polkadotSigner, polkadotAddress);
         await this.sendTransaction(polkadotAddress,signed);
+        this.conditionalLog("To Private transaction finished.");
     }
 
     /// Builds and signs a "To Private" transaction for any fungible token.
@@ -214,6 +213,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     async privateTransferSend(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
         const signed = await this.privateTransferBuild(assetId,amount,toPrivateAddress,polkadotSigner,polkadotAddress);
         await this.sendTransaction(polkadotAddress,signed);
+        this.conditionalLog("Private Transfer transaction finished.");
     }
 
     /// Builds a "Private Transfer" transaction for any fungible token.
@@ -237,6 +237,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     async toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
         const signed = await this.toPublicBuild(assetId,amount,polkadotSigner, polkadotAddress);
         await this.sendTransaction(polkadotAddress,signed);
+        this.conditionalLog("To Public transaction finished.");
     }
 
     /// Builds and signs a "To Public" transaction for any fungible token.
@@ -267,6 +268,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
                 destinationAddress
             );
             await tx.signAndSend(senderAddress);
+            this.conditionalLog("Public Transfer transaction finished.");
         } catch (e) {
             console.log("Failed to execute public transfer.");
             console.error(e);
@@ -277,6 +279,15 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Private Methods
     ///
 
+
+    /// Conditionally logs the contents of `message` depending on if `loggingEnabled`
+    /// is set to `true`.
+    private conditionalLog(message:string): void {
+        if (this.loggingEnabled) {
+            console.log(message);
+        }
+    }
+
     // WASM wallet doesn't allow you to call two methods at once, so before
     // calling methods it is necessary to wait for a pending call to finish.
     private async waitForWallet(): Promise<void> {
@@ -286,7 +297,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     };
 
     /// Private helper method for internal use to initialize the Polkadot.js API with web3Extension.
-    private static async initApi(env: Environment, network: Network): Promise<InitApiResult> {
+    private static async initApi(env: Environment, network: Network, loggingEnabled:boolean): Promise<InitApiResult> {
         const provider = new WsProvider(MantaPrivateWallet.envUrl(env, network));
         const api = await ApiPromise.create({ provider, types, rpc });
         const [chain, nodeName, nodeVersion] = await Promise.all([
@@ -294,8 +305,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             api.rpc.system.name(),
             api.rpc.system.version()
         ]);
-        
-        console.log(`MantaPrivateWallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
+
+        if (loggingEnabled) {
+            console.log(`MantaPrivateWallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
+        }
 
         return {
             api
@@ -303,13 +316,13 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
-    private static async initWasmSdk(api: ApiPromise): Promise<InitWasmResult> {
+    private static async initWasmSdk(api: ApiPromise, maxReceiversPullSize:number, maxSendersPullSize:number, pullCallback:any, errorCallback:any): Promise<InitWasmResult> {
         const wasm = await import('manta-wasm-wallet');
         const wasmSigner = new wasm.Signer(SIGNER_URL);
         const wasmApiConfig = new ApiConfig(
-            api, DEFAULT_PULL_SIZE, DEFAULT_PULL_SIZE
+            maxReceiversPullSize, maxSendersPullSize, pullCallback, errorCallback
         );
-        const wasmApi = new Api(wasmApiConfig);
+        const wasmApi = new Api(api,wasmApiConfig);
         const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
         const wasmWallet = new wasm.Wallet(wasmLedger, wasmSigner);
         return {
@@ -319,6 +332,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         }
     }
 
+    /// Sets the polkadot Signer to `polkadotSigner` and polkadot signing address to `polkadotAddress`.
     private async setPolkadotSigner(polkadotSigner: Signer, polkadotAddress:Address): Promise<void> {
         this.wasmApi.setExternalAccountSigner(polkadotAddress);
         this.api.setSigner(polkadotSigner);
