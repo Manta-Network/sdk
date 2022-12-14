@@ -1,13 +1,13 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 // @ts-ignore
-import Api, {ApiConfig} from 'manta-wasm-wallet-api';
+import Api, {ApiConfig} from './api/index';
 import axios from 'axios';
 import BN from 'bn.js';
 import config from './manta-config.json';
 import { Transaction, Wallet } from 'manta-wasm-wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
-import { Version, Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction, wasmApi } from "./sdk.interfaces";
+import { Version, Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction } from "./sdk.interfaces";
 
 const rpc = config.RPC;
 const types = config.TYPES;
@@ -39,12 +39,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     wasmWallet: Wallet;
     network: Network;
     environment: Environment;
-    wasmApi: wasmApi;
+    wasmApi: any;
     walletIsBusy: boolean;
     initialSyncIsFinished: boolean;
     loggingEnabled: boolean;
 
-    constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment, wasmApi: wasmApi, loggingEnabled:boolean) {
+    constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment, wasmApi: any, loggingEnabled:boolean) {
         this.api = api;
         this.wasm = wasm;
         this.wasmWallet = wasmWallet;

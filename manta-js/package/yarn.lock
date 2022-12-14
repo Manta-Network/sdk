@@ -1201,9 +1201,6 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
-"manta-wasm-wallet-api@file:../../wallet/api":
-  version "1.5.1"
-
 "manta-wasm-wallet@file:../../wallet/crate/pkg":
   version "1.5.1"
 

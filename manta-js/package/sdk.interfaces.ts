@@ -3,8 +3,6 @@ import { Wallet } from 'manta-wasm-wallet';
 import { Environment, Network } from './sdk';
 import BN from 'bn.js';
 import { SubmittableExtrinsic, Signer } from '@polkadot/api/types';
-// @ts-ignore
-import Api from 'manta-wasm-wallet-api';
 
 export type Version = string;
 export type Address = string;
@@ -16,12 +14,10 @@ export type InitApiResult = {
   api: ApiPromise
 }
 
-export type wasmApi = typeof Api;
-
 export type InitWasmResult = {
   wasm: any,
   wasmWallet: Wallet,
-  wasmApi: wasmApi
+  wasmApi: any
 }
 
 export type SignedTransaction = {
@@ -36,7 +32,7 @@ export interface IMantaPrivateWallet {
   wasmWallet: Wallet;
   network: Network;
   environment: Environment;
-  wasmApi: wasmApi;
+  wasmApi: any;
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
   loggingEnabled: boolean;
