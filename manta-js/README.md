@@ -35,13 +35,20 @@ const dolphinNetwork = sdk.Network.Dolphin;
 const privateWallet = await MantaPrivateWallet.init(prodEnvironment,dolphinNetwork);
 ```
 
+`MantaPrivateWallet.init` has several optional arguments:
+
+- `maxSendersPullSize`, set by default to 4096.
+- `maxReceiversPullSize`, set by default to 4096.
+- `pullCallback`, callback function after a pull has occured, set by default to `null`.
+- `errorCallback`, callback function after an error has occured, set by default to `null`.
+
 ## Transacting
 
 After initialization of the `MantaPrivateWallet` class, `initalWalletSync()` must be called before any transactions are made.
 
 After every single transaction, to get the latest data from the ledger, `walletSync()` must be called.
 
-A PolkadotJS `Signer` and public `Address` should be provided to every function that requires transacting. Below is an example of how to get these values, this example assumes that the Polkadot JS extension is installed and contains an existing account.
+A PolkadotJS `Signer` and public PolkadotJS `Address` should be provided to every function that requires transacting. Below is an example of how to get these values, this example assumes that the Polkadot JS extension is installed and contains an existing account.
 
 ### Polkadot JS Transaction Parameters
 
@@ -85,22 +92,22 @@ const assetId = new BN("1");
 const amount = new BN("10000000000000000000");
 
 // Sync with most recent ledger state. 
-await mantaPrivateWallet.initialWalletSync();
+await privateWallet.initialWalletSync();
 
 // Get private address
-const privateAddress = await mantaPrivateWallet.privateAddress();
+const privateAddress = await privateWallet.getPrivateAddress();
 
 // Get private balance of DOL for given private address
-const privateBalance = await mantaPrivateWallet.privateBalance(assetId);
+const privateBalance = await privateWallet.getPrivateBalance(assetId);
 
 // Privatize 10 DOL to 10 pDOL
-await mantaPrivateWallet.toPrivate(asset_id, amount, polkadotSigner, polkadotAddress);
+await privateWallet.toPrivateSend(assetId, amount, polkadotSigner, polkadotAddress);
 
 // Sync to get latest data after the transaction and check that it was successful.
-await mantaPrivateWallet.walletSync();
+await privateWallet.walletSync();
 
 // The private balance of pDOL should be incremented by 10 units.
-const newPrivateBalance = await mantaSdk.privateBalance(assetId);
+const newPrivateBalance = await mantaSdk.getPrivateBalance(assetId);
 ```
 
 ### PrivateTransfer
@@ -113,20 +120,20 @@ const assetId = new BN("1");
 const amount = new BN("10000000000000000000");
 
 // Sync with most recent ledger state. 
-await mantaSdk.initialWalletSync();
+await privateWallet.initialWalletSync();
 
 // Get private address
-const privateAddress = await mantaSdk.privateAddress();
+const privateAddress = await privateWallet.getPrivateAddress();
 
 // Private Transfer of 10 pDOL to another private address
 const examplePrivateAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
-await mantaSdk.privateTransfer(asset_id, amount, examplePrivateAddress, polkadotSigner, polkadotAddress);
+await privateWallet.privateTransferSend(assetId, amount, examplePrivateAddress, polkadotSigner, polkadotAddress);
 
 // Sync to get latest data after transaction and check that it was successful.
-await mantaSdk.walletSync();
+await privateWallet.walletSync();
 
 // The private balance of pDOL should decrease by 10 units.
-const newPrivateBalance = await mantaSdk.privateBalance(assetId);
+const newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
 ```
 
 ### ToPublic
@@ -139,22 +146,22 @@ const assetId = new BN("1");
 const amount = new BN("5000000000000000000");
 
 // Sync with most recent ledger state. 
-await mantaSdk.initialWalletSync();
+await privateWallet.initialWalletSync();
 
 // Get private address
-const privateAddress = await mantaSdk.privateAddress();
+const privateAddress = await privateWallet.getPrivateAddress();
 
 // Get private balance of DOL for given private address
-const privateBalance = await mantaSdk.privateBalance(assetId);
+const privateBalance = await privateWallet.getPrivateBalance(assetId);
 
 // Convert 5 pDOL back to DOL
-await mantaSdk.toPublic(assetId, amount, polkadotSigner, polkadotAddress);
+await privateWallet.toPublicSend(assetId, amount, polkadotSigner, polkadotAddress);
 
 // Sync to get latest data after transaction and check that it was successful.
-await mantaSdk.walletSync();
+await privateWallet.walletSync();
 
 // The private balance of pDOL should decrease by 5 units.
-const newPrivateBalance = await mantaSdk.privateBalance(assetId);
+const newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
 ```
 
 ### Sign and manual send transaction
@@ -169,17 +176,17 @@ const amount = new BN("10000000000000000000");
 
 const env = sdk.Environment.Development;
 const net = sdk.Network.Dolphin;
-const mantaSdk = await sdk.init(env,net);
+const privateWallet = await sdk.init(env,net);
 
-const privateAddress = await mantaSdk.privateAddress();
+const privateAddress = await privateWallet.privateAddress();
 console.log("The private address is: ", privateAddress);
 
-await mantaSdk.initalWalletSync();
+await privateWallet.initalWalletSync();
 
-const initalPrivateBalance = await mantaSdk.privateBalance(assetId);
+const initalPrivateBalance = await privateWallet.privateBalance(assetId);
 console.log("The inital private balance is: ", initalPrivateBalance);
 
-const signResult = await mantaSdk.toPrivateBuild(assetId, amount, polkadotSigner, polkadotAddress);
+const signResult = await privateWallet.toPrivateBuild(assetId, amount, polkadotSigner, polkadotAddress);
 
 console.log("The result of the signing: ", JSON.stringify(signResult.transactions));
 ```
@@ -187,9 +194,9 @@ console.log("The result of the signing: ", JSON.stringify(signResult.transaction
 This can also be done for all other transaction types:
 
 ```javascript
-const toPrivateSignResult = await mantaSdk.toPrivateBuild(assetId, amount, polkadotSigner, polkadotAddress);
-const toPublicSignResult = await mantaSdk.toPublicBuild(assetId, amount, polkadotSigner, polkadotAddress);
-const privateTransferSignResult = await mantaSdk.privateTransferBuild(assetId, amount, privateAddress, polkadotSigner, polkadotAddress);
+const toPrivateSignResult = await privateWallet.toPrivateBuild(assetId, amount, polkadotSigner, polkadotAddress);
+const toPublicSignResult = await privateWallet.toPublicBuild(assetId, amount, polkadotSigner, polkadotAddress);
+const privateTransferSignResult = await privateWallet.privateTransferBuild(assetId, amount, privateAddress, polkadotSigner, polkadotAddress);
 ```
 
 Then you can use the signResult to submit transaction by your self. Here is an example on how to verify the `toPrivateBuild` sign result is valid:
