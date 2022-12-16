@@ -37,7 +37,8 @@
         "mantaPay": {
             "pull_ledger_diff": {
                 "description": "pull from mantaPay",
-                "params": [{
+                "params": [
+                    {
                         "name": "checkpoint",
                         "type": "Checkpoint"
                     },
@@ -51,6 +52,24 @@
                     }
                 ],
                 "type": "PullResponse"
+            },
+            "dense_pull_ledger_diff": {
+                "description": "pull from mantaPay",
+                "params": [
+                    {
+                        "name": "checkpoint",
+                        "type": "Checkpoint"
+                    },
+                    {
+                        "name": "max_receiver",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "max_sender",
+                        "type": "u64"
+                    }
+                ],
+                "type": "DensePullResponse"
             }
         }
     },
@@ -112,6 +131,13 @@
             "receiver_posts": "Vec<ReceiverPost>",
             "sinks": "Vec<[u8; 16]>",
             "proof": "[u8; 128]"
+        },
+        "DensePullResponse": {
+            "should_continue": "bool",
+            "receivers": "String",
+            "senders": "String",
+            "senders_receivers_total": "[u8; 16]",
+            "next_checkpoint": "Option<Checkpoint>"
         }
     }
 }

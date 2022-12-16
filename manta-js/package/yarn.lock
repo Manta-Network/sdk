@@ -1464,6 +1464,11 @@ safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   resolved "https://registry.npmjs.org/safe-buffer/-/safe-buffer-5.1.2.tgz#991ec69d296e0313747d59bdfd2b745c35f8828d"
   integrity sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==
 
+scale-ts@^0.2.11:
+  version "0.2.11"
+  resolved "https://registry.npmmirror.com/scale-ts/-/scale-ts-0.2.11.tgz#f69d0429fc6c110c03c333b7f87b9f67fd60a027"
+  integrity sha512-h0HRNScTPSZL9/H4iXERSaRZB6dhug4igTVx7OzUPwuhpodj+e63oOtYs425TcTky2Xp7zpGUG49WA+f+Y31zg==
+
 scryptsy@^2.1.0:
   version "2.1.0"
   resolved "https://registry.npmjs.org/scryptsy/-/scryptsy-2.1.0.tgz#8d1e8d0c025b58fdd25b6fa9a0dc905ee8faa790"

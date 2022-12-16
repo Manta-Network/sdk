@@ -2,6 +2,10 @@
 
 // Polkadot-JS Ledger API
 
+import {_void, Enum, Struct, Tuple, u128, u8, Vector} from "scale-ts";
+import {ApiPromise} from "@polkadot/api";
+import {base64Decode} from "@polkadot/util-crypto";
+
 export class ApiConfig {
   constructor(
     maxReceiversPullSize,
@@ -47,7 +51,7 @@ export default class Api {
     const cipher1 = Array.from(ciphertext.slice(32, 64));
     return {
       ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
-      ciphertext: new Array(cipher0, cipher1)
+      ciphertext: [cipher0, cipher1]
     }
   }
 
@@ -59,7 +63,7 @@ export default class Api {
     const cipher2 = Array.from(ciphertext.slice(64, 96));
     return {
       ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
-      ciphertext: new Array(cipher0, cipher1, cipher2)
+      ciphertext: [cipher0, cipher1, cipher2]
     };
   }
 
@@ -75,7 +79,7 @@ export default class Api {
         note.ephemeral_public_key.toU8a()
       ),
       tag: Array.from(note.tag.toU8a()),
-      ciphertext: new Array(cipher0, cipher1, cipher2)
+      ciphertext: [cipher0, cipher1, cipher2]
     }
   }
 
@@ -107,7 +111,7 @@ export default class Api {
     try {
       await this.api.isReady;
       console.log('checkpoint', checkpoint);
-      let result = await this.api.rpc.mantaPay.pull_ledger_diff(
+      let result = await this.api.rpc.mantaPay.dense_pull_ledger_diff(
         checkpoint,
         this.maxReceiversPullSize,
         this.maxSendersPullSize
@@ -115,18 +119,12 @@ export default class Api {
 
       console.log('pull result', JSON.stringify(result));
 
-      const receivers = result.receivers.map((receiver_raw) => {
-        return new Array(
-          this._utxo_to_json(receiver_raw[0]),
-          this._full_incoming_note_to_jons(receiver_raw[1])
-        );
+      const receivers = receiver_spec.dec(base64Decode(result.receivers.toString())).map((r) => {
+        return [r[0], r[1]];
       });
-      const senders = result.senders.map((sender_raw) => {
-        return new Array(
-          Array.from(sender_raw[0].toU8a()),
-          this._outgoing_note_to_json(sender_raw[1]),
-        );
-      });
+      const senders = sender_spec.dec(base64Decode(result.senders.toString())).map((s) => {
+          return [s[0], s[1]];
+      })
       if (this.pullCallback) {
         this.pullCallback(
           receivers,
@@ -155,17 +153,14 @@ export default class Api {
     let senders = post.sender_posts.length;
     let receivers = post.receiver_posts.length;
     let sinks = post.sinks.length;
-    if (sources == 1 && senders == 0 && receivers == 1 && sinks == 0) {
-      const mint_tx = await this.api.tx.mantaPay.toPrivate(post);
-      return mint_tx;
-    } else if (sources == 0 && senders == 2 && receivers == 2 && sinks == 0) {
-      const private_transfer_tx = await this.api.tx.mantaPay.privateTransfer(
-        post
-      );
-      return private_transfer_tx;
-    } else if (sources == 0 && senders == 2 && receivers == 1 && sinks == 1) {
-      const reclaim_tx = await this.api.tx.mantaPay.toPublic(post);
-      return reclaim_tx;
+    if (sources === 1 && senders === 0 && receivers === 1 && sinks === 0) {
+        return this.api.tx.mantaPay.toPrivate(post);
+    } else if (sources === 0 && senders === 2 && receivers === 2 && sinks === 0) {
+        return this.api.tx.mantaPay.privateTransfer(
+            post
+        );
+    } else if (sources === 0 && senders === 2 && receivers === 1 && sinks === 1) {
+        return this.api.tx.mantaPay.toPublic(post);
     } else {
       throw new Error(
         'Invalid transaction shape; there is no extrinsic for a transaction' +
@@ -200,3 +195,40 @@ export default class Api {
 
 export const SUCCESS = 'success';
 export const FAILURE = 'failure';
+
+
+/// Here's some types spec to parse pull_ledger_diff info from byte array in densely api response.
+/// You can match them in manta-config.json.
+/// NOTE: maybe we can just use `decodeU8a` in `@polkadot/types-codec` instead of depending on a third party lib.
+const utxo_spec = Struct(
+    {
+        transparency: Enum({Transparent: _void, Opaque: _void}),
+        public_asset: Struct({
+            id: Vector(u8, 32),
+            value: u128
+        }),
+        commitment: Vector(u8, 32)
+    }
+);
+
+const full_incoming_note_spec = Struct({
+    address_partition: u8,
+    incoming_note: Struct({
+        ephemeral_public_key: Vector(u8, 32),
+        tag: Vector(u8, 32),
+        ciphertext: Vector(Vector(u8, 32), 3)
+    }),
+    light_incoming_note: Struct({
+        ephemeral_public_key: Vector(u8, 32),
+        ciphertext: Vector(Vector(u8, 32), 3)
+    })
+});
+
+const receiver_spec = Vector(Tuple(utxo_spec, full_incoming_note_spec));
+
+const outgoing_note_spec = Struct({
+    ephemeral_public_key: Vector(u8, 32),
+    ciphertext: Vector(Vector(u8, 32), 2)
+});
+
+const sender_spec = Vector(Tuple(Vector(u8, 32), outgoing_note_spec));
