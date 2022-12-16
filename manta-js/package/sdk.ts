@@ -13,7 +13,7 @@ const rpc = config.RPC;
 const types = config.TYPES;
 const DEFAULT_PULL_SIZE = config.DEFAULT_PULL_SIZE;
 const SIGNER_URL = config.SIGNER_URL;
-const PRIVATE_ASSET_PREFIX = "p";
+const PRIVATE_ASSET_PREFIX = "zk";
 const NATIVE_TOKEN_ASSET_ID = "1";
 
 /// The Envrionment that the sdk is configured to run for, if development
@@ -106,7 +106,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// performs a synchronization against the signer and ledger to catch up to
     /// the current checkpoint and balance state.
     ///
-    /// Requirements: Must be called once after creating an instance of MantaPrivateWallet 
+    /// Requirements: Must be called once after creating an instance of MantaPrivateWallet
     /// and must be called before walletSync().
     async initalWalletSync(): Promise<void> {
         try {
@@ -148,7 +148,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             console.error("Sync failed.",e);
         }
     }
-    
+
     /// Returns the private balance of the currently connected zkAddress for the currently
     /// connected network.
     async getPrivateBalance(assetId: BN): Promise<string> {
@@ -184,7 +184,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             console.error(e);
         }
     }
-    
+
     /// Executes a "To Private" transaction for any fungible token.
     async toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
         const signed = await this.toPrivateBuild(assetId,amount,polkadotSigner, polkadotAddress);
@@ -339,7 +339,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     /// Returns the corresponding blockchain connection URL from Environment
-    /// and Network values. 
+    /// and Network values.
     private static envUrl(env: Environment, network: Network): string {
         var url = config.NETWORKS[network].ws_local;
         if(env == Environment.Production) {
@@ -348,12 +348,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         return url;
     }
 
-   
+
     /// Builds the "ToPrivate" transaction in JSON format to be signed.
     private async toPrivateFungible(assetId: BN, amount: BN): Promise<any> {
         try {
             const assetIdArray = Array.from(this.assetIdToUInt8Array(assetId));
-            const txJson = `{ "ToPrivate": { "id": [${assetIdArray}], "value": ${amount} }}`;
+            const txJson = `{ "ToPrivate": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
             const transaction = this.wasm.Transaction.from_string(txJson);
             return transaction;
         } catch (error) {
@@ -366,12 +366,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         try {
             const addressJson = this.convertPrivateAddressToJson(toPrivateAddress);
             const assetIdArray = Array.from(this.assetIdToUInt8Array(assetId));
-            const txJson = `{ "PrivateTransfer": [{ "id": [${assetIdArray}], "value": ${amount} }, ${addressJson} ]}`;
+            const txJson = `{ "PrivateTransfer": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${addressJson} ]}`;
             const transaction = this.wasm.Transaction.from_string(txJson);
-        
+
             // construct asset metadata json by query api
             const assetMeta = await this.api.query.assetManager.assetIdMetadata(assetId);
-        
+
             const json = JSON.stringify(assetMeta.toHuman());
             const jsonObj = JSON.parse(json);
             const decimals = jsonObj["metadata"]["decimals"];
@@ -390,12 +390,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     private async toPublicFungible(assetId: BN, amount: BN): Promise<any> {
         try {
             const assetIdArray = Array.from(this.assetIdToUInt8Array(assetId));
-            const txJson = `{ "ToPublic": { "id": [${assetIdArray}], "value": ${amount} }}`;
+            const txJson = `{ "ToPublic": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
             const transaction = this.wasm.Transaction.from_string(txJson);
-        
+
             // construct asset metadata json by query api
             const assetMeta = await this.api.query.assetManager.assetIdMetadata(assetId);
-        
+
             const json = JSON.stringify(assetMeta.toHuman());
             const jsonObj = JSON.parse(json);
             const decimals = jsonObj["metadata"]["decimals"];
@@ -453,9 +453,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     private assetIdToUInt8Array(asset_id: BN, len: number=32): AssetId {
         let hex = asset_id.toString(16); // to heximal format
         if (hex.length % 2) { hex = '0' + hex; }
-    
+
         let u8a = new Uint8Array(len);
-    
+
         let i = 0;
         let j = 0;
         while (i < len) {
@@ -511,14 +511,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             function(item: any,index:any,a: any){
             return item;
         });
-        const tag = x.note.incoming_note.ciphertext.ciphertext.tag; 
-        const pk = x.note.incoming_note.ciphertext.ephemeral_public_key; 
+        const tag = x.note.incoming_note.ciphertext.ciphertext.tag;
+        const pk = x.note.incoming_note.ciphertext.ephemeral_public_key;
         x.note.incoming_note.tag = tag;
         x.note.incoming_note.ephemeral_public_key = pk;
         x.note.incoming_note.ciphertext = arr1;
         delete x.note.incoming_note.header;
 
-        const lightPk = x.note.light_incoming_note.ciphertext.ephemeral_public_key; 
+        const lightPk = x.note.light_incoming_note.ciphertext.ephemeral_public_key;
         // ciphertext is [u8; 96] on manta-rs, but runtime side is [[u8; 32]; 3]
         const lightCipher = x.note.light_incoming_note.ciphertext.ciphertext;
         const lightCiper0 = lightCipher.slice(0, 32);
@@ -538,7 +538,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     // convert sender_posts to match runtime side
     private convertSenderPost(x:any) {
         const pk = x.nullifier.outgoing_note.ciphertext.ephemeral_public_key;
-        const cipher = x.nullifier.outgoing_note.ciphertext.ciphertext; 
+        const cipher = x.nullifier.outgoing_note.ciphertext.ciphertext;
         const ciper0 = cipher.slice(0, 32);
         const ciper1 = cipher.slice(32, 64);
         const outgoing = {
@@ -554,7 +554,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// NOTE: `post` from manta-rs sign result should match runtime side data structure type.
     private transferPost(post:any): any {
         let json = JSON.parse(JSON.stringify(post));
-        
+
         // transfer authorization_signature format
         if(json.authorization_signature != null){
             const scala = json.authorization_signature.signature.scalar;
