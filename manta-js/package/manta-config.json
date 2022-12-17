@@ -9,8 +9,7 @@
             "ws_local": "ws://127.0.0.1:9944",
             "parachainId": 2084,
             "decimals": 12,
-            "subscanUrl": "https://dolphin.subscan.io",
-            "SS58_ENCODING": 78
+            "subscanUrl": "https://dolphin.subscan.io"
         },
         "Calamari": {
             "name": "Calamari",
@@ -19,7 +18,6 @@
             "parachainId": 2084,
             "decimals": 12,
             "subscanUrl": "https://calamari.subscan.io",
-            "SS58_ENCODING": 78
         },
         "Manta": {
             "name": "Manta",

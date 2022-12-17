@@ -2,19 +2,17 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 // @ts-ignore
 import Api, {ApiConfig} from './api/index';
-import axios from 'axios';
 import BN from 'bn.js';
 import config from './manta-config.json';
 import { Transaction, Wallet } from 'manta-wasm-wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
-import { Version, Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction } from "./sdk.interfaces";
+import { Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction } from "./sdk.interfaces";
 
 const rpc = config.RPC;
 const types = config.TYPES;
 const DEFAULT_PULL_SIZE = config.DEFAULT_PULL_SIZE;
 const SIGNER_URL = config.SIGNER_URL;
 const PRIVATE_ASSET_PREFIX = "zk";
-const NATIVE_TOKEN_ASSET_ID = "1";
 
 /// The Envrionment that the sdk is configured to run for, if development
 /// is selected then it will attempt to connect to a local node instance.
@@ -75,6 +73,23 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             receiving_key: Array.from(bytes)
         });
     }
+    
+    /// Convert asset_id string to UInt8Array, default UInt8 array size is 32.
+    static assetIdToUInt8Array(asset_id: BN, len: number=32): AssetId {
+        let hex = asset_id.toString(16); // to heximal format
+        if (hex.length % 2) { hex = '0' + hex; }
+
+        let u8a = new Uint8Array(len);
+
+        let i = 0;
+        let j = 0;
+        while (i < len) {
+        u8a[i] = parseInt(hex.slice(j, j+2), 16);
+        i += 1;
+        j += 2;
+        }
+        return u8a;
+    }
 
     /// Returns information about the currently supported networks.
     getNetworks(): any {
@@ -112,12 +127,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         try {
             await this.waitForWallet();
             this.walletIsBusy = true;
-            this.conditionalLog('Beginning initial sync');
+            this.log('Beginning initial sync');
             const networkType = this.wasm.Network.from_string(`"${this.network}"`);
             const startTime = performance.now();
             await this.wasmWallet.restart(networkType);
             const endTime = performance.now();
-            this.conditionalLog(`Initial sync finished in ${(endTime - startTime) / 1000} seconds`);
+            this.log(`Initial sync finished in ${(endTime - startTime) / 1000} seconds`);
             this.walletIsBusy = false;
             this.initialSyncIsFinished = true;
         } catch (e) {
@@ -136,12 +151,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             }
             await this.waitForWallet();
             this.walletIsBusy = true;
-            this.conditionalLog('Beginning sync');
+            this.log('Beginning sync');
             const networkType = this.wasm.Network.from_string(`"${this.network}"`);
             const startTime = performance.now();
             await this.wasmWallet.sync(networkType);
             const endTime = performance.now();
-            this.conditionalLog(`Initial sync finished in ${(endTime - startTime) / 1000} seconds`);
+            this.log(`Initial sync finished in ${(endTime - startTime) / 1000} seconds`);
             this.walletIsBusy = false;
         } catch (e) {
             this.walletIsBusy = false;
@@ -164,32 +179,20 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         }
     }
 
-    /// Returns the public balance associated with an account for a given `asset_id`.
-    /// If no address is provided, the balance will be returned for this.signer.
-    async getPublicBalance(assetId: BN, address:Address): Promise<any> {
-        try {
-            if (assetId.toString() === NATIVE_TOKEN_ASSET_ID) {
-                const nativeBalance: any = await this.api.query.system.account(address);
-                return nativeBalance.data.free.toHuman();
-            } else {
-                const assetBalance: any = await this.api.query.assets.account(assetId, address);
-                if (assetBalance.value.isEmpty) {
-                    return "0";
-                } else {
-                    return assetBalance.value.balance.toString();
-                }
-            }
-        } catch (e) {
-            console.log("Failed to fetch public balance.");
-            console.error(e);
-        }
+    /// Returns the metadata for an asset with a given `asset_id` for the currently
+    /// connected network.
+    static async getAssetMetadata(api: ApiPromise, assetId: BN): Promise<any> {
+        const data = await api.query.assetManager.assetIdMetadata(assetId);
+        const json = JSON.stringify(data.toHuman());
+        const jsonObj = JSON.parse(json);
+        return jsonObj;
     }
 
     /// Executes a "To Private" transaction for any fungible token.
     async toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
         const signed = await this.toPrivateBuild(assetId,amount,polkadotSigner, polkadotAddress);
         await this.sendTransaction(polkadotAddress,signed);
-        this.conditionalLog("To Private transaction finished.");
+        this.log("To Private transaction finished.");
     }
 
     /// Builds and signs a "To Private" transaction for any fungible token.
@@ -199,7 +202,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             await this.waitForWallet();
             this.walletIsBusy = true;
             await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
-            const transaction = await this.toPrivateFungible(assetId, amount);
+            const transaction = await this.toPrivateBuildUnsigned(assetId, amount);
             const signResult = await this.signTransaction(null, transaction, this.network);
             this.walletIsBusy = false;
             return signResult;
@@ -213,7 +216,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     async privateTransferSend(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
         const signed = await this.privateTransferBuild(assetId,amount,toPrivateAddress,polkadotSigner,polkadotAddress);
         await this.sendTransaction(polkadotAddress,signed);
-        this.conditionalLog("Private Transfer transaction finished.");
+        this.log("Private Transfer transaction finished.");
     }
 
     /// Builds a "Private Transfer" transaction for any fungible token.
@@ -223,7 +226,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             await this.waitForWallet();
             this.walletIsBusy = true;
             await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
-            const transaction = await this.privateFungibleTransfer(assetId, amount, toPrivateAddress);
+            const transaction = await this.privateTransferBuildUnsigned(assetId, amount, toPrivateAddress);
             const signResult = await this.signTransaction(transaction.assetMetadataJson, transaction.transaction, this.network);
             this.walletIsBusy = false;
             return signResult;
@@ -237,7 +240,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     async toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
         const signed = await this.toPublicBuild(assetId,amount,polkadotSigner, polkadotAddress);
         await this.sendTransaction(polkadotAddress,signed);
-        this.conditionalLog("To Public transaction finished.");
+        this.log("To Public transaction finished.");
     }
 
     /// Builds and signs a "To Public" transaction for any fungible token.
@@ -247,7 +250,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             await this.waitForWallet();
             this.walletIsBusy = true;
             await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
-            const transaction = await this.toPublicFungible(assetId, amount);
+            const transaction = await this.toPublicBuildUnsigned(assetId, amount);
             const signResult = await this.signTransaction(transaction.assetMetadataJson, transaction.transaction, this.network);
             this.walletIsBusy = false;
             return signResult;
@@ -257,32 +260,13 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         }
     }
 
-    /// Executes a public transfer.
-    async publicTransfer(assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void> {
-        await this.setPolkadotSigner(polkadotSigner, senderAddress);
-        try {
-            const assetIdArray = Array.from(this.assetIdToUInt8Array(assetId));
-            const amountBN = amount.toArray('le', 16);
-            const tx = await this.api.tx.mantaPay.publicTransfer(
-                { id: assetIdArray, value: amountBN },
-                destinationAddress
-            );
-            await tx.signAndSend(senderAddress);
-            this.conditionalLog("Public Transfer transaction finished.");
-        } catch (e) {
-            console.log("Failed to execute public transfer.");
-            console.error(e);
-        }
-    }
-
     ///
     /// Private Methods
     ///
 
-
     /// Conditionally logs the contents of `message` depending on if `loggingEnabled`
     /// is set to `true`.
-    private conditionalLog(message:string): void {
+    private log(message:string): void {
         if (this.loggingEnabled) {
             console.log(message);
         }
@@ -350,9 +334,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
 
     /// Builds the "ToPrivate" transaction in JSON format to be signed.
-    private async toPrivateFungible(assetId: BN, amount: BN): Promise<any> {
+    private async toPrivateBuildUnsigned(assetId: BN, amount: BN): Promise<any> {
         try {
-            const assetIdArray = Array.from(this.assetIdToUInt8Array(assetId));
+            const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
             const txJson = `{ "ToPrivate": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
             const transaction = this.wasm.Transaction.from_string(txJson);
             return transaction;
@@ -362,10 +346,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     /// private transfer transaction
-    private async privateFungibleTransfer(assetId: BN, amount: BN, toPrivateAddress: Address): Promise<any> {
+    private async privateTransferBuildUnsigned(assetId: BN, amount: BN, toPrivateAddress: Address): Promise<any> {
         try {
             const addressJson = this.convertPrivateAddressToJson(toPrivateAddress);
-            const assetIdArray = Array.from(this.assetIdToUInt8Array(assetId));
+            const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
             const txJson = `{ "PrivateTransfer": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${addressJson} ]}`;
             const transaction = this.wasm.Transaction.from_string(txJson);
 
@@ -387,9 +371,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     /// Builds the "ToPublic" transaction in JSON format to be signed.
-    private async toPublicFungible(assetId: BN, amount: BN): Promise<any> {
+    private async toPublicBuildUnsigned(assetId: BN, amount: BN): Promise<any> {
         try {
-            const assetIdArray = Array.from(this.assetIdToUInt8Array(assetId));
+            const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
             const txJson = `{ "ToPublic": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
             const transaction = this.wasm.Transaction.from_string(txJson);
 
@@ -447,23 +431,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
                 console.error('Transaction failed', error);
             }
         }
-    }
-
-    /// Convert asset_id string to UInt8Array, default UInt8 array size is 32.
-    private assetIdToUInt8Array(asset_id: BN, len: number=32): AssetId {
-        let hex = asset_id.toString(16); // to heximal format
-        if (hex.length % 2) { hex = '0' + hex; }
-
-        let u8a = new Uint8Array(len);
-
-        let i = 0;
-        let j = 0;
-        while (i < len) {
-        u8a[i] = parseInt(hex.slice(j, j+2), 16);
-        i += 1;
-        j += 2;
-        }
-        return u8a;
     }
 
     /// Maps a given `post` to a known transaction type, either Mint, Private Transfer or Reclaim.
@@ -573,32 +540,5 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         });
 
         return json
-    }
-}
-
-export class MantaUtilities {
-
-    /// Returns the metadata for an asset with a given `asset_id` for the currently
-    /// connected network.
-    static async getAssetMetadata(api: ApiPromise, assetId: BN): Promise<any> {
-        const data = await api.query.assetManager.assetIdMetadata(assetId);
-        const json = JSON.stringify(data.toHuman());
-        const jsonObj = JSON.parse(json);
-        return jsonObj;
-    }
-
-    /// Returns the version of the currently connected manta-signer instance.
-    /// Note: Requires manta-signer to be running.
-    static async getSignerVersion(): Promise<Version> {
-        try {
-            const versionResult = await axios.get(`${SIGNER_URL}version`, {
-                timeout: 1500
-            });
-            const version: Version = versionResult.data;
-            return version;
-        } catch (error) {
-            console.error('Sync failed', error);
-            return;
-        }
     }
 }
