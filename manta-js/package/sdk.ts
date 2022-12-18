@@ -6,7 +6,7 @@ import BN from 'bn.js';
 import config from './manta-config.json';
 import { Transaction, Wallet } from 'manta-wasm-wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
-import { Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction } from "./sdk.interfaces";
+import { Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction, PrivateWalletConfig } from "./sdk.interfaces";
 
 const rpc = config.RPC;
 const types = config.TYPES;
@@ -36,18 +36,16 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     wasm: any;
     wasmWallet: Wallet;
     network: Network;
-    environment: Environment;
     wasmApi: any;
     walletIsBusy: boolean;
     initialSyncIsFinished: boolean;
     loggingEnabled: boolean;
 
-    constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, environment: Environment, wasmApi: any, loggingEnabled:boolean) {
+    constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, wasmApi: any, loggingEnabled: boolean) {
         this.api = api;
         this.wasm = wasm;
         this.wasmWallet = wasmWallet;
         this.network = network;
-        this.environment = environment;
         this.wasmApi = wasmApi;
         this.walletIsBusy = false;
         this.initialSyncIsFinished = false;
@@ -59,10 +57,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     ///
 
     /// Initializes the MantaPrivateWallet class, for a corresponding environment and network.
-    static async init(env: Environment, network: Network, loggingEnabled:boolean=false, maxReceiversPullSize:number=DEFAULT_PULL_SIZE, maxSendersPullSize:number=DEFAULT_PULL_SIZE, pullCallback:any=null, errorCallback:any=null): Promise<MantaPrivateWallet> {
-        const { api } = await MantaPrivateWallet.initApi(env, network,loggingEnabled);
-        const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(api,maxReceiversPullSize,maxSendersPullSize,pullCallback,errorCallback);
-        const sdk = new MantaPrivateWallet(api,wasm,wasmWallet,network,env,wasmApi,loggingEnabled);
+    static async init(config: PrivateWalletConfig): Promise<MantaPrivateWallet> {
+        const { api } = await MantaPrivateWallet.initApi(config.environment, config.network, Boolean(config.loggingEnabled));
+        const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(api,config);
+        const sdk = new MantaPrivateWallet(api,wasm,wasmWallet,config.network,wasmApi,Boolean(config.loggingEnabled));
         return sdk;
     }
 
@@ -300,11 +298,11 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
-    private static async initWasmSdk(api: ApiPromise, maxReceiversPullSize:number, maxSendersPullSize:number, pullCallback:any, errorCallback:any): Promise<InitWasmResult> {
+    private static async initWasmSdk(api: ApiPromise, config:PrivateWalletConfig): Promise<InitWasmResult> {
         const wasm = await import('manta-wasm-wallet');
         const wasmSigner = new wasm.Signer(SIGNER_URL);
         const wasmApiConfig = new ApiConfig(
-            maxReceiversPullSize, maxSendersPullSize, pullCallback, errorCallback
+            (config.maxReceiversPullSize ?? DEFAULT_PULL_SIZE), (config.maxSendersPullSize ?? DEFAULT_PULL_SIZE), config.pullCallback, config.errorCallback
         );
         const wasmApi = new Api(api,wasmApiConfig);
         const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);

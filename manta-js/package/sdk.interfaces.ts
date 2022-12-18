@@ -26,12 +26,21 @@ export type SignedTransaction = {
   txs: SubmittableExtrinsic<"promise", any>[]
 } 
 
+export type PrivateWalletConfig = {
+  environment: Environment,
+  network: Network,
+  loggingEnabled?: boolean,
+  maxReceiversPullSize?: number,
+  maxSendersPullSize?: number,
+  pullCallback?: any,
+  errorCallback?: any
+}
+
 export interface IMantaPrivateWallet {
   api: ApiPromise;
   wasm: any;
   wasmWallet: Wallet;
   network: Network;
-  environment: Environment;
   wasmApi: any;
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
