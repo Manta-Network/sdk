@@ -2,8 +2,7 @@
 
 // Polkadot-JS Ledger API
 
-import {_void, Enum, Struct, Tuple, u128, u8, Vector} from "scale-ts";
-import {ApiPromise} from "@polkadot/api";
+import {Struct, Tuple, u128, u8, Vector, bool} from "scale-ts";
 import {base64Decode} from "@polkadot/util-crypto";
 
 export class ApiConfig {
@@ -144,6 +143,7 @@ export default class Api {
       if (this.errorCallback) {
         this.errorCallback();
       }
+      console.error("get a error: ", err);
     }
   }
 
@@ -202,10 +202,10 @@ export const FAILURE = 'failure';
 /// NOTE: maybe we can just use `decodeU8a` in `@polkadot/types-codec` instead of depending on a third party lib.
 const utxo_spec = Struct(
     {
-        transparency: Enum({Transparent: _void, Opaque: _void}),
+        transparency: bool,
         public_asset: Struct({
             id: Vector(u8, 32),
-            value: u128
+            value: Vector(u8, 16)
         }),
         commitment: Vector(u8, 32)
     }
@@ -232,3 +232,5 @@ const outgoing_note_spec = Struct({
 });
 
 const sender_spec = Vector(Tuple(Vector(u8, 32), outgoing_note_spec));
+// to avoid error when use JSON.stringify: JSON.stringify() doesn't know how to serialize a BigInt
+BigInt.prototype.toJSON = function() {return this.toString(); }
