@@ -302,7 +302,7 @@ impl TransferPost {
                     Decode::decode(x)
                         .expect("Decoding a field element from [u8; 32] is not allowed to fail"),
                 )
-            }), // TODO: Are all [u8; 32] allowed?
+            }), 
             sources: sources.into_iter().map(from_js).collect(),
             sender_posts: sender_posts.into_iter().map(from_js).collect(),
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
