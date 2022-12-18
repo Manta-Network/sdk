@@ -49,6 +49,7 @@ export interface IMantaPrivateWallet {
   convertPrivateAddressToJson(address: string): any
   getNetworks(): any;
   getZkAddress(): Promise<Address>;
+  getAssetMetadata(assetId: BN): Promise<any>;
   initalWalletSync(): Promise<void>;
   walletSync(): Promise<void>;
   getPrivateBalance(assetId: BN): Promise<string>;

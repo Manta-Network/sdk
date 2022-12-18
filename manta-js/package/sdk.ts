@@ -177,10 +177,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         }
     }
 
-    /// Returns the metadata for an asset with a given `asset_id` for the currently
+    /// Returns the metadata for an asset with a given `assetId` for the currently
     /// connected network.
-    static async getAssetMetadata(api: ApiPromise, assetId: BN): Promise<any> {
-        const data = await api.query.assetManager.assetIdMetadata(assetId);
+    async getAssetMetadata(assetId: BN): Promise<any> {
+        const data = await this.api.query.assetManager.assetIdMetadata(assetId);
         const json = JSON.stringify(data.toHuman());
         const jsonObj = JSON.parse(json);
         return jsonObj;
@@ -350,12 +350,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
             const txJson = `{ "PrivateTransfer": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${addressJson} ]}`;
             const transaction = this.wasm.Transaction.from_string(txJson);
-
-            // construct asset metadata json by query api
-            const assetMeta = await this.api.query.assetManager.assetIdMetadata(assetId);
-
-            const json = JSON.stringify(assetMeta.toHuman());
-            const jsonObj = JSON.parse(json);
+            const jsonObj = await this.getAssetMetadata(assetId);
             const decimals = jsonObj["metadata"]["decimals"];
             const symbol = jsonObj["metadata"]["symbol"];
             const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
@@ -374,12 +369,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
             const txJson = `{ "ToPublic": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
             const transaction = this.wasm.Transaction.from_string(txJson);
-
-            // construct asset metadata json by query api
-            const assetMeta = await this.api.query.assetManager.assetIdMetadata(assetId);
-
-            const json = JSON.stringify(assetMeta.toHuman());
-            const jsonObj = JSON.parse(json);
+            const jsonObj = await this.getAssetMetadata(assetId);
             const decimals = jsonObj["metadata"]["decimals"];
             const symbol = jsonObj["metadata"]["symbol"];
             const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
