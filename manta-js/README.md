@@ -32,10 +32,15 @@ import { MantaPrivateWallet, Environment, Network } from 'manta.js';
 const prodEnvironment = sdk.Environment.Production;
 const dolphinNetwork = sdk.Network.Dolphin;
 
-const privateWallet = await MantaPrivateWallet.init(prodEnvironment,dolphinNetwork);
+const privateWalletConfig: PrivateWalletConfig = {
+    environment: prodEnvironment,
+    network: dolphinNetwork,
+};
+
+const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
 ```
 
-`MantaPrivateWallet.init` has several optional arguments:
+`PrivateWalletConfig` has several optional arguments:
 
 - `loggingEnabled`, whether or not non-error logging to console should occur, set by default to `false`.
 - `maxSendersPullSize`, set by default to 4096.
@@ -165,7 +170,32 @@ await privateWallet.walletSync();
 const newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
 ```
 
-### Sign and manual send transaction
+### Manta Utilities
+
+There also exists a `MantaUtilities` class with additional functions. Mainly for interacting publicly with the Manta ecosystem. This example demonstrates these functions. This example assumes the `MantaPrivateWallet` class has already been initialized, as well as `polkadotAddress` and `polkadotSigner`.
+
+```javascript
+import { MantaUtilities } from "manta.js";
+
+// Get signer version, signer must be running.
+const signerVersion = await MantaUtilities.getSignerVersion();
+
+// DOL token
+const assetId = new BN("1");
+
+// Get public balance of DOL for `polkadotAddress`.
+const oldPublicBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
+
+// Public transfer of 5 DOL to `destinationAddress`.
+const destinationAddress = "dmyhNmYL13N7ZKcVYqBQhvrk5kSfrKZUmrjX9vAaM4846bWKR";
+const amount = new BN("5000000000000000000");
+await MantaUtilities.publicTransfer(api, assetId, amount, destinationAddress, polkadotAddress, polkadotSigner);
+
+// Public balance should now be 5 DOL less that `oldPublicBalance`.
+const newPublicBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
+```
+
+### Sign and manually send transaction
 
 In some cases you may not want to send transaction to the ledger through manta.js, thus you can get sign result after manta-signer has signed the transaction and send the transaction yourself. This is done by using the `toPrivateBuild`, `privateTransferBuild`, `publicTransferBuild` functions.
 
