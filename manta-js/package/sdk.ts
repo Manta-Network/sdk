@@ -302,7 +302,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         const wasm = await import('manta-wasm-wallet');
         const wasmSigner = new wasm.Signer(SIGNER_URL);
         const wasmApiConfig = new ApiConfig(
-            (config.maxReceiversPullSize ?? DEFAULT_PULL_SIZE), (config.maxSendersPullSize ?? DEFAULT_PULL_SIZE), config.pullCallback, config.errorCallback
+            Boolean(config.loggingEnabled),(config.maxReceiversPullSize ?? DEFAULT_PULL_SIZE), (config.maxSendersPullSize ?? DEFAULT_PULL_SIZE), config.pullCallback, config.errorCallback
         );
         const wasmApi = new Api(api,wasmApiConfig);
         const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);

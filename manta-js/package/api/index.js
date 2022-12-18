@@ -4,11 +4,13 @@
 
 export class ApiConfig {
   constructor(
+    loggingEnabled = false,
     maxReceiversPullSize,
     maxSendersPullSize,
     pullCallback = null,
     errorCallback = null
   ) {
+    this.loggingEnabled = loggingEnabled;
     this.maxReceiversPullSize = maxReceiversPullSize;
     this.maxSendersPullSize = maxSendersPullSize;
     this.pullCallback = pullCallback;
@@ -19,6 +21,7 @@ export class ApiConfig {
 export default class Api {
   // Constructs an API from a config
   constructor(api,config) {
+    this.loggingEnabled = config.loggingEnabled;
     this.config = config;
     this.api = api;
     this.externalAccountSigner = null;
@@ -27,6 +30,12 @@ export default class Api {
     this.txResHandler = null;
     this.pullCallback = this.config.pullCallback;
     this.errorCallback = this.config.errorCallback;
+  }
+
+  _log(message) {
+    if (this.loggingEnabled) {
+      console.log(message);
+    }
   }
 
   // Sets the transaction result handler to `txResHandler`.
@@ -106,14 +115,15 @@ export default class Api {
   async pull(checkpoint) {
     try {
       await this.api.isReady;
-      console.log('checkpoint', checkpoint);
+
+      this._log('checkpoint ' + checkpoint);
       let result = await this.api.rpc.mantaPay.pull_ledger_diff(
         checkpoint,
         this.maxReceiversPullSize,
         this.maxSendersPullSize
       );
 
-      console.log('pull result', JSON.stringify(result));
+      this._log('pull result ' + JSON.stringify(result));
 
       const receivers = result.receivers.map((receiver_raw) => {
         return new Array(
@@ -140,7 +150,7 @@ export default class Api {
         receivers: receivers,
         senders: senders,
       };
-      console.log("pull response:" + JSON.stringify(pull_result));
+      this._log("pull response: " + JSON.stringify(pull_result));
       return pull_result;
     } catch (err) {
       if (this.errorCallback) {
@@ -185,11 +195,9 @@ export default class Api {
     }
     try {
       const batchTx = await this.api.tx.utility.batch(transactions);
-      console.log('[INFO] Batch Transaction:', batchTx);
-      console.log(
-        '[INFO] Result:',
-        await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler)
-      );
+      this._log('[INFO] Batch Transaction: '+ batchTx);
+      const signResult = await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler);
+      this._log('[INFO] Result: ' + signResult);
       return { Ok: SUCCESS };
     } catch (err) {
       console.error(err);
