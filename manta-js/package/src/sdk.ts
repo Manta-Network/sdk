@@ -71,7 +71,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
             receiving_key: Array.from(bytes)
         });
     }
-    
+
     /// Convert asset_id string to UInt8Array, default UInt8 array size is 32.
     static assetIdToUInt8Array(asset_id: BN, len: number=32): AssetId {
         let hex = asset_id.toString(16); // to heximal format
@@ -183,6 +183,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         const data: any = await this.api.query.assetManager.assetIdMetadata(assetId);
         const json = JSON.stringify(data.toHuman());
         const jsonObj = JSON.parse(json);
+        // Dolphin is equivalent to Calamari on-chain, and only appears differently at UI level
+        // so it is necessary to set its symbol and name manually
+        if (this.network === Network.Dolphin) {
+          jsonObj.metadata.symbol = "DOL";
+          jsonObj.metadata.name = "Dolphin"
+        }
         return jsonObj;
     }
 
