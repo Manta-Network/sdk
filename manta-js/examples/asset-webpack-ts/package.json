@@ -1,5 +1,5 @@
 {
-  "name": "asset-webpack-2",
+  "name": "asset-webpack-ts",
   "version": "1.0.0",
   "description": "manta api example",
   "main": "./index.ts",

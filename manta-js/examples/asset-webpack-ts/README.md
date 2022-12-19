@@ -8,17 +8,11 @@ In order to run these examples:
 
 ```
 #!/bin/bash
-cd /Users/kevingislason/sdk/wallet/crate
-wasm-pack build
-cd /Users/kevingislason/sdk/manta-js/package
-yarn upgrade file:../../wallet/crate/pkg
-yarn upgrade file:../../wallet/api
-cd /Users/kevingislason/sdk/manta-js/examples/aset-webpack-ts
 yarn
 yarn upgrade manta.js
 ```
 
-- Make sure you modify the examples to use the correct network. They are currently set to dev, which requires a local node.
+- Make sure you modify the examples to use the correct environment. They are currently set to development, which requires a local node.
 
 - Make sure the public polkadot JS account you are using has sufficient funds.
 

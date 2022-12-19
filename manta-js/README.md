@@ -8,6 +8,15 @@ This package implements a Javascript SDK for connecting with the Manta Network.
 yarn install manta.js
 ```
 
+### Local Development
+
+1. `git clone https://github.com/Manta-Network/sdk.git`
+2. `cd sdk/manta-js/package`
+3. `yarn`
+4. `yarn build`
+5. add `"manta.js": "file:/{LOCAL PATH OF sdk/manta-js/package}` to your project's package.json
+6. `yarn upgrade manta.js` in your project's directory
+
 # Usage
 
 All methods are called through the `MantaPrivateWallet` class.
@@ -43,8 +52,8 @@ const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
 `PrivateWalletConfig` has several optional arguments:
 
 - `loggingEnabled`, whether or not non-error logging to console should occur, set by default to `false`.
-- `maxSendersPullSize`, set by default to 4096.
-- `maxReceiversPullSize`, set by default to 4096.
+- `maxSendersPullSize`, set by default to `4096`.
+- `maxReceiversPullSize`, set by default to `4096`.
 - `pullCallback`, callback function after a pull has occured, set by default to `null`.
 - `errorCallback`, callback function after an error has occured, set by default to `null`.
 
@@ -88,7 +97,7 @@ Below is an example of how to transact using fungible tokens, there are four mai
 
 > This example assumes the `polkadotAddress` already has associated public funds.
 
-### ToPrivate
+### To Private
 
 This example converts 10 public DOL tokens to 10 private DOL tokens.
 
@@ -116,7 +125,7 @@ await privateWallet.walletSync();
 const newPrivateBalance = await mantaSdk.getPrivateBalance(assetId);
 ```
 
-### PrivateTransfer
+### Private Transfer
 
 This example transfers 10 private private pDOL to another address.
 
@@ -142,7 +151,7 @@ await privateWallet.walletSync();
 const newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
 ```
 
-### ToPublic
+### To Public
 
 This example converts 5 private pDOL to 5 public DOL.
 
@@ -175,24 +184,26 @@ const newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
 There also exists a `MantaUtilities` class with additional functions. Mainly for interacting publicly with the Manta ecosystem. This example demonstrates these functions. This example assumes the `MantaPrivateWallet` class has already been initialized, as well as `polkadotAddress` and `polkadotSigner`.
 
 ```javascript
-import { MantaUtilities } from "manta.js";
+import { MantaUtilities } from "manta.js/utils";
+
+const mantaUtilities = new MantaUtilities();
 
 // Get signer version, signer must be running.
-const signerVersion = await MantaUtilities.getSignerVersion();
+const signerVersion = await mantaUtilities.getSignerVersion();
 
 // DOL token
 const assetId = new BN("1");
 
 // Get public balance of DOL for `polkadotAddress`.
-const oldPublicBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
+const oldPublicBalance = await mantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
 
 // Public transfer of 5 DOL to `destinationAddress`.
 const destinationAddress = "dmyhNmYL13N7ZKcVYqBQhvrk5kSfrKZUmrjX9vAaM4846bWKR";
 const amount = new BN("5000000000000000000");
-await MantaUtilities.publicTransfer(api, assetId, amount, destinationAddress, polkadotAddress, polkadotSigner);
+await mantaUtilities.publicTransfer(privateWallet.api, assetId, amount, destinationAddress, polkadotAddress, polkadotSigner);
 
 // Public balance should now be 5 DOL less that `oldPublicBalance`.
-const newPublicBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
+const newPublicBalance = await mantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
 ```
 
 ### Sign and manually send transaction
