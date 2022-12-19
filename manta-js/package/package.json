@@ -30,6 +30,7 @@
   },
   "exports": {
     ".": "./dist/sdk.js",
-    "./utils": "./dist/utils.js"
+    "./utils": "./dist/utils.js",
+    "./interfaces": "./src/sdk.interfaces.ts"
   }
 }
