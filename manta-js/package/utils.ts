@@ -1,4 +1,4 @@
-import { Version, Address } from "./sdk.interfaces";
+import { Version, Address, IMantaUtilities } from "./sdk.interfaces";
 import { Signer } from '@polkadot/api/types';
 import axios from 'axios';
 import config from './manta-config.json';
@@ -9,11 +9,11 @@ import { MantaPrivateWallet } from "./sdk";
 const NATIVE_TOKEN_ASSET_ID = "1";
 
 /// MantaUtilities class
-export class MantaUtilities {
+export class MantaUtilities implements IMantaUtilities {
 
   /// Returns the version of the currently connected manta-signer instance.
   /// Note: Requires manta-signer to be running.
-  static async getSignerVersion(): Promise<Version> {
+  async getSignerVersion(): Promise<Version> {
     try {
       const versionResult = await axios.get(`${config.SIGNER_URL}version`, {
         timeout: 1500
@@ -27,7 +27,7 @@ export class MantaUtilities {
   }
 
   /// Returns the public balance associated with an account for a given AssetId.
-  static async getPublicBalance(api:ApiPromise, assetId: BN, address:Address): Promise<any> {
+  async getPublicBalance(api:ApiPromise, assetId: BN, address:Address): Promise<any> {
     try {
       if (assetId.toString() === NATIVE_TOKEN_ASSET_ID) {
         const nativeBalance: any = await api.query.system.account(address);
@@ -47,7 +47,7 @@ export class MantaUtilities {
   }
 
   /// Executes a public transfer.
-  static async publicTransfer(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void> {
+  async publicTransfer(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void> {
     api.setSigner(polkadotSigner);
     try {
         const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));

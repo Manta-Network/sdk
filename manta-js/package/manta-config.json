@@ -17,7 +17,7 @@
             "ws_local": "ws://127.0.0.1:9944",
             "parachainId": 2084,
             "decimals": 12,
-            "subscanUrl": "https://calamari.subscan.io",
+            "subscanUrl": "https://calamari.subscan.io"
         },
         "Manta": {
             "name": "Manta",
@@ -25,8 +25,7 @@
             "ws_local": null,
             "parachainId": null,
             "decimals": null,
-            "subscanUrl": null,
-            "SS58_ENCODING": null
+            "subscanUrl": null
         }
     },
     "PRIVATE_LEDGER_ACCOUNT_PUBLIC_KEY": "0x6d6f646c6d616e74617061790000000000000000000000000000000000000000",

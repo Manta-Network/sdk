@@ -36,6 +36,12 @@ export type PrivateWalletConfig = {
   errorCallback?: any
 }
 
+export interface IMantaUtilities {
+  getSignerVersion(): Promise<Version>;
+  getPublicBalance(api:ApiPromise, assetId: BN, address:Address): Promise<any>;
+  publicTransfer(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void>;
+}
+
 export interface IMantaPrivateWallet {
   api: ApiPromise;
   wasm: any;
