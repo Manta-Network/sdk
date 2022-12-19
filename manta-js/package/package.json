@@ -2,13 +2,18 @@
   "name": "manta.js",
   "version": "1.0.0",
   "description": "manta.js sdk",
-  "main": "sdk.js",
+  "main": "./dist/sdk.js",
+  "files": [
+    "dist",
+    "tsconfig.json"
+  ],
   "scripts": {
     "clean": "rimraf dist",
     "prebuild": "yarn run clean",
+    "wasm-postbuild": "rm ./dist/wallet/crate/pkg/.gitignore",
     "wasm-dev": "wasm-pack build ./src/wallet/crate",
     "wasm": "wasm-pack build ./src/wallet/crate --out-dir ../../../dist/wallet/crate/pkg",
-    "build": "yarn prebuild && yarn wasm && yarn wasm-dev && tsc"
+    "build": "yarn prebuild && yarn wasm && yarn wasm-dev && tsc && yarn wasm-postbuild"
   },
   "dependencies": {
     "@polkadot/api": "6.8.1",
