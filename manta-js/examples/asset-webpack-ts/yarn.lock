@@ -4197,9 +4197,6 @@ make-fetch-happen@^9.1.0:
     socks-proxy-agent "^6.0.0"
     ssri "^8.0.0"
 
-"manta-wasm-wallet@file:../../../wallet/crate/pkg":
-  version "1.5.1"
-
 "manta.js@file:../../package":
   version "1.0.0"
   dependencies:
@@ -4213,7 +4210,6 @@ make-fetch-happen@^9.1.0:
     "@polkadot/util-crypto" "8.1.2"
     axios "^0.27.2"
     bn.js "^5.2.0"
-    manta-wasm-wallet "file:../../../../../../Library/Caches/Yarn/v6/npm-manta-js-1.0.0-0f4132c0-5926-4522-95f3-a3de093afea2-1671419336919/wallet/crate/pkg"
 
 md5.js@^1.3.4:
   version "1.3.5"

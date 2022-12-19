@@ -4,7 +4,7 @@ import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import Api, {ApiConfig} from './api/index';
 import BN from 'bn.js';
 import config from './manta-config.json';
-import { Transaction, Wallet } from 'manta-wasm-wallet';
+import { Transaction, Wallet } from './wallet/crate/pkg';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import { Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction, PrivateWalletConfig } from "./sdk.interfaces";
 
@@ -180,7 +180,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// Returns the metadata for an asset with a given `assetId` for the currently
     /// connected network.
     async getAssetMetadata(assetId: BN): Promise<any> {
-        const data = await this.api.query.assetManager.assetIdMetadata(assetId);
+        const data: any = await this.api.query.assetManager.assetIdMetadata(assetId);
         const json = JSON.stringify(data.toHuman());
         const jsonObj = JSON.parse(json);
         return jsonObj;
@@ -299,7 +299,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
     private static async initWasmSdk(api: ApiPromise, config:PrivateWalletConfig): Promise<InitWasmResult> {
-        const wasm = await import('manta-wasm-wallet');
+        const wasm = await import('./wallet/crate/pkg');
         const wasmSigner = new wasm.Signer(SIGNER_URL);
         const wasmApiConfig = new ApiConfig(
             Boolean(config.loggingEnabled),(config.maxReceiversPullSize ?? DEFAULT_PULL_SIZE), (config.maxSendersPullSize ?? DEFAULT_PULL_SIZE), config.pullCallback, config.errorCallback

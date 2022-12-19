@@ -1,15 +1,17 @@
+// @ts-ignore
 import { MantaPrivateWallet, Environment, Network} from 'manta.js';
+// @ts-ignore
 import { MantaUtilities } from 'manta.js/utils';
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
 async function main() {
-    //await toPrivateOnlySignTest();
-    //await toPrivateTest();
-    //await privateTransferTest();
-    //await toPublicTest();
-    //await publicTransferTest();
-    //console.log("END");
+    await toPrivateOnlySignTest();
+    await toPrivateTest();
+    await privateTransferTest();
+    await toPublicTest();
+    await publicTransferTest();
+    console.log("END");
 }
 
 // Get Polkadot JS Signer and Polkadot JS account address.

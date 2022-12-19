@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "package/build",
+    "outDir": "dist",
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": true,
     "skipLibCheck": true,
