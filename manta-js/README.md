@@ -106,7 +106,7 @@ This example converts 10 public DOL tokens to 10 private DOL tokens.
 const assetId = new BN("1");
 const amount = new BN("10000000000000000000");
 
-// Sync with most recent ledger state. 
+// Sync with most recent ledger state.
 await privateWallet.initialWalletSync();
 
 // Get private address
@@ -134,7 +134,7 @@ This example transfers 10 private private pDOL to another address.
 const assetId = new BN("1");
 const amount = new BN("10000000000000000000");
 
-// Sync with most recent ledger state. 
+// Sync with most recent ledger state.
 await privateWallet.initialWalletSync();
 
 // Get private address
@@ -160,7 +160,7 @@ This example converts 5 private pDOL to 5 public DOL.
 const assetId = new BN("1");
 const amount = new BN("5000000000000000000");
 
-// Sync with most recent ledger state. 
+// Sync with most recent ledger state.
 await privateWallet.initialWalletSync();
 
 // Get private address
@@ -226,7 +226,7 @@ console.log("The private address is: ", privateAddress);
 await privateWallet.initalWalletSync();
 
 const initalPrivateBalance = await privateWallet.privateBalance(assetId);
-console.log("The inital private balance is: ", initalPrivateBalance);
+console.log("The inital private balance is: ", initalPrivateBalance.toString());
 
 const signResult = await privateWallet.toPrivateBuild(assetId, amount, polkadotSigner, polkadotAddress);
 

@@ -3,6 +3,7 @@ import { Wallet } from './wallet/crate/pkg';
 import { Environment, Network } from './privateWallet';
 import BN from 'bn.js';
 import { SubmittableExtrinsic, Signer } from '@polkadot/api/types';
+import api from './api';
 
 export type Version = string;
 export type Address = string;
@@ -24,7 +25,7 @@ export type SignedTransaction = {
   posts: any,
   transactions: SubmittableExtrinsic<'promise', any>[],
   txs: SubmittableExtrinsic<'promise', any>[]
-} 
+}
 
 export type PrivateWalletConfig = {
   environment: Environment,
@@ -34,12 +35,6 @@ export type PrivateWalletConfig = {
   maxSendersPullSize?: number,
   pullCallback?: any,
   errorCallback?: any
-}
-
-export interface IMantaUtilities {
-  getSignerVersion(): Promise<Version>;
-  getPublicBalance(api:ApiPromise, assetId: BN, address:Address): Promise<any>;
-  publicTransfer(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void>;
 }
 
 export interface IMantaPrivateWallet {
@@ -56,13 +51,13 @@ export interface IMantaPrivateWallet {
   getNetworks(): any;
   getZkAddress(): Promise<Address>;
   getAssetMetadata(assetId: BN): Promise<any>;
-  initalWalletSync(): Promise<void>;
-  walletSync(): Promise<void>;
-  getPrivateBalance(assetId: BN): Promise<string>;
+  initalWalletSync(): Promise<boolean>;
+  walletSync(): Promise<boolean>;
+  getPrivateBalance(assetId: BN): Promise<BN | null>;
   toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction>;
+  toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
   privateTransferSend(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  privateTransferBuild(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction>;
+  privateTransferBuild(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
   toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  toPublicBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction>;
+  toPublicBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
 }
