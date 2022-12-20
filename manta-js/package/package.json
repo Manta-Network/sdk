@@ -2,7 +2,7 @@
   "name": "manta.js",
   "version": "1.0.0",
   "description": "manta.js sdk",
-  "main": "./dist/sdk.js",
+  "main": "./dist/index.js",
   "files": [
     "dist",
     "tsconfig.json"
@@ -32,10 +32,5 @@
   },
   "devDependencies": {
     "rimraf": "^3.0.2"
-  },
-  "exports": {
-    ".": "./dist/sdk.js",
-    "./utils": "./dist/utils.js",
-    "./interfaces": "./src/sdk.interfaces.ts"
   }
 }

@@ -4,11 +4,11 @@
 
 export class ApiConfig {
   constructor(
-    loggingEnabled = false,
     maxReceiversPullSize,
     maxSendersPullSize,
     pullCallback = null,
-    errorCallback = null
+    errorCallback = null,
+    loggingEnabled = false
   ) {
     this.loggingEnabled = loggingEnabled;
     this.maxReceiversPullSize = maxReceiversPullSize;
@@ -34,7 +34,7 @@ export default class Api {
 
   _log(message) {
     if (this.loggingEnabled) {
-      console.log(message);
+      console.log("[INFO]: "+message);
     }
   }
 
@@ -116,7 +116,7 @@ export default class Api {
     try {
       await this.api.isReady;
 
-      this._log('checkpoint ' + checkpoint);
+      this._log('checkpoint ' + JSON.stringify(checkpoint));
       let result = await this.api.rpc.mantaPay.pull_ledger_diff(
         checkpoint,
         this.maxReceiversPullSize,
@@ -195,9 +195,9 @@ export default class Api {
     }
     try {
       const batchTx = await this.api.tx.utility.batch(transactions);
-      this._log('[INFO] Batch Transaction: '+ batchTx);
+      this._log('Batch Transaction: '+ batchTx);
       const signResult = await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler);
-      this._log('[INFO] Result: ' + signResult);
+      this._log('Result: ' + signResult);
       return { Ok: SUCCESS };
     } catch (err) {
       console.error(err);

@@ -4,7 +4,7 @@ import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import Api, {ApiConfig} from './api/index';
 import BN from 'bn.js';
 import config from './manta-config.json';
-import { Transaction, Wallet } from './wallet/crate/pkg';
+import { Transaction, Wallet } from './wallet/crate/pkg/manta_wasm_wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import { Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction, PrivateWalletConfig } from "./sdk.interfaces";
 
@@ -60,8 +60,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     static async init(config: PrivateWalletConfig): Promise<MantaPrivateWallet> {
         const { api } = await MantaPrivateWallet.initApi(config.environment, config.network, Boolean(config.loggingEnabled));
         const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(api,config);
-        const sdk = new MantaPrivateWallet(api,wasm,wasmWallet,config.network,wasmApi,Boolean(config.loggingEnabled));
-        return sdk;
+        return new MantaPrivateWallet(api,wasm,wasmWallet,config.network,wasmApi,Boolean(config.loggingEnabled));
     }
 
     /// Convert a private address to JSON.
@@ -145,7 +144,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     async walletSync(): Promise<void> {
         try {
             if (!this.initialSyncIsFinished) {
-                console.error("Must call initalWalletSync before walletSync!");
+                throw "Must call initalWalletSync before walletSync!";
             }
             await this.waitForWallet();
             this.walletIsBusy = true;
@@ -272,7 +271,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     /// is set to `true`.
     private log(message:string): void {
         if (this.loggingEnabled) {
-            console.log(message);
+            console.log("[INFO]: "+message);
         }
     }
 
@@ -295,7 +294,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         ]);
 
         if (loggingEnabled) {
-            console.log(`MantaPrivateWallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
+            console.log(`[INFO]: MantaPrivateWallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
         }
 
         return {
@@ -305,10 +304,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
     private static async initWasmSdk(api: ApiPromise, config:PrivateWalletConfig): Promise<InitWasmResult> {
-        const wasm = await import('./wallet/crate/pkg');
+        const wasm = await import('./wallet/crate/pkg/manta_wasm_wallet');
         const wasmSigner = new wasm.Signer(SIGNER_URL);
         const wasmApiConfig = new ApiConfig(
-            Boolean(config.loggingEnabled),(config.maxReceiversPullSize ?? DEFAULT_PULL_SIZE), (config.maxSendersPullSize ?? DEFAULT_PULL_SIZE), config.pullCallback, config.errorCallback
+            (config.maxReceiversPullSize ?? DEFAULT_PULL_SIZE), (config.maxSendersPullSize ?? DEFAULT_PULL_SIZE), config.pullCallback, config.errorCallback, Boolean(config.loggingEnabled)
         );
         const wasmApi = new Api(api,wasmApiConfig);
         const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);

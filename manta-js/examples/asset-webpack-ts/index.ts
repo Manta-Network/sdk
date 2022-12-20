@@ -1,7 +1,5 @@
 // @ts-ignore
-import { MantaPrivateWallet, Environment, Network} from 'manta.js';
-// @ts-ignore
-import { MantaUtilities } from 'manta.js/utils';
+import { MantaPrivateWallet, Environment, Network, MantaUtilities } from 'manta.js';
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
@@ -138,7 +136,8 @@ const toPrivateTest = async () => {
 
     const privateWalletConfig = {
         environment: Environment.Development,
-        network: Network.Dolphin
+        network: Network.Dolphin,
+        loggingEnabled: true
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);

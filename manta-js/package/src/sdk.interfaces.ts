@@ -1,6 +1,6 @@
 import { ApiPromise } from '@polkadot/api';
 import { Wallet } from './wallet/crate/pkg';
-import { Environment, Network } from './sdk';
+import { Environment, Network } from './privateWallet';
 import BN from 'bn.js';
 import { SubmittableExtrinsic, Signer } from '@polkadot/api/types';
 

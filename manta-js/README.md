@@ -184,7 +184,7 @@ const newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
 There also exists a `MantaUtilities` class with additional functions. Mainly for interacting publicly with the Manta ecosystem. This example demonstrates these functions. This example assumes the `MantaPrivateWallet` class has already been initialized, as well as `polkadotAddress` and `polkadotSigner`.
 
 ```javascript
-import { MantaUtilities } from "manta.js/utils";
+import { MantaUtilities } from "manta.js";
 
 const mantaUtilities = new MantaUtilities();
 
