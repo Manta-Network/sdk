@@ -6,7 +6,7 @@ import BN from 'bn.js';
 import { ApiPromise } from '@polkadot/api';
 import { MantaPrivateWallet } from './privateWallet';
 
-const NATIVE_TOKEN_ASSET_ID = '1';
+export const NATIVE_TOKEN_ASSET_ID = '1';
 
 /// MantaUtilities class
 export class MantaUtilities {

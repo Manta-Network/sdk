@@ -7,6 +7,7 @@ import config from './manta-config.json';
 import { Transaction, Wallet } from './wallet/crate/pkg/manta_wasm_wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import { Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction, PrivateWalletConfig } from './sdk.interfaces';
+import { NATIVE_TOKEN_ASSET_ID } from './utils';
 
 const rpc = config.RPC;
 const types = config.TYPES;
@@ -190,7 +191,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     const jsonObj = JSON.parse(json);
     // Dolphin is equivalent to Calamari on-chain, and only appears differently at UI level
     // so it is necessary to set its symbol and name manually
-    if (this.network === Network.Dolphin) {
+    if (this.network === Network.Dolphin && assetId.toString() === NATIVE_TOKEN_ASSET_ID) {
       jsonObj.metadata.symbol = 'DOL';
       jsonObj.metadata.name = 'Dolphin';
     }
