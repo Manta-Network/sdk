@@ -34,7 +34,7 @@ export default class Api {
 
   _log(message) {
     if (this.loggingEnabled) {
-      console.log("[INFO]: "+message);
+      console.log('[INFO]: '+message);
     }
   }
 
@@ -46,7 +46,7 @@ export default class Api {
   // Sets the externalAccountSigner to `signer`.
   setExternalAccountSigner = (signer) => {
     this.externalAccountSigner = signer;
-  }
+  };
 
   // Converts an `outgoing note` into a JSON object.
   _outgoing_note_to_json(note) {
@@ -56,8 +56,8 @@ export default class Api {
     const cipher1 = Array.from(ciphertext.slice(32, 64));
     return {
       ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
-      ciphertext: new Array(cipher0, cipher1)
-    }
+      ciphertext: [cipher0, cipher1]
+    };
   }
 
   // Converts an `light incoming note` into a JSON object.
@@ -68,7 +68,7 @@ export default class Api {
     const cipher2 = Array.from(ciphertext.slice(64, 96));
     return {
       ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
-      ciphertext: new Array(cipher0, cipher1, cipher2)
+      ciphertext: [cipher0, cipher1, cipher2]
     };
   }
 
@@ -84,8 +84,8 @@ export default class Api {
         note.ephemeral_public_key.toU8a()
       ),
       tag: Array.from(note.tag.toU8a()),
-      ciphertext: new Array(cipher0, cipher1, cipher2)
-    }
+      ciphertext: [cipher0, cipher1, cipher2]
+    };
   }
 
   // Converts an `full incoming note` into a JSON object.
@@ -94,7 +94,7 @@ export default class Api {
       address_partition: note.address_partition.toNumber(),
       incoming_note: this._incoming_note_to_json(note.incoming_note),
       light_incoming_note: this._light_incoming_note_to_json(note.light_incoming_note),
-    }
+    };
   }
 
   // Converts an `utxo` into a JSON object.
@@ -126,16 +126,16 @@ export default class Api {
       this._log('pull result ' + JSON.stringify(result));
 
       const receivers = result.receivers.map((receiver_raw) => {
-        return new Array(
+        return [
           this._utxo_to_json(receiver_raw[0]),
           this._full_incoming_note_to_jons(receiver_raw[1])
-        );
+        ];
       });
       const senders = result.senders.map((sender_raw) => {
-        return new Array(
+        return [
           Array.from(sender_raw[0].toU8a()),
           this._outgoing_note_to_json(sender_raw[1]),
-        );
+        ];
       });
       if (this.pullCallback) {
         this.pullCallback(
@@ -150,7 +150,7 @@ export default class Api {
         receivers: receivers,
         senders: senders,
       };
-      this._log("pull response: " + JSON.stringify(pull_result));
+      this._log('pull response: ' + JSON.stringify(pull_result));
       return pull_result;
     } catch (err) {
       if (this.errorCallback) {
