@@ -186,24 +186,22 @@ There also exists a `MantaUtilities` class with additional functions. Mainly for
 ```javascript
 import { MantaUtilities } from "manta.js";
 
-const mantaUtilities = new MantaUtilities();
-
 // Get signer version, signer must be running.
-const signerVersion = await mantaUtilities.getSignerVersion();
+const signerVersion = await MantaUtilities.getSignerVersion();
 
 // DOL token
 const assetId = new BN("1");
 
 // Get public balance of DOL for `polkadotAddress`.
-const oldPublicBalance = await mantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
+const oldPublicBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
 
 // Public transfer of 5 DOL to `destinationAddress`.
 const destinationAddress = "dmyhNmYL13N7ZKcVYqBQhvrk5kSfrKZUmrjX9vAaM4846bWKR";
 const amount = new BN("5000000000000000000");
-await mantaUtilities.publicTransfer(privateWallet.api, assetId, amount, destinationAddress, polkadotAddress, polkadotSigner);
+await MantaUtilities.publicTransfer(privateWallet.api, assetId, amount, destinationAddress, polkadotAddress, polkadotSigner);
 
 // Public balance should now be 5 DOL less that `oldPublicBalance`.
-const newPublicBalance = await mantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
+const newPublicBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
 ```
 
 ### Sign and manually send transaction

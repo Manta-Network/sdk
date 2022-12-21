@@ -39,27 +39,26 @@ const publicTransferTest = async () => {
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     const polkadotConfig = await getPolkadotSignerAndAddress();
-    const mantaUtilities = new MantaUtilities();
 
     const assetId = new BN("1"); // DOL
     const amount = new BN("10000000000000000000"); // 10 units
 
     const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
 
-    const senderBalance = await mantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotConfig.polkadotAddress);
+    const senderBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotConfig.polkadotAddress);
     console.log("Sender Balance:" + JSON.stringify(senderBalance.toString()));
 
-    const destinationBalance = await mantaUtilities.getPublicBalance(privateWallet.api, assetId, destinationAddress);
+    const destinationBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, destinationAddress);
     console.log("Destination Balance:" + JSON.stringify(destinationBalance.toString()));
 
-    await mantaUtilities.publicTransfer(privateWallet.api, assetId, amount, destinationAddress, polkadotConfig.polkadotAddress, polkadotConfig.polkadotSigner);
+    await MantaUtilities.publicTransfer(privateWallet.api, assetId, amount, destinationAddress, polkadotConfig.polkadotAddress, polkadotConfig.polkadotSigner);
 
     await new Promise(r => setTimeout(r, 10000));
 
-    const senderBalanceAfterTrasnfer = await mantaUtilities.getPublicBalance(privateWallet.api, assetId,polkadotConfig.polkadotAddress);
+    const senderBalanceAfterTrasnfer = await MantaUtilities.getPublicBalance(privateWallet.api, assetId,polkadotConfig.polkadotAddress);
     console.log("Sender Balance After:" + JSON.stringify(senderBalanceAfterTrasnfer.toString()));
 
-    const destinationBalanceAfterTransfer = await mantaUtilities.getPublicBalance(privateWallet.api, assetId, destinationAddress);
+    const destinationBalanceAfterTransfer = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, destinationAddress);
     console.log("Dest Balance After:" + JSON.stringify(destinationBalanceAfterTransfer.toString()));
 }
 
