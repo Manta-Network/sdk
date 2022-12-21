@@ -1371,6 +1371,16 @@ lower-case@^2.0.2:
   dependencies:
     tslib "^2.0.3"
 
+manta-wasm-wallet-api@^1.5.1-dev-2:
+  version "1.5.1-dev-2"
+  resolved "https://registry.yarnpkg.com/manta-wasm-wallet-api/-/manta-wasm-wallet-api-1.5.1-dev-2.tgz#c9371f564178e3d29fb8353f949d0b91a234610f"
+  integrity sha512-hk7L0BJHggsPU6dwplX2a0UTYlJuZNLuNU3XvxYwvBNkwKWQcCyFeW72gzSMkKdYuurJs2PyZLCxJsDuP+hULQ==
+
+manta-wasm-wallet@^1.5.1-dev-2:
+  version "1.5.1-dev-2"
+  resolved "https://registry.yarnpkg.com/manta-wasm-wallet/-/manta-wasm-wallet-1.5.1-dev-2.tgz#22376b63d9929f6670e7fea7de736267c60d2b35"
+  integrity sha512-laHrdq44Mn5/1hcxcBDKlwmoVtBYuLKUnVP9Cp+Wf5rEu4QFu3nG4NrSpdrIXLGRlPTjE7aEEiGaE9Cto0MYnA==
+
 media-typer@0.3.0:
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/media-typer/-/media-typer-0.3.0.tgz#8710d7af0aa626f8fffa1ce00168545263255748"

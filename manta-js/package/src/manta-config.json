@@ -1,0 +1,114 @@
+{
+    "VERSION": "1.0.0",
+    "MIN_REQUIRED_SIGNER_VERSION": "0.7.0",
+    "SIGNER_URL": "http://localhost:29987/",
+    "NETWORKS": {
+        "Dolphin": {
+            "name": "Dolphin",
+            "ws": "wss://ws.calamari.seabird.systems",
+            "ws_local": "ws://127.0.0.1:9944",
+            "parachainId": 2084,
+            "decimals": 12,
+            "subscanUrl": "https://dolphin.subscan.io"
+        },
+        "Calamari": {
+            "name": "Calamari",
+            "ws": "wss://ws.calamari.systems/",
+            "ws_local": "ws://127.0.0.1:9944",
+            "parachainId": 2084,
+            "decimals": 12,
+            "subscanUrl": "https://calamari.subscan.io"
+        },
+        "Manta": {
+            "name": "Manta",
+            "ws": null,
+            "ws_local": null,
+            "parachainId": null,
+            "decimals": null,
+            "subscanUrl": null
+        }
+    },
+    "PRIVATE_LEDGER_ACCOUNT_PUBLIC_KEY": "0x6d6f646c6d616e74617061790000000000000000000000000000000000000000",
+    "DEFAULT_PULL_SIZE": 4096,
+    "RPC": {
+        "mantaPay": {
+            "pull_ledger_diff": {
+                "description": "pull from mantaPay",
+                "params": [{
+                        "name": "checkpoint",
+                        "type": "Checkpoint"
+                    },
+                    {
+                        "name": "max_receiver",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "max_sender",
+                        "type": "u64"
+                    }
+                ],
+                "type": "PullResponse"
+            }
+        }
+    },
+    "TYPES": {
+        "Checkpoint": {
+            "receiver_index": "[u64; 256]",
+            "sender_index": "u64"
+        },
+        "Asset": {
+            "id": "[u8; 32]",
+            "value": "[u8; 16]"
+        },
+        "Utxo": {
+            "is_transparent": "bool",
+            "public_asset": "Asset",
+            "commitment": "[u8; 32]"
+        },
+        "IncomingNote": {
+            "ephemeral_public_key": "[u8; 32]",
+            "tag": "[u8; 32]",
+            "ciphertext": "[[u8; 32]; 3]"
+        },
+        "LightIncomingNote": {
+            "ephemeral_public_key": "[u8; 32]",
+            "ciphertext": "[[u8; 32]; 3]"
+        },
+        "FullIncomingNote": {
+            "address_partition": "u8",
+            "incoming_note": "IncomingNote",
+            "light_incoming_note": "LightIncomingNote"
+        },
+        "OutgoingNote": {
+            "ephemeral_public_key": "[u8; 32]",
+            "ciphertext": "[[u8; 32]; 2]"
+        },
+        "PullResponse": {
+            "should_continue": "bool",
+            "receivers": "Vec<(Utxo, FullIncomingNote)>",
+            "senders": "Vec<([u8; 32], OutgoingNote)>"
+        },
+        "AuthorizationSignature": {
+            "authorization_key": "[u8; 32]",
+            "signature": "([u8; 32], [u8; 32])"
+        },
+        "SenderPost": {
+            "utxo_accumulator_output": "[u8; 32]",
+            "nullifier_commitment": "[u8; 32]",
+            "outgoing_note": "OutgoingNote"
+        },
+        "ReceiverPost": {
+            "utxo": "Utxo",
+            "note": "FullIncomingNote"
+        },
+        "TransferPost": {
+            "authorization_signature": "Option<AuthorizationSignature>",
+            "asset_id": "Option<[u8; 32]>",
+            "sources": "Vec<[u8; 16]>",
+            "sender_posts": "Vec<SenderPost>",
+            "receiver_posts": "Vec<ReceiverPost>",
+            "sinks": "Vec<[u8; 16]>",
+            "proof": "[u8; 128]"
+        }
+    }
+}

@@ -4,15 +4,13 @@
 
 export class ApiConfig {
   constructor(
-    api,
-    externalAccountSigner,
     maxReceiversPullSize,
     maxSendersPullSize,
     pullCallback = null,
-    errorCallback = null
+    errorCallback = null,
+    loggingEnabled = false
   ) {
-    this.api = api;
-    this.externalAccountSigner = externalAccountSigner;
+    this.loggingEnabled = loggingEnabled;
     this.maxReceiversPullSize = maxReceiversPullSize;
     this.maxSendersPullSize = maxSendersPullSize;
     this.pullCallback = pullCallback;
@@ -22,10 +20,11 @@ export class ApiConfig {
 
 export default class Api {
   // Constructs an API from a config
-  constructor(config) {
+  constructor(api,config) {
+    this.loggingEnabled = config.loggingEnabled;
     this.config = config;
-    this.api = this.config.api;
-    this.externalAccountSigner = this.config.externalAccountSigner;
+    this.api = api;
+    this.externalAccountSigner = null;
     this.maxReceiversPullSize = this.config.maxReceiversPullSize;
     this.maxSendersPullSize = this.config.maxSendersPullSize;
     this.txResHandler = null;
@@ -33,18 +32,82 @@ export default class Api {
     this.errorCallback = this.config.errorCallback;
   }
 
+  _log(message) {
+    if (this.loggingEnabled) {
+      console.log('[INFO]: '+message);
+    }
+  }
+
   // Sets the transaction result handler to `txResHandler`.
   setTxResHandler = (txResHandler) => {
     this.txResHandler = txResHandler;
   };
 
-  // Converts an `encrypted_note` into a JSON object.
-  _encrypted_note_to_json(encrypted_note) {
+  // Sets the externalAccountSigner to `signer`.
+  setExternalAccountSigner = (signer) => {
+    this.externalAccountSigner = signer;
+  };
+
+  // Converts an `outgoing note` into a JSON object.
+  _outgoing_note_to_json(note) {
+    // [u8; 64] -> [[u8; 32], 2]
+    const ciphertext = note.ciphertext.toU8a();
+    const cipher0 = Array.from(ciphertext.slice(0, 32));
+    const cipher1 = Array.from(ciphertext.slice(32, 64));
+    return {
+      ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
+      ciphertext: [cipher0, cipher1]
+    };
+  }
+
+  // Converts an `light incoming note` into a JSON object.
+  _light_incoming_note_to_json(note) {
+    const ciphertext = note.ciphertext.toU8a(); // hex to u8 array
+    const cipher0 = Array.from(ciphertext.slice(0, 32));
+    const cipher1 = Array.from(ciphertext.slice(32, 64));
+    const cipher2 = Array.from(ciphertext.slice(64, 96));
+    return {
+      ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
+      ciphertext: [cipher0, cipher1, cipher2]
+    };
+  }
+
+  // Converts an `incoming note` into a JSON object.
+  _incoming_note_to_json(note) {
+    // hex -> [u8; 96] -> [[u8; 32]; 3]
+    const ciphertext = note.ciphertext.toU8a();
+    const cipher0 = Array.from(ciphertext.slice(0, 32));
+    const cipher1 = Array.from(ciphertext.slice(32, 64));
+    const cipher2 = Array.from(ciphertext.slice(64, 96));
     return {
       ephemeral_public_key: Array.from(
-        encrypted_note.ephemeral_public_key.toU8a()
+        note.ephemeral_public_key.toU8a()
       ),
-      ciphertext: Array.from(encrypted_note.ciphertext.toU8a()),
+      tag: Array.from(note.tag.toU8a()),
+      ciphertext: [cipher0, cipher1, cipher2]
+    };
+  }
+
+  // Converts an `full incoming note` into a JSON object.
+  _full_incoming_note_to_jons(note) {
+    return {
+      address_partition: note.address_partition.toNumber(),
+      incoming_note: this._incoming_note_to_json(note.incoming_note),
+      light_incoming_note: this._light_incoming_note_to_json(note.light_incoming_note),
+    };
+  }
+
+  // Converts an `utxo` into a JSON object.
+  _utxo_to_json(utxo) {
+    const asset_id = Array.from(utxo.public_asset.id.toU8a()); // hex -> [u8; 32]
+    const asset_value = Array.from(utxo.public_asset.value.toU8a()); // to [u8; 16]
+    return {
+      is_transparent: utxo.is_transparent,
+      public_asset: {
+        id: asset_id,
+        value: asset_value,
+      },
+      commitment: Array.from(utxo.commitment.toU8a())
     };
   }
 
@@ -52,46 +115,43 @@ export default class Api {
   async pull(checkpoint) {
     try {
       await this.api.isReady;
-      console.log('checkpoint', checkpoint);
+
+      this._log('checkpoint ' + JSON.stringify(checkpoint));
       let result = await this.api.rpc.mantaPay.pull_ledger_diff(
         checkpoint,
         this.maxReceiversPullSize,
         this.maxSendersPullSize
       );
 
-      console.log('pull result', result);
-
-      const voidNumberSetSize = await api.query.mantaPay.voidNumberSetSize();
-      let senders_receivers_total = voidNumberSetSize.toNumber();
-      const shardTreeEntries = await api.query.mantaPay.shardTrees.entries();
-      if (shardTreeEntries && shardTreeEntries.length > 0) {
-        shardTreeEntries.forEach(entry => {
-          senders_receivers_total += entry[1].current_path.leaf_index.toNumber();
-        })
-      }
+      this._log('pull result ' + JSON.stringify(result));
 
       const receivers = result.receivers.map((receiver_raw) => {
         return [
-          Array.from(receiver_raw[0].toU8a()),
-          this._encrypted_note_to_json(receiver_raw[1]),
+          this._utxo_to_json(receiver_raw[0]),
+          this._full_incoming_note_to_jons(receiver_raw[1])
         ];
       });
       const senders = result.senders.map((sender_raw) => {
-        return Array.from(sender_raw.toU8a());
+        return [
+          Array.from(sender_raw[0].toU8a()),
+          this._outgoing_note_to_json(sender_raw[1]),
+        ];
       });
       if (this.pullCallback) {
         this.pullCallback(
           receivers,
           senders,
           checkpoint.sender_index,
-          senders_receivers_total
+          result.sender_recievers_total.toNumber()
         );
       }
-      return {
+      const pull_result = {
         should_continue: result.should_continue,
         receivers: receivers,
         senders: senders,
       };
+      this._log('pull response: ' + JSON.stringify(pull_result));
+      return pull_result;
     } catch (err) {
       if (this.errorCallback) {
         this.errorCallback();
@@ -135,11 +195,9 @@ export default class Api {
     }
     try {
       const batchTx = await this.api.tx.utility.batch(transactions);
-      console.log('[INFO] Batch Transaction:', batchTx);
-      console.log(
-        '[INFO] Result:',
-        await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler)
-      );
+      this._log('Batch Transaction: '+ batchTx);
+      const signResult = await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler);
+      this._log('Result: ' + signResult);
       return { Ok: SUCCESS };
     } catch (err) {
       console.error(err);

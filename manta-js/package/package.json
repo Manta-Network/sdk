@@ -1,0 +1,42 @@
+{
+  "name": "manta.js",
+  "version": "0.0.0",
+  "description": "manta.js sdk",
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "tsconfig.json"
+  ],
+  "scripts": {
+    "lint": "eslint \"{**/*,*}.{js,ts}\"",
+    "format": "eslint \"{**/*,*}.{js,ts}\" --fix",
+    "clean": "rimraf dist",
+    "prebuild": "yarn run clean",
+    "wasm-postbuild": "rm ./dist/wallet/crate/pkg/.gitignore",
+    "wasm-dev": "wasm-pack build ./src/wallet/crate",
+    "wasm": "wasm-pack build ./src/wallet/crate --out-dir ../../../dist/wallet/crate/pkg",
+    "build": "yarn prebuild && yarn wasm && yarn wasm-dev && tsc && yarn wasm-postbuild"
+  },
+  "dependencies": {
+    "@polkadot/api": "6.8.1",
+    "@polkadot/extension-dapp": "0.39.3",
+    "@polkadot/keyring": "8.1.2",
+    "@polkadot/types": "8.11.3",
+    "@polkadot/ui-keyring": "0.85.1",
+    "@polkadot/ui-settings": "0.85.1",
+    "@polkadot/util": "8.1.2",
+    "@polkadot/util-crypto": "8.1.2",
+    "axios": "^0.27.2",
+    "bn.js": "^5.2.0",
+    "typescript": "^4.9.4"
+  },
+  "browser": {
+    "crypto": false
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.47.0",
+    "@typescript-eslint/parser": "^5.47.0",
+    "eslint": "^8.30.0",
+    "rimraf": "^3.0.2"
+  }
+}
