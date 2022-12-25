@@ -285,6 +285,21 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
   }
 
+  /// @TODO: Update return type to match manta-rs TransactionData type
+  async transactionData(transferPosts:any): Promise<any> {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      const transactionData = await this.wasmWallet.transaction_data(transferPosts);
+      this.walletIsBusy = false;
+      return transactionData;
+    } catch (e) {
+      this.walletIsBusy = false;
+      console.error('Failed to fetch transaction data from transfer posts.',e);
+      return null;
+    }
+  }
+
   ///
   /// Private Methods
   ///

@@ -205,6 +205,7 @@ impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
 
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
+impl_js_compatible!(ConfigTransferPost, config::TransferPost, "Transfer Post Type");
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
@@ -615,6 +616,29 @@ impl Wallet {
                             .map(TransferPost::from)
                             .collect::<Vec<_>>()
                     });
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
+    /// Attempts to process TransferPosts and returns the corresponding TransactionData.
+    /// @TODO: Fix JsObject bug here
+    #[inline]
+    pub fn transaction_data(
+        &self,
+        transfer_posts: Vec<ConfigTransferPost>,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this.transaction_data(|transfer_posts| {
+                    transfer_posts
+                            .into_iter()
+                            .map(Into::into)
+                            .collect::<Vec<_>>()
+                }).await;
                 this.signer_mut().set_network(None);
                 response
             })
