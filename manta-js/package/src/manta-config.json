@@ -6,7 +6,7 @@
         "Dolphin": {
             "name": "Dolphin",
             "ws": "wss://ws.calamari.seabird.systems",
-            "ws_local": "ws://127.0.0.1:9944",
+            "ws_local": "ws://127.0.0.1:9111",
             "parachainId": 2084,
             "decimals": 12,
             "subscanUrl": "https://dolphin.subscan.io"
@@ -34,6 +34,25 @@
         "mantaPay": {
             "pull_ledger_diff": {
                 "description": "pull from mantaPay",
+                "params": [{
+                        "name": "checkpoint",
+                        "type": "Checkpoint"
+                    },
+                    {
+                        "name": "max_receiver",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "max_sender",
+                        "type": "u64"
+                    }
+                ],
+                "type": "PullResponse"
+            }
+        },
+        "mantaSBT": {
+            "pull_ledger_diff": {
+                "description": "pull from mantaSBT",
                 "params": [{
                         "name": "checkpoint",
                         "type": "Checkpoint"

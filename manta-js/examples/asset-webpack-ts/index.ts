@@ -4,11 +4,12 @@ import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
 async function main() {
-    await toPrivateOnlySignTest();
-    await toPrivateTest();
-    await privateTransferTest();
-    await toPublicTest();
-    await publicTransferTest();
+    await toSBTPrivateTest();
+    //await toPrivateOnlySignTest();
+    //await toPrivateTest();
+    //await privateTransferTest();
+    //await toPublicTest();
+    //await publicTransferTest();
     console.log("END");
 }
 
@@ -216,6 +217,50 @@ const toPublicTest = async () => {
         }
     }
 
+}
+
+/// Test to execute a `ToPrivate` transaction.
+/// Convert 10 DOL to 10 pDOL.
+const toSBTPrivateTest = async () => {
+    const privateWalletConfig = {
+        environment: Environment.Development,
+        network: Network.Dolphin,
+        loggingEnabled: true
+    }
+
+    const privateWallet = await MantaPrivateWallet.initSBT(privateWalletConfig);
+    const polkadotConfig = await getPolkadotSignerAndAddress();
+
+    const privateAddress = await privateWallet.getZkAddress();
+    console.log("The private address is: ", privateAddress);
+
+    const nextId = await privateWallet.api.query.mantaSbt.itemIdCounter(); // nft asset id
+    const assetId = nextId.unwrapOr(new BN("0"));
+    const amount = new BN("1"); // 1 nft
+
+    await privateWallet.initalWalletSync();
+
+    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    console.log("NFT AssetId: ", assetId.toString());
+    console.log("NFT Present: ", initalPrivateBalance.toString());
+
+    await privateWallet.toPrivateSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+
+    while (true) {
+        await new Promise(r => setTimeout(r, 5000));
+        console.log("Syncing with ledger...");
+        await privateWallet.walletSync();
+        let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+        console.log("Private Balance after sync: ", newPrivateBalance.toString());
+        console.log("NFT AssetId: ", assetId.toString());
+
+        if (initalPrivateBalance.toString() !== newPrivateBalance.toString()) {
+            console.log("Detected balance change after sync!");
+            console.log("Old balance: ", initalPrivateBalance.toString());
+            console.log("New balance: ", newPrivateBalance.toString());
+            break;
+        }
+    }
 }
 
 main();
