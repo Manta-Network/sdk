@@ -1,5 +1,5 @@
 // @ts-ignore
-import { MantaPrivateWallet, Environment, Network, MantaUtilities } from 'manta.js';
+import { MantaPrivateWallet, SbtMantaPrivateWallet, Environment, Network, MantaUtilities } from 'manta.js';
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
@@ -228,7 +228,7 @@ const toSBTPrivateTest = async () => {
         loggingEnabled: true
     }
 
-    const privateWallet = await MantaPrivateWallet.initSBT(privateWalletConfig);
+    const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const privateAddress = await privateWallet.getZkAddress();
@@ -244,7 +244,7 @@ const toSBTPrivateTest = async () => {
     console.log("NFT AssetId: ", assetId.toString());
     console.log("NFT Present: ", initalPrivateBalance.toString());
 
-    await privateWallet.toPrivateSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+    await privateWallet.mintSbt(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
     while (true) {
         await new Promise(r => setTimeout(r, 5000));

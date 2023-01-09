@@ -40,7 +40,7 @@ export type PrivateWalletConfig = {
 export interface IMantaPrivateWallet {
   api: ApiPromise;
   wasm: any;
-  wasmWallet: Wallet | SBTWallet;
+  wasmWallet: Wallet;
   network: Network;
   wasmApi: any;
   walletIsBusy: boolean;

@@ -4,15 +4,15 @@ import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import Api, {ApiConfig} from './api/index';
 import BN from 'bn.js';
 import config from './manta-config.json';
-import { Transaction, Wallet, SBTWallet } from './wallet/crate/pkg/manta_wasm_wallet';
+import { Transaction, Wallet } from './wallet/crate/pkg/manta_wasm_wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import { Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction, PrivateWalletConfig } from './sdk.interfaces';
 import { NATIVE_TOKEN_ASSET_ID } from './utils';
 
-const rpc = config.RPC;
-const types = config.TYPES;
-const DEFAULT_PULL_SIZE = config.DEFAULT_PULL_SIZE;
-const SIGNER_URL = config.SIGNER_URL;
+export const rpc = config.RPC;
+export const types = config.TYPES;
+export const DEFAULT_PULL_SIZE = config.DEFAULT_PULL_SIZE;
+export const SIGNER_URL = config.SIGNER_URL;
 const PRIVATE_ASSET_PREFIX = 'zk';
 
 /// The Envrionment that the sdk is configured to run for, if development
@@ -35,14 +35,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   api: ApiPromise;
   wasm: any;
-  wasmWallet: Wallet | SBTWallet;
+  wasmWallet: Wallet;
   network: Network;
   wasmApi: any;
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
   loggingEnabled: boolean;
 
-  constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet | SBTWallet, network: Network, wasmApi: any, loggingEnabled: boolean) {
+  constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, wasmApi: any, loggingEnabled: boolean) {
     this.api = api;
     this.wasm = wasm;
     this.wasmWallet = wasmWallet;
@@ -61,13 +61,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   static async init(config: PrivateWalletConfig): Promise<MantaPrivateWallet> {
     const { api } = await MantaPrivateWallet.initApi(config.environment, config.network, Boolean(config.loggingEnabled));
     const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(api,config);
-    return new MantaPrivateWallet(api,wasm,wasmWallet,config.network,wasmApi,Boolean(config.loggingEnabled));
-  }
-
-  /// Initializes the MantaPrivateWallet class, for a corresponding environment and network.
-  static async initSBT(config: PrivateWalletConfig): Promise<MantaPrivateWallet> {
-    const { api } = await MantaPrivateWallet.initApi(config.environment, config.network, Boolean(config.loggingEnabled));
-    const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initSBTWasmSdk(api,config);
     return new MantaPrivateWallet(api,wasm,wasmWallet,config.network,wasmApi,Boolean(config.loggingEnabled));
   }
 
@@ -298,7 +291,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   /// Conditionally logs the contents of `message` depending on if `loggingEnabled`
   /// is set to `true`.
-  private log(message:string): void {
+  protected log(message:string): void {
     if (this.loggingEnabled) {
       console.log('[INFO]: '+message);
     }
@@ -313,7 +306,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// Private helper method for internal use to initialize the Polkadot.js API with web3Extension.
-  private static async initApi(env: Environment, network: Network, loggingEnabled:boolean): Promise<InitApiResult> {
+  protected static async initApi(env: Environment, network: Network, loggingEnabled:boolean): Promise<InitApiResult> {
     const provider = new WsProvider(MantaPrivateWallet.envUrl(env, network));
     const api = await ApiPromise.create({ provider, types, rpc });
     const [chain, nodeName, nodeVersion] = await Promise.all([
@@ -341,23 +334,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     const wasmApi = new Api(api,wasmApiConfig);
     const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
     const wasmWallet = new wasm.Wallet(wasmLedger, wasmSigner);
-    return {
-      wasm,
-      wasmWallet,
-      wasmApi
-    };
-  }
-
-  /// Private helper method for internal use to initialize the initialize manta-wasm-wallet for SBT.
-  private static async initSBTWasmSdk(api: ApiPromise, config:PrivateWalletConfig): Promise<InitWasmResult> {
-    const wasm = await import('./wallet/crate/pkg/manta_wasm_wallet');
-    const wasmSigner = new wasm.Signer(SIGNER_URL);
-    const wasmApiConfig = new ApiConfig(
-      (config.maxReceiversPullSize ?? DEFAULT_PULL_SIZE), (config.maxSendersPullSize ?? DEFAULT_PULL_SIZE), config.pullCallback, config.errorCallback, Boolean(config.loggingEnabled)
-    );
-    const wasmApi = new Api(api,wasmApiConfig);
-    const wasmLedger = new wasm.SBTPolkadotJsLedger(wasmApi);
-    const wasmWallet = new wasm.SBTWallet(wasmLedger, wasmSigner);
     return {
       wasm,
       wasmWallet,
@@ -435,7 +411,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   /// Signs the a given transaction returning posts, transactions and batches.
   /// assetMetaDataJson is optional, pass in null if transaction should not contain any.
-  private async signTransaction (assetMetadataJson: any, transaction: Transaction, network: Network): Promise<SignedTransaction | null> {
+  protected async signTransaction (assetMetadataJson: any, transaction: Transaction, network: Network): Promise<SignedTransaction | null> {
     try {
       let assetMetadata = null;
       if (assetMetadataJson) {
@@ -446,13 +422,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const transactions = [];
       for (let i = 0; i < posts.length; i++) {
         const convertedPost = this.transferPost(posts[i]);
-        if (this.wasmWallet instanceof Wallet) {
           const transaction = await this.mapPostToTransaction(convertedPost, this.api);
           transactions.push(transaction);
-        } else {
-          const transaction = await this.sbtPostToTransaction(convertedPost, this.api);
-          transactions.push(transaction);
-        }
       }
       const txs = await this.transactionsToBatches(transactions, this.api);
       return {
@@ -468,7 +439,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   /// This method sends a transaction to the public ledger after it has been signed
   /// by Manta Signer.
-  private async sendTransaction(signer: string, signedTransaction:SignedTransaction): Promise<void> {
+  protected async sendTransaction(signer: string, signedTransaction:SignedTransaction): Promise<void> {
     for (let i = 0; i < signedTransaction.txs.length; i++) {
       try {
         await signedTransaction.txs[i].signAndSend(signer, (_status:any, _events:any) => { });
@@ -503,14 +474,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
   }
 
-  private async sbtPostToTransaction(post: any, api: ApiPromise): Promise<SubmittableExtrinsic<'promise', any>> {
-    const mintSBT = await api.tx.mantaSbt.toPrivate(post);
-
-    return mintSBT
-  }
-
   /// Batches transactions.
-  private async transactionsToBatches(transactions: any, api: ApiPromise): Promise<SubmittableExtrinsic<'promise', any>[]> {
+  protected async transactionsToBatches(transactions: any, api: ApiPromise): Promise<SubmittableExtrinsic<'promise', any>[]> {
     const MAX_BATCH = 2;
     const batches = [];
     for (let i = 0; i < transactions.length; i += MAX_BATCH) {
@@ -570,7 +535,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// NOTE: `post` from manta-rs sign result should match runtime side data structure type.
-  private transferPost(post:any): any {
+  protected transferPost(post:any): any {
     const json = JSON.parse(JSON.stringify(post));
 
     // transfer authorization_signature format
