@@ -380,7 +380,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const jsonObj = await this.getAssetMetadata(assetId);
       const decimals = jsonObj['metadata']['decimals'];
       const symbol = jsonObj['metadata']['symbol'];
-      const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
+      const assetMetadataJson = `{ "token_type": {"FT": ${decimals}}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
       return {
         transaction,
         assetMetadataJson
@@ -399,7 +399,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const jsonObj = await this.getAssetMetadata(assetId);
       const decimals = jsonObj['metadata']['decimals'];
       const symbol = jsonObj['metadata']['symbol'];
-      const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
+      const assetMetadataJson = `{ "token_type": {"FT": ${decimals}}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
       return {
         transaction,
         assetMetadataJson
