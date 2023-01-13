@@ -1,5 +1,5 @@
 import { ApiPromise } from '@polkadot/api';
-import { Transaction, SBTWallet } from './wallet/crate/pkg/manta_wasm_wallet';
+import { SBTWallet } from './wallet/crate/pkg/manta_wasm_wallet';
 import {MantaPrivateWallet, Network, SIGNER_URL, DEFAULT_PULL_SIZE } from './privateWallet';
 import {Address, PrivateWalletConfig, InitWasmResult, SignedTransaction} from './sdk.interfaces';
 import Api, {ApiConfig} from './api/index';
@@ -14,14 +14,14 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
     super(api, wasm, wasmWallet, network, wasmApi, loggingEnabled);
   }
 
-  /// Initializes the MantaPrivateWallet class, for a corresponding environment and network.
+  /// Initializes the SbtMantaPrivateWallet class, for a corresponding environment and network.
   static async initSBT(config: PrivateWalletConfig): Promise<SbtMantaPrivateWallet> {
     const { api } = await SbtMantaPrivateWallet.initApi(config.environment, config.network, Boolean(config.loggingEnabled));
     const { wasm, wasmWallet, wasmApi } = await SbtMantaPrivateWallet.initSBTWasmSdk(api,config);
     return new SbtMantaPrivateWallet(api,wasm,wasmWallet,config.network,wasmApi,Boolean(config.loggingEnabled));
   }
 
-  /// Private helper method for internal use to initialize the initialize manta-wasm-wallet for SBT.
+  /// Private helper method for internal use to initialize manta-wasm-wallet for SBT.
   private static async initSBTWasmSdk(api: ApiPromise, config:PrivateWalletConfig): Promise<InitWasmResult> {
     const wasm = await import('./wallet/crate/pkg/manta_wasm_wallet');
     const wasmSigner = new wasm.Signer(SIGNER_URL);
@@ -38,49 +38,68 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
     };
   }
 
-  /// Signs the a given transaction returning posts, transactions and batches.
-  /// assetMetaDataJson is optional, pass in null if transaction should not contain any.
-  protected async signTransaction (assetMetadataJson: any, transaction: Transaction, network: Network): Promise<SignedTransaction | null> {
+  /// Reserve Sbt to whitelist to mint SBT
+  async reserveSbt(polkadotSigner: Signer, polkadotAddress: Address): Promise<void> {
+    await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
+
+    const reserveSbt = this.api.tx.mantaSbt.reserveSbt()
+
     try {
-      let assetMetadata = null;
-      if (assetMetadataJson) {
-        assetMetadata = this.wasm.AssetMetadata.from_string(assetMetadataJson);
-      }
-      const networkType = this.wasm.Network.from_string(`"${network}"`);
-      const posts = await this.wasmWallet.sign(transaction, assetMetadata, networkType);
-      const transactions = [];
-      for (let i = 0; i < posts.length; i++) {
-        const convertedPost = this.transferPost(posts[i]);
-          const transaction = await this.sbtPostToTransaction(convertedPost, this.api);
-          transactions.push(transaction);
-      }
-      const txs = await this.transactionsToBatches(transactions, this.api);
-      return {
-        posts,
-        transactions,
-        txs
-      };
-    } catch (e) {
-      console.error('Unable to sign transaction.',e);
-      return null;
+      await reserveSbt.signAndSend(polkadotAddress, (_status:any, _events:any) => { });
+    } catch (error) {
+      console.error('Transaction failed', error);
     }
+    this.log('Reserve SBT transaction finished.');
   }
 
   /// Executes a "To Private" transaction for any fungible token.
-  async mintSbt(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress: Address): Promise<void> {
-    const signed = await this.toPrivateBuild(assetId,amount,polkadotSigner, polkadotAddress);
+  async mintSbt(assetId: BN, numberOfMints: number, polkadotSigner: Signer, polkadotAddress: Address, metadata: string): Promise<void> {
+    const signed = await this.buildSbtBatch(polkadotSigner, polkadotAddress, assetId, numberOfMints, metadata);
     // transaction rejected by signer
     if (signed === null) {
       return;
     }
-    await this.sendTransaction(polkadotAddress,signed);
+    try {
+      await signed.signAndSend(polkadotAddress, (_status:any, _events:any) => { });
+    } catch (error) {
+      console.error('Transaction failed', error);
+    }
     this.log('Mint SBT transaction finished.');
   }
 
-  private async sbtPostToTransaction(post: any, api: ApiPromise): Promise<SubmittableExtrinsic<'promise', any>> {
-    const mintSBT = await api.tx.mantaSbt.toPrivate(post);
+  private async buildSbtBatch(polkadotSigner: Signer, polkadotAddress: Address, startingAssetId: BN, numberOfMints: number, metadata: string): Promise<SubmittableExtrinsic<"promise", any>> {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
+      const amount = new BN("1"); // 1 nft
+
+      const transactions = [];
+      for (let i = 0; i < numberOfMints; i++ ) {
+        const transactionUnsigned = await this.toPrivateBuildUnsigned(startingAssetId, amount);
+        startingAssetId = startingAssetId.add(new BN("1"));
+
+        const networkType = this.wasm.Network.from_string(`"${this.network}"`);
+        const posts = await this.wasmWallet.sign(transactionUnsigned, null, networkType);
+        for (let i = 0; i < posts.length; i++) {
+          const convertedPost = this.transferPost(posts[i]);
+          const transaction = await this.sbtPostToTransaction(convertedPost, this.api, metadata);
+          transactions.push(transaction);
+        }
+      }
+      this.walletIsBusy = false;
+
+      const batchTx = this.api.tx.utility.batchAll(transactions);
+      return batchTx
+    } catch {
+      console.error('Unable to build mintSbt transaction');
+      return null
+    }
+  }
+
+  private async sbtPostToTransaction(post: any, api: ApiPromise, metadata: string): Promise<SubmittableExtrinsic<'promise', any> | null> {
+    const mintSBT = api.tx.mantaSbt.toPrivate(post, metadata);
 
     return mintSBT
   }
-
 }

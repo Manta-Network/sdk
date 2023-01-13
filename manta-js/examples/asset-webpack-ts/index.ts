@@ -234,9 +234,8 @@ const toSBTPrivateTest = async () => {
     const privateAddress = await privateWallet.getZkAddress();
     console.log("The private address is: ", privateAddress);
 
-    const nextId = await privateWallet.api.query.mantaSbt.itemIdCounter(); // nft asset id
-    const assetId = nextId.unwrapOr(new BN("0"));
-    const amount = new BN("1"); // 1 nft
+    const assetId = await privateWallet.api.query.mantaSbt.itemIdCounter(); // nft asset id
+    const numberOfMints = 5;
 
     await privateWallet.initalWalletSync();
 
@@ -244,7 +243,8 @@ const toSBTPrivateTest = async () => {
     console.log("NFT AssetId: ", assetId.toString());
     console.log("NFT Present: ", initalPrivateBalance.toString());
 
-    await privateWallet.mintSbt(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+    await privateWallet.reserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+    await privateWallet.mintSbt(assetId, numberOfMints, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
     while (true) {
         await new Promise(r => setTimeout(r, 5000));

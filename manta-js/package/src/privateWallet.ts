@@ -299,7 +299,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   // WASM wallet doesn't allow you to call two methods at once, so before
   // calling methods it is necessary to wait for a pending call to finish.
-  private async waitForWallet(): Promise<void> {
+  protected async waitForWallet(): Promise<void> {
     while (this.walletIsBusy === true) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
@@ -342,7 +342,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// Sets the polkadot Signer to `polkadotSigner` and polkadot signing address to `polkadotAddress`.
-  private async setPolkadotSigner(polkadotSigner: Signer, polkadotAddress:Address): Promise<void> {
+  protected async setPolkadotSigner(polkadotSigner: Signer, polkadotAddress:Address): Promise<void> {
     this.wasmApi.setExternalAccountSigner(polkadotAddress);
     this.api.setSigner(polkadotSigner);
   }
@@ -359,7 +359,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
 
   /// Builds the "ToPrivate" transaction in JSON format to be signed.
-  private async toPrivateBuildUnsigned(assetId: BN, amount: BN): Promise<any> {
+  protected async toPrivateBuildUnsigned(assetId: BN, amount: BN): Promise<any> {
     try {
       const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
       const txJson = `{ "ToPrivate": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
