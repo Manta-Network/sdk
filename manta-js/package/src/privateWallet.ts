@@ -290,7 +290,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      const transactionData = await this.wasmWallet.transaction_data(transferPosts);
+      const network = this.wasm.Network.from_string(`"${this.network}"`);
+      const transactionData = await this.wasmWallet.transaction_data(transferPosts, network);
       this.walletIsBusy = false;
       return transactionData;
     } catch (e) {
