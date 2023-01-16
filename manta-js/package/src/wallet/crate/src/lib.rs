@@ -297,12 +297,12 @@ impl TransferPost {
                 let raw: RawAuthorizationSignature = x.try_into().unwrap();
                 raw.try_into().unwrap()
             }),
-            asset_id: asset_id.map(|id| field_from_id_string(id)).map(|x| {
+            asset_id: asset_id.map(field_from_id_string).map(|x| {
                 AssetId(
                     Decode::decode(x)
                         .expect("Decoding a field element from [u8; 32] is not allowed to fail"),
                 )
-            }), 
+            }),
             sources: sources.into_iter().map(from_js).collect(),
             sender_posts: sender_posts.into_iter().map(from_js).collect(),
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
@@ -326,7 +326,12 @@ impl From<config::TransferPost> for TransferPost {
                 .collect(),
             sender_posts: post.body.sender_posts,
             receiver_posts: post.body.receiver_posts,
-            sinks: post.body.sinks.into_iter().map(|s| s.to_le_bytes()).collect(),
+            sinks: post
+                .body
+                .sinks
+                .into_iter()
+                .map(|s| s.to_le_bytes())
+                .collect(),
             proof: post.body.proof,
         }
     }
@@ -438,12 +443,11 @@ impl Wallet {
     /// # Setting Up the Wallet
     ///
     /// Creating a [`Wallet`] using this method should be followed with a call to [`sync`] or
-    /// [`recover`] to retrieve the current checkpoint and balance for this [`Wallet`]. If the
+    /// `recover` to retrieve the current checkpoint and balance for this [`Wallet`]. If the
     /// backing `signer` is known to be already initialized, a call to [`sync`] is enough,
-    /// otherwise, a call to [`recover`] is necessary to retrieve the full balance state.
+    /// otherwise, a call to `recover` is necessary to retrieve the full balance state.
     ///
     /// [`sync`]: Self::sync
-    /// [`recover`]: Self::recover
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(ledger: PolkadotJsLedger, signer: Signer) -> Self {
@@ -455,7 +459,7 @@ impl Wallet {
     pub fn balance(&self, id: String) -> String {
         let asset_id = id.parse::<u128>().ok();
         let asset_id_type = asset_id
-            .map(|id| field_from_id_u128(id))
+            .map(field_from_id_u128)
             .map(|x| {
                 Decode::decode(x)
                     .expect("Decoding a field element from [u8; 32] is not allowed to fail")
@@ -476,8 +480,7 @@ impl Wallet {
         borrow_js(self.0.borrow().assets())
     }
 
-    /// Returns the [`Checkpoint`](ledger::Connection::Checkpoint) representing the current state
-    /// of this wallet.
+    /// Returns the `Checkpoint` representing the current state of this wallet.
     #[inline]
     pub fn checkpoint(&self) -> JsValue {
         borrow_js(self.0.borrow().checkpoint())
@@ -587,7 +590,7 @@ impl Wallet {
     #[inline]
     pub fn check(&self, transaction: &Transaction) -> Result<TransactionKind, Asset> {
         // FIXME: Use a better API so we can remove the `clone`.
-        self.check(&transaction.clone().into())
+        self.check(&transaction.clone())
             .map(Into::into)
             .map_err(Into::into)
     }
