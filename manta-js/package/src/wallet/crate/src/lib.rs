@@ -577,25 +577,9 @@ impl Wallet {
         })
     }
 
-    /// Checks if `transaction` can be executed on the balance state of `self`, returning the
-    /// kind of update that should be performed on the balance state if the transaction is
-    /// successfully posted to the ledger.
-    ///
-    /// # Safety
-    ///
-    /// This method is already called by [`post`](Self::post), but can be used by custom
-    /// implementations to perform checks elsewhere.
-    #[inline]
-    pub fn check(&self, transaction: &Transaction) -> Result<TransactionKind, Asset> {
-        // FIXME: Use a better API so we can remove the `clone`.
-        self.check(&transaction.clone())
-            .map(Into::into)
-            .map_err(Into::into)
-    }
-
-    /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for context. This
-    /// method _does not_ automatically sychronize with the ledger. To do this, call the
-    /// [`sync`](Self::sync) method separately.
+    /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for
+    /// context. This method _does not_ automatically sychronize with the ledger. To do this, call
+    /// the [`sync`](Self::sync) method separately.
     #[inline]
     pub fn sign(
         &self,
