@@ -40,7 +40,10 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
 
   /// Reserve Sbt to whitelist to mint SBT
   async reserveSbt(polkadotSigner: Signer, polkadotAddress: Address): Promise<void> {
+    await this.waitForWallet();
+    this.walletIsBusy = true;
     await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
+    this.walletIsBusy = false;
 
     const reserveSbt = this.api.tx.mantaSbt.reserveSbt()
 
@@ -53,7 +56,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
   }
 
   /// Executes a "To Private" transaction for any fungible token.
-  async mintSbt(assetId: BN, numberOfMints: number, polkadotSigner: Signer, polkadotAddress: Address, metadata: string): Promise<void> {
+  async mintSbt(assetId: BN, numberOfMints: number, polkadotSigner: Signer, polkadotAddress: Address, metadata: string[]): Promise<void> {
     const signed = await this.buildSbtBatch(polkadotSigner, polkadotAddress, assetId, numberOfMints, metadata);
     // transaction rejected by signer
     if (signed === null) {
@@ -67,7 +70,12 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
     this.log('Mint SBT transaction finished.');
   }
 
-  private async buildSbtBatch(polkadotSigner: Signer, polkadotAddress: Address, startingAssetId: BN, numberOfMints: number, metadata: string): Promise<SubmittableExtrinsic<"promise", any>> {
+  private async buildSbtBatch(polkadotSigner: Signer, polkadotAddress: Address, startingAssetId: BN, numberOfMints: number, metadata: string[]): Promise<SubmittableExtrinsic<"promise", any>> {
+    if (numberOfMints != metadata.length) {
+      console.error('Number of mints does not correspond to metadata');
+      return null
+    }
+
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
@@ -83,7 +91,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
         const posts = await this.wasmWallet.sign(transactionUnsigned, null, networkType);
         for (let i = 0; i < posts.length; i++) {
           const convertedPost = this.transferPost(posts[i]);
-          const transaction = await this.sbtPostToTransaction(convertedPost, this.api, metadata);
+          const transaction = await this.sbtPostToTransaction(convertedPost, this.api, metadata[i]);
           transactions.push(transaction);
         }
       }

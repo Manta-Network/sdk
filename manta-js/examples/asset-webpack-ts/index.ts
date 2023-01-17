@@ -235,7 +235,11 @@ const toSBTPrivateTest = async () => {
     console.log("The private address is: ", privateAddress);
 
     const assetId = await privateWallet.api.query.mantaSbt.itemIdCounter(); // nft asset id
-    const numberOfMints = 5;
+    const numberOfMints = 2;
+    const metadata: string[] = [];
+    for (let i = 0; i < numberOfMints; i++ ) {
+        metadata.push(`hello`)
+    }
 
     await privateWallet.initalWalletSync();
 
@@ -244,7 +248,7 @@ const toSBTPrivateTest = async () => {
     console.log("NFT Present: ", initalPrivateBalance.toString());
 
     await privateWallet.reserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
-    await privateWallet.mintSbt(assetId, numberOfMints, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+    await privateWallet.mintSbt(assetId, numberOfMints, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, metadata);
 
     while (true) {
         await new Promise(r => setTimeout(r, 5000));
