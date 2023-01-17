@@ -238,7 +238,7 @@ const toSBTPrivateTest = async () => {
     const numberOfMints = 2;
     const metadata: string[] = [];
     for (let i = 0; i < numberOfMints; i++ ) {
-        metadata.push(`hello`)
+        metadata.push(`hello ${i.toString()}`)
     }
 
     await privateWallet.initalWalletSync();
@@ -260,6 +260,7 @@ const toSBTPrivateTest = async () => {
 
         if (initalPrivateBalance.toString() !== newPrivateBalance.toString()) {
             console.log("Detected balance change after sync!");
+            console.log(`Metadata: ${await privateWallet.getSBTMetadata(assetId)}`);
             console.log("Old balance: ", initalPrivateBalance.toString());
             console.log("New balance: ", newPrivateBalance.toString());
             break;

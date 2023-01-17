@@ -6,6 +6,9 @@ import Api, {ApiConfig} from './api/index';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import BN from 'bn.js';
 
+// Collection of  sbt is hardcoded to 0 in runtime
+const COLLECTION_ID = new BN("0");
+
 /// SbtMantaPrivateWallet class
 export class SbtMantaPrivateWallet extends MantaPrivateWallet {
   wasmWallet: SBTWallet;
@@ -38,6 +41,17 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
     };
   }
 
+  /// Gets metadata of SBT, corresponds to image
+  async getSBTMetadata(assetId: BN): Promise<string | null> {
+    const metadata = await this.api.query.uniques.instanceMetadataOf(COLLECTION_ID, assetId);
+    if (metadata.isNone) {
+      return null
+    } else {
+      const data = metadata.unwrap().data.toString();
+      return hex2a(data)
+    }
+  }
+
   /// Reserve Sbt to whitelist to mint SBT
   async reserveSbt(polkadotSigner: Signer, polkadotAddress: Address): Promise<void> {
     await this.waitForWallet();
@@ -55,7 +69,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
     this.log('Reserve SBT transaction finished.');
   }
 
-  /// Executes a "To Private" transaction for any fungible token.
+  /// Executes a "To Private" transaction for SBT.
   async mintSbt(assetId: BN, numberOfMints: number, polkadotSigner: Signer, polkadotAddress: Address, metadata: string[]): Promise<void> {
     const signed = await this.buildSbtBatch(polkadotSigner, polkadotAddress, assetId, numberOfMints, metadata);
     // transaction rejected by signer
@@ -110,4 +124,12 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
 
     return mintSBT
   }
+}
+
+// convert hex to ascii string starts with 0x
+function hex2a(hex: string): string {
+    var str = '';
+    for (var i = 2; i < hex.length; i += 2)
+        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    return str;
 }
