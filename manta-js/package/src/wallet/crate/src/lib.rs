@@ -616,6 +616,36 @@ impl Wallet {
         })
     }
 
+    /// Combin `sign` and `transaction_data` in one call.
+    #[inline]
+    pub fn sign_with_transaction_data(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this
+                    .sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
+                    .await
+                    .map(|response| {
+                        let resps = response.0.clone();
+                        let posts = resps.into_iter()
+                            .map(|x| TransferPost::from(x.0))
+                            .collect::<Vec<_>>();
+                        let txs = response.0.into_iter()
+                            .map(|x| x.1)
+                            .collect::<Vec<_>>();
+                        (posts, txs)
+                    });
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
     /// Attempts to process TransferPosts and returns the corresponding TransactionData.
     /// @TODO: Fix JsObject bug here when using `Vec<ConfigTransferPost>`
     #[inline]

@@ -31,6 +31,7 @@ export type PrivateWalletConfig = {
   environment: Environment,
   network: Network,
   loggingEnabled?: boolean,
+  transactionDataEnabled?: boolean,
   maxReceiversPullSize?: number,
   maxSendersPullSize?: number,
   pullCallback?: any,
@@ -46,6 +47,7 @@ export interface IMantaPrivateWallet {
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
   loggingEnabled: boolean;
+  transactionDataEnabled: boolean;
 
   convertPrivateAddressToJson(address: string): any
   getNetworks(): any;
