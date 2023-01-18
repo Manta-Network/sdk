@@ -249,7 +249,8 @@ const toSBTPrivateTest = async () => {
     console.log("NFT Present: ", initalPrivateBalance.toString());
 
     await privateWallet.reserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
-    await privateWallet.mintSbt(assetId, numberOfMints, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, metadata);
+    const transaction_datas = await privateWallet.mintSbt(assetId, numberOfMints, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, metadata);
+    console.log("transaction_datas:" + JSON.stringify(transaction_datas));
 
     while (true) {
         await new Promise(r => setTimeout(r, 5000));

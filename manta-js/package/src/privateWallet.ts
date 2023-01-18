@@ -451,6 +451,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         const txs = await this.transactionsToBatches(transactions, this.api);
         return {
           posts,
+          transaction_data,
           transactions,
           txs
         };
@@ -465,6 +466,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         const txs = await this.transactionsToBatches(transactions, this.api);
         return {
           posts,
+          transaction_data: null,
           transactions,
           txs
         };

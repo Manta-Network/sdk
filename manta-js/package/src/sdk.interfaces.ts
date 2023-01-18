@@ -23,6 +23,7 @@ export type InitWasmResult = {
 
 export type SignedTransaction = {
   posts: any,
+  transaction_data: any,
   transactions: SubmittableExtrinsic<'promise', any>[],
   txs: SubmittableExtrinsic<'promise', any>[]
 }
