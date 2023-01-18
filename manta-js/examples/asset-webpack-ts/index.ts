@@ -108,7 +108,8 @@ const toPrivateOnlySignTest = async () => {
 
     const privateWalletConfig = {
         environment: Environment.Development,
-        network: Network.Dolphin
+        network: Network.Dolphin,
+        transactionDataEnabled: true,
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
@@ -118,16 +119,16 @@ const toPrivateOnlySignTest = async () => {
     console.log("The private address is: ", privateAddress);
 
     const assetId = new BN("1"); // DOL
-    const amount = new BN("10000000000000000000"); // 10 units
+    const amount = new BN("20000000000000000000"); // 10 units
 
     await privateWallet.initalWalletSync();
 
     const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance.toString());
 
-    const signResult = await privateWallet.toPrivateSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+    const signResult = await privateWallet.toPrivateBuild(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
-    console.log("The result of the signing: ", signResult);
+    console.log("The result of the signing: ", JSON.stringify(signResult));
 }
 
 /// Test to execute a `ToPrivate` transaction.
@@ -224,7 +225,7 @@ const toPublicTest = async () => {
 const toSBTPrivateTest = async () => {
     const privateWalletConfig = {
         environment: Environment.Development,
-        network: Network.Dolphin,
+        network: Network.Calamari,
         loggingEnabled: true
     }
 

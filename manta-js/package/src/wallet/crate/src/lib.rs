@@ -22,13 +22,7 @@ extern crate alloc;
 extern crate console_error_panic_hook;
 
 use crate::types::*;
-use alloc::{
-    boxed::Box,
-    format,
-    rc::Rc,
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{boxed::Box, format, rc::Rc, string::{String, ToString}, vec, vec::Vec};
 use core::{cell::RefCell, fmt::Debug};
 use js_sys::{JsString, Promise};
 use manta_accounting::{
@@ -130,7 +124,7 @@ pub fn field_from_id_u128(id: u128) -> [u8; 32] {
 macro_rules! impl_js_compatible {
     ($name:ident, $type:ty, $doc:expr) => {
         #[doc = $doc]
-        #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+        #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
         #[serde(crate = "manta_util::serde", deny_unknown_fields, transparent)]
         #[wasm_bindgen]
         pub struct $name($type);
@@ -211,6 +205,7 @@ impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
 
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
+impl_js_compatible!(ConfigTransferPost, config::TransferPost, "Transfer Post Type");
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
@@ -627,6 +622,59 @@ impl Wallet {
         })
     }
 
+    /// Combin `sign` and `transaction_data` in one call.
+    #[inline]
+    pub fn sign_with_transaction_data(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this
+                    .sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
+                    .await
+                    .map(|response| {
+                        let resps = response.0.clone();
+                        let posts = resps.into_iter()
+                            .map(|x| TransferPost::from(x.0))
+                            .collect::<Vec<_>>();
+                        let txs = response.0.into_iter()
+                            .map(|x| x.1)
+                            .collect::<Vec<_>>();
+                        (posts, txs)
+                    });
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
+    /// Attempts to process TransferPosts and returns the corresponding TransactionData.
+    /// @TODO: Fix JsObject bug here when using `Vec<ConfigTransferPost>`
+    #[inline]
+    pub fn transaction_data(
+        &self,
+        transfer_posts: ConfigTransferPost,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+                // let posts = transfer_posts
+                //     .into_iter()
+                //     .map(Into::into)
+                //     .collect::<Vec<TransferPost>>();
+                let posts: Vec<config::TransferPost> = vec![transfer_posts.into()];
+                let response = this.transaction_data(posts).await;
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
     /// Posts a transaction to the ledger, returning a success [`Response`] if the `transaction`
     /// was successfully posted to the ledger. This method automatically synchronizes with the
     /// ledger before posting, _but not after_. To amortize the cost of future calls to [`post`],
@@ -947,6 +995,59 @@ impl SBTWallet {
                             .map(TransferPost::from)
                             .collect::<Vec<_>>()
                     });
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
+    /// Combin `sign` and `transaction_data` in one call.
+    #[inline]
+    pub fn sign_with_transaction_data(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this
+                    .sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
+                    .await
+                    .map(|response| {
+                        let resps = response.0.clone();
+                        let posts = resps.into_iter()
+                            .map(|x| TransferPost::from(x.0))
+                            .collect::<Vec<_>>();
+                        let txs = response.0.into_iter()
+                            .map(|x| x.1)
+                            .collect::<Vec<_>>();
+                        (posts, txs)
+                    });
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
+    /// Attempts to process TransferPosts and returns the corresponding TransactionData.
+    /// @TODO: Fix JsObject bug here when using `Vec<ConfigTransferPost>`
+    #[inline]
+    pub fn transaction_data(
+        &self,
+        transfer_posts: ConfigTransferPost,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+                // let posts = transfer_posts
+                //     .into_iter()
+                //     .map(Into::into)
+                //     .collect::<Vec<TransferPost>>();
+                let posts: Vec<config::TransferPost> = vec![transfer_posts.into()];
+                let response = this.transaction_data(posts).await;
                 this.signer_mut().set_network(None);
                 response
             })
