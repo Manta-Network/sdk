@@ -41,8 +41,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
   loggingEnabled: boolean;
+  transactionDataEnabled: boolean;
 
-  constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, wasmApi: any, loggingEnabled: boolean) {
+  constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, wasmApi: any, loggingEnabled: boolean, transactionDataEnabled: boolean) {
     this.api = api;
     this.wasm = wasm;
     this.wasmWallet = wasmWallet;
@@ -51,6 +52,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.walletIsBusy = false;
     this.initialSyncIsFinished = false;
     this.loggingEnabled = loggingEnabled;
+    this.transactionDataEnabled = transactionDataEnabled;
   }
 
   ///
@@ -61,7 +63,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   static async init(config: PrivateWalletConfig): Promise<MantaPrivateWallet> {
     const { api } = await MantaPrivateWallet.initApi(config.environment, config.network, Boolean(config.loggingEnabled));
     const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(api,config);
-    return new MantaPrivateWallet(api,wasm,wasmWallet,config.network,wasmApi,Boolean(config.loggingEnabled));
+    return new MantaPrivateWallet(api,wasm,wasmWallet,config.network,wasmApi,Boolean(config.loggingEnabled), Boolean(config.transactionDataEnabled));
   }
 
   /// Convert a private address to JSON.
@@ -285,6 +287,22 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
   }
 
+  /// @TODO: Update return type to match manta-rs TransactionData type
+  async transactionData(transferPosts:any): Promise<any> {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      const network = this.wasm.Network.from_string(`"${this.network}"`);
+      const transactionData = await this.wasmWallet.transaction_data(transferPosts, network);
+      this.walletIsBusy = false;
+      return transactionData;
+    } catch (e) {
+      this.walletIsBusy = false;
+      console.error('Failed to fetch transaction data from transfer posts.',e);
+      return null;
+    }
+  }
+
   ///
   /// Private Methods
   ///
@@ -418,19 +436,40 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         assetMetadata = this.wasm.AssetMetadata.from_string(assetMetadataJson);
       }
       const networkType = this.wasm.Network.from_string(`"${network}"`);
-      const posts = await this.wasmWallet.sign(transaction, assetMetadata, networkType);
-      const transactions = [];
-      for (let i = 0; i < posts.length; i++) {
-        const convertedPost = this.transferPost(posts[i]);
-        const transaction = await this.mapPostToTransaction(convertedPost, this.api);
-        transactions.push(transaction);
+      if (this.transactionDataEnabled) {
+        console.log("transactionDataEnabled: true");
+        const posts_txs = await this.wasmWallet.sign_with_transaction_data(transaction, assetMetadata, networkType);
+        const transaction_data = posts_txs[1];
+        console.log("transaction_data:" + JSON.stringify(transaction_data));
+        const posts = posts_txs[0];
+        const transactions = [];
+        for (let i = 0; i < posts.length; i++) {
+          const convertedPost = this.transferPost(posts[i]);
+          const transaction = await this.mapPostToTransaction(convertedPost, this.api);
+          transactions.push(transaction);
+        }
+        const txs = await this.transactionsToBatches(transactions, this.api);
+        return {
+          posts,
+          transactions,
+          txs
+        };
+      } else {
+        const posts = await this.wasmWallet.sign(transaction, assetMetadata, networkType);
+        const transactions = [];
+        for (let i = 0; i < posts.length; i++) {
+          const convertedPost = this.transferPost(posts[i]);
+          const transaction = await this.mapPostToTransaction(convertedPost, this.api);
+          transactions.push(transaction);
+        }
+        const txs = await this.transactionsToBatches(transactions, this.api);
+        return {
+          posts,
+          transactions,
+          txs
+        };
       }
-      const txs = await this.transactionsToBatches(transactions, this.api);
-      return {
-        posts,
-        transactions,
-        txs
-      };
+      
     } catch (e) {
       console.error('Unable to sign transaction.',e);
       return null;
