@@ -470,7 +470,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
           transactions,
           txs
         };
-      }      
+      }
     } catch (e) {
       console.error('Unable to sign transaction.',e);
       return null;

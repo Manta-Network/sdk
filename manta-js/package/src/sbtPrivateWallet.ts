@@ -1,7 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { SBTWallet } from './wallet/crate/pkg/manta_wasm_wallet';
 import {MantaPrivateWallet, Network, SIGNER_URL, DEFAULT_PULL_SIZE } from './privateWallet';
-import {Address, PrivateWalletConfig, InitWasmResult, SignedTransaction} from './sdk.interfaces';
+import {Address, PrivateWalletConfig, InitWasmResult} from './sdk.interfaces';
 import Api, {ApiConfig} from './api/index';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import BN from 'bn.js';
@@ -47,6 +47,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
     if (metadata.isNone) {
       return null
     } else {
+      // will not fail due to check above
       const data = metadata.unwrap().data.toString();
       return hex2a(data)
     }
@@ -86,7 +87,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
   }
 
   toHexString(byteArray: Uint8Array) {
-    return byteArray.reduce((output, elem) => 
+    return byteArray.reduce((output, elem) =>
       (output + ('0' + elem.toString(16)).slice(-2)),
       '');
   }
@@ -117,8 +118,8 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
         console.log("tx_data of private:" + JSON.stringify(to_private_tx_data));
         transaction_datas.push(this.toHexString(to_private_tx_data));
         const posts = posts_txs[0];
-        for (let i = 0; i < posts.length; i++) {
-          const convertedPost = this.transferPost(posts[i]);
+        for (let j = 0; j < posts.length; j++) {
+          const convertedPost = this.transferPost(posts[j]);
           const transaction = await this.sbtPostToTransaction(convertedPost, this.api, metadata[i]);
           transactions.push(transaction);
         }

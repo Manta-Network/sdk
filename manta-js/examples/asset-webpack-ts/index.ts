@@ -235,20 +235,26 @@ const toSBTPrivateTest = async () => {
     const privateAddress = await privateWallet.getZkAddress();
     console.log("The private address is: ", privateAddress);
 
-    const assetId = await privateWallet.api.query.mantaSbt.itemIdCounter(); // nft asset id
     const numberOfMints = 2;
     const metadata: string[] = [];
     for (let i = 0; i < numberOfMints; i++ ) {
         metadata.push(`hello ${i.toString()}`)
     }
-
     await privateWallet.initalWalletSync();
+
+    await privateWallet.reserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+    const assetIdRange = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
+
+    if (assetIdRange.isNone) {
+        console.error("no assetId in storage mapped to this account");
+        return
+    }
+    const assetId = assetIdRange.unwrap()[0];
 
     const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("NFT AssetId: ", assetId.toString());
     console.log("NFT Present: ", initalPrivateBalance.toString());
 
-    await privateWallet.reserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
     const transaction_datas = await privateWallet.mintSbt(assetId, numberOfMints, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, metadata);
     console.log("transaction_datas:" + JSON.stringify(transaction_datas));
 
