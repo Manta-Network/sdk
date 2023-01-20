@@ -15,8 +15,11 @@
     "prebuild": "yarn run clean",
     "wasm-postbuild": "rm ./dist/wallet/crate/pkg/.gitignore",
     "wasm-dev": "wasm-pack build ./src/wallet/crate",
-    "wasm": "wasm-pack build ./src/wallet/crate --target nodejs --out-dir ../../../dist/wallet/crate/pkg",
-    "build": "yarn prebuild && yarn wasm && yarn wasm-dev && tsc && yarn wasm-postbuild"
+    "wasm": "wasm-pack build ./src/wallet/crate --out-dir ../../../dist/wallet/crate/pkg",
+    "build": "yarn prebuild && yarn wasm && yarn wasm-dev && tsc && yarn wasm-postbuild",
+    "wasm-dev-node": "wasm-pack build --target nodejs ./src/wallet/crate",
+    "wasm-node": "wasm-pack build ./src/wallet/crate --target nodejs --out-dir ../../../dist/wallet/crate/pkg",
+    "build-node": "yarn prebuild && yarn wasm-node && yarn wasm-dev-node && tsc && yarn wasm-postbuild"
   },
   "dependencies": {
     "@polkadot/api": "6.8.1",
