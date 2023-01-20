@@ -1,4 +1,4 @@
-{
+const config = {
     "VERSION": "1.0.0",
     "MIN_REQUIRED_SIGNER_VERSION": "0.7.0",
     "SIGNER_URL": "http://localhost:29987/",
@@ -21,11 +21,11 @@
         },
         "Manta": {
             "name": "Manta",
-            "ws": null,
-            "ws_local": null,
-            "parachainId": null,
-            "decimals": null,
-            "subscanUrl": null
+            "ws": "0",
+            "ws_local": "0",
+            "parachainId": 0,
+            "decimals": 0,
+            "subscanUrl": "0",
         }
     },
     "PRIVATE_LEDGER_ACCOUNT_PUBLIC_KEY": "0x6d6f646c6d616e74617061790000000000000000000000000000000000000000",
@@ -112,3 +112,5 @@
         }
     }
 }
+
+export {config};

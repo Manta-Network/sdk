@@ -1,7 +1,7 @@
 import { Version, Address } from './sdk.interfaces';
 import { Signer } from '@polkadot/api/types';
 import axios from 'axios';
-import config from './manta-config.json';
+import {config} from './manta-config';
 import BN from 'bn.js';
 import { ApiPromise } from '@polkadot/api';
 import { MantaPrivateWallet } from './privateWallet';
