@@ -243,8 +243,10 @@ const toSBTPrivateTest = async () => {
     await privateWallet.initalWalletSync();
 
     await privateWallet.reserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
-    const assetIdRange = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
+    // pause to wait for tx to submit (maybe change above funtion to wait for finalization?)
+    await new Promise(r => setTimeout(r, 5000));
 
+    const assetIdRange = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
     if (assetIdRange.isNone) {
         console.error("no assetId in storage mapped to this account");
         return
