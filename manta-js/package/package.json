@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "description": "manta.js sdk",
   "main": "./dist/index.js",
-  "type": "module",
   "files": [
     "dist",
     "tsconfig.json"
@@ -19,7 +18,7 @@
     "build": "yarn prebuild && yarn wasm && yarn wasm-dev && tsc && yarn wasm-postbuild",
     "wasm-dev-node": "wasm-pack build --target nodejs ./src/wallet/crate",
     "wasm-node": "wasm-pack build ./src/wallet/crate --target nodejs --out-dir ../../../dist/wallet/crate/pkg",
-    "build-node": "yarn prebuild && yarn wasm-node && yarn wasm-dev-node && tsc && yarn wasm-postbuild"
+    "build-node": "yarn prebuild && yarn wasm-node && yarn wasm-dev-node && tsc --module node16 && yarn wasm-postbuild"
   },
   "dependencies": {
     "@polkadot/api": "6.8.1",
