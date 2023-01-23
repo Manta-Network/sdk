@@ -20,7 +20,7 @@
             "subscanUrl": "https://calamari.subscan.io"
         },
         "Manta": {
-            "name": null,
+            "name": "Manta",
             "ws": null,
             "ws_local": null,
             "parachainId": null,
