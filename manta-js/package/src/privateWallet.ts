@@ -3,7 +3,7 @@ import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 // @ts-ignore
 import Api, {ApiConfig} from './api/index';
 import BN from 'bn.js';
-import {config} from './manta-config';
+import config from './manta-config.json';
 import { Transaction, Wallet } from './wallet/crate/pkg/manta_wasm_wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import { Address, AssetId, InitApiResult, InitWasmResult, IMantaPrivateWallet, SignedTransaction, PrivateWalletConfig } from './sdk.interfaces';
