@@ -124,9 +124,12 @@ const toPrivateOnlySignTest = async () => {
     const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("The inital private balance is: ", initalPrivateBalance.toString());
 
-    const signResult = await privateWallet.toPrivateSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+    const signResult = await privateWallet.toPrivateBuild(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
-    console.log("The result of the signing: ", signResult);
+    console.log("The result of the signing: \"0x", JSON.stringify(signResult));
+
+    // remove first 3 bytes of the signResult
+    console.log("For xcm remote transact payload, please use: \"0x" + JSON.stringify(signResult.txs).slice(10));
 }
 
 /// Test to execute a `ToPrivate` transaction.
