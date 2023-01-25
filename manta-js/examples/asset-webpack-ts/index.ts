@@ -5,10 +5,10 @@ import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-da
 
 async function main() {
     await toPrivateOnlySignTest();
-    // await toPrivateTest();
-    // await privateTransferTest();
-    // await toPublicTest();
-    // await publicTransferTest();
+    await toPrivateTest();
+    await privateTransferTest();
+    await toPublicTest();
+    await publicTransferTest();
     console.log("END");
 }
 
