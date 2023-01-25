@@ -13,7 +13,7 @@ yarn install manta.js
 1. `git clone https://github.com/Manta-Network/sdk.git`
 2. `cd sdk/manta-js/package`
 3. `yarn`
-4. `yarn build`
+4. `yarn build` for use in browser or `yarn build-node` for use in node.js
 5. add `"manta.js": "file:/{LOCAL PATH OF sdk/manta-js/package}` to your project's package.json
 6. `yarn upgrade manta.js` in your project's directory
 
@@ -26,6 +26,23 @@ All methods are called through the `MantaPrivateWallet` class.
 > If running `manta-signer` on dev mode, you should use the following features: `features=unsafe-disable-cors,disable-restart`.
 
 Refer to `/examples` for more thorough examples, and how to run them.
+
+## Node Specific
+
+If running in node.js the wasm module assumes browser DOM exists, you must export Web API functions from node in your project as seen below.
+
+```javascript
+import fetch from 'node-fetch';
+
+// @ts-ignore
+global.fetch = fetch;
+// @ts-ignore
+global.Headers = fetch.Headers;
+// @ts-ignore
+global.Request = fetch.Request;
+// @ts-ignore
+global.Response = fetch.Response;
+```
 
 ## Initialization
 
