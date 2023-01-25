@@ -5,10 +5,10 @@ import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-da
 
 async function main() {
     await toPrivateOnlySignTest();
-    await toPrivateTest();
-    await privateTransferTest();
-    await toPublicTest();
-    await publicTransferTest();
+    // await toPrivateTest();
+    // await privateTransferTest();
+    // await toPublicTest();
+    // await publicTransferTest();
     console.log("END");
 }
 
@@ -106,7 +106,7 @@ const privateTransferTest = async () => {
 const toPrivateOnlySignTest = async () => {
 
     const privateWalletConfig = {
-        environment: Environment.Development,
+        environment: Environment.Production,
         network: Network.Dolphin
     }
 
@@ -128,8 +128,9 @@ const toPrivateOnlySignTest = async () => {
 
     console.log("The result of the signing: ", signResult);
 
+    console.log("Full: ", JSON.stringify(signResult.txs));
     // remove first 3 bytes of the signResult
-    console.log("For xcm remote transact payload, please use: \"0x" + JSON.stringify(signResult.txs).slice(10));
+    console.log("For xcm remote transact payload, please use: [\"0x" + JSON.stringify(signResult.txs).slice(10));
 }
 
 /// Test to execute a `ToPrivate` transaction.
