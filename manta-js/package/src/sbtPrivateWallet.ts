@@ -142,6 +142,22 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
 
     return mintSBT
   }
+
+  /// Produces Identity Proof from randomness in `virtualAsset`
+  async getIdentityProof(virtualAsset: string) {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      const networkType = this.wasm.Network.from_string(`"${this.network}"`);
+      const asset = this.wasm.VirtualAsset.from_string(virtualAsset);
+      const identityProof = this.wasmWallet.identity_proof(asset, networkType);
+      this.walletIsBusy = false;
+      return identityProof;
+    } catch (e) {
+      this.walletIsBusy = false;
+      console.error('Failed to build Identity Proof.',e);
+    }
+  }
 }
 
 // convert hex to ascii string starts with 0x

@@ -5,6 +5,7 @@ import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-da
 
 async function main() {
     await toSBTPrivateTest();
+    await identityProofGen();
     //await toPrivateOnlySignTest();
     //await toPrivateTest();
     //await privateTransferTest();
@@ -276,6 +277,25 @@ const toSBTPrivateTest = async () => {
             break;
         }
     }
+}
+
+/// Test identity proof works
+const  identityProofGen = async () => {
+    const privateWalletConfig = {
+        environment: Environment.Development,
+        network: Network.Calamari,
+        loggingEnabled: true
+    }
+    const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
+
+    const privateAddress = await privateWallet.getZkAddress();
+    console.log("The private address is: ", privateAddress);
+    const addressBytes = privateWallet.convertPrivateAddressToJson(privateAddress);
+    console.log("Private address in json form: ", addressBytes);
+
+    const virtualAsset = '{"identifier": {"is_transparent":false,"utxo_commitment_randomness":[216,90,232,90,231,73,221,203,14,202,12,133,7,95,184,229,85,239,159,122,243,51,48,108,228,79,228,52,47,111,233,20]}, "asset": {"id":[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"value":1}}';
+    const identityProof = await privateWallet.getIdentityProof(virtualAsset);
+    console.log("Identity Proof: ", identityProof);
 }
 
 main();

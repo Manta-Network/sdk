@@ -206,6 +206,7 @@ impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
 impl_js_compatible!(ConfigTransferPost, config::TransferPost, "Transfer Post Type");
+impl_js_compatible!(VirtualAsset, config::IdentifiedAsset, "Virtual Asset Type");
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
@@ -675,6 +676,24 @@ impl Wallet {
         })
     }
 
+    #[inline]
+    pub fn identity_proof(
+        &self,
+        virtual_asset: VirtualAsset,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+
+                let virtual_assets: Vec<config::IdentifiedAsset> = vec![virtual_asset.into()];
+                let response = this.identity_proof(virtual_assets).await;
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
     /// Posts a transaction to the ledger, returning a success [`Response`] if the `transaction`
     /// was successfully posted to the ledger. This method automatically synchronizes with the
     /// ledger before posting, _but not after_. To amortize the cost of future calls to [`post`],
@@ -1048,6 +1067,24 @@ impl SBTWallet {
                 //     .collect::<Vec<TransferPost>>();
                 let posts: Vec<config::TransferPost> = vec![transfer_posts.into()];
                 let response = this.transaction_data(posts).await;
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
+    #[inline]
+    pub fn identity_proof(
+        &self,
+        virtual_asset: VirtualAsset,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+
+                let virtual_assets: Vec<config::IdentifiedAsset> = vec![virtual_asset.into()];
+                let response = this.identity_proof(virtual_assets).await;
                 this.signer_mut().set_network(None);
                 response
             })

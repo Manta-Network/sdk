@@ -23,7 +23,14 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
-"@babel/runtime@^7.14.8", "@babel/runtime@^7.15.3", "@babel/runtime@^7.16.0", "@babel/runtime@^7.16.3", "@babel/runtime@^7.17.2", "@babel/runtime@^7.18.6", "@babel/runtime@^7.20.6", "@babel/runtime@^7.20.7":
+"@babel/runtime@^7.14.8", "@babel/runtime@^7.15.3", "@babel/runtime@^7.16.0", "@babel/runtime@^7.16.3", "@babel/runtime@^7.17.2", "@babel/runtime@^7.18.6", "@babel/runtime@^7.20.6":
+  version "7.20.13"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.20.13.tgz#7055ab8a7cff2b8f6058bf6ae45ff84ad2aded4b"
+  integrity sha512-gt3PKXs0DBoL9xCvOIIZ2NEqAGZqHjAnmVbfQtB620V0uReIQutpel14KcneZuer7UioY8ALKZ7iocavvzTNFA==
+  dependencies:
+    regenerator-runtime "^0.13.11"
+
+"@babel/runtime@^7.20.7":
   version "7.20.7"
   resolved "https://registry.npmmirror.com/@babel/runtime/-/runtime-7.20.7.tgz#fcb41a5a70550e04a7b708037c7c32f7f356d8fd"
   integrity sha512-UF0tvkUtxwAgZ5W/KrkHf0Rn0fdnLDU9ScxBrEVNUprE/MzirjK4MJUX1/BVDv00Sv8cljtukVK1aky++X1SjQ==
@@ -1230,7 +1237,12 @@
     pako "^2.0.4"
     ws "^8.8.1"
 
-"@substrate/ss58-registry@^1.23.0", "@substrate/ss58-registry@^1.37.0":
+"@substrate/ss58-registry@^1.23.0":
+  version "1.38.0"
+  resolved "https://registry.yarnpkg.com/@substrate/ss58-registry/-/ss58-registry-1.38.0.tgz#b50cb28c77a0375fbf33dd29b7b28ee32871af9f"
+  integrity sha512-sHiVRWekGMRZAjPukN9/W166NM6D5wtHcK6RVyLy66kg3CHNZ1BXfpXcjOiXSwhbd7guQFDEwnOVaDrbk1XL1g==
+
+"@substrate/ss58-registry@^1.37.0":
   version "1.37.0"
   resolved "https://registry.npmmirror.com/@substrate/ss58-registry/-/ss58-registry-1.37.0.tgz#78f2a6f59f8c712cfe3ea747c52dcdfded3ec517"
   integrity sha512-8R/4aQdZlKEPNrp2HSoPNxlDPPOyJe20qFk2w1hT0lXVbY4ZALrsO5Z4NrObAM2D9wTSpcxNKMFVQ2hIsqEHdw==
