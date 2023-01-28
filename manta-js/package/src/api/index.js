@@ -133,25 +133,29 @@ export default class Api {
         base64Decode(result.receivers.toString())
       );
       $.assert($Receivers, decodedReceivers);
+      let receivers = [];
+      if (decodedReceivers.length === 0) {
+        receivers = decodedReceivers.map((receiver) => {
+          return [
+            this._utxo_to_json(receiver[0]),
+            this._full_incoming_note_to_jons(receiver[1])
+          ];
+        });
+      }
 
       const decodedSenders = $Senders.decode(
         base64Decode(result.senders.toString())
       );
       $.assert($Senders, decodedSenders);
-      
-      const receivers = decodedReceivers.map((receiver) => {
-        return [
-          this._utxo_to_json(receiver[0]),
-          this._full_incoming_note_to_jons(receiver[1])
-        ];
-      });
-
-      const senders = decodedSenders.map((sender) => {
-        return [
-          Array.from(u8aToU8a(sender[0])),
-          this._outgoing_note_to_json(sender[1]),
-        ];
-      });
+      let senders = [];
+      if (decodedSenders.length === 0) {
+        senders = decodedSenders.map((sender) => {
+          return [
+            Array.from(u8aToU8a(sender[0])),
+            this._outgoing_note_to_json(sender[1]),
+          ];
+        });
+      }
       
       if (this.pullCallback) {
         this.pullCallback(
