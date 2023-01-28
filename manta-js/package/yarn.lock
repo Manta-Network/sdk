@@ -2212,6 +2212,11 @@ safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   resolved "https://registry.npmjs.org/safe-buffer/-/safe-buffer-5.1.2.tgz#991ec69d296e0313747d59bdfd2b745c35f8828d"
   integrity sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==
 
+scale-codec@^0.10.0:
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/scale-codec/-/scale-codec-0.10.0.tgz#65bcd0d531695987ecd5f5666c2ca9d28449ff98"
+  integrity sha512-07zErup6jy+5HuNk1zDOTgeeH7ksP6iVQHht5E7E8Wrh1nb/QZnuFgO/WzJGJyay6Qp8LmvgqhlTJlZn6gfnfw==
+
 scryptsy@^2.1.0:
   version "2.1.0"
   resolved "https://registry.npmjs.org/scryptsy/-/scryptsy-2.1.0.tgz#8d1e8d0c025b58fdd25b6fa9a0dc905ee8faa790"
