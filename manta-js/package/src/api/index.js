@@ -134,7 +134,7 @@ export default class Api {
       );
       $.assert($Receivers, decodedReceivers);
       let receivers = [];
-      if (decodedReceivers.length === 0) {
+      if (decodedReceivers.length !== 0) {
         receivers = decodedReceivers.map((receiver) => {
           return [
             this._utxo_to_json(receiver[0]),
@@ -148,7 +148,7 @@ export default class Api {
       );
       $.assert($Senders, decodedSenders);
       let senders = [];
-      if (decodedSenders.length === 0) {
+      if (decodedSenders.length !== 0) {
         senders = decodedSenders.map((sender) => {
           return [
             Array.from(u8aToU8a(sender[0])),
