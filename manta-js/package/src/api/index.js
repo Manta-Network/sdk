@@ -55,9 +55,9 @@ export default class Api {
   // Converts an `outgoing note` into a JSON object.
   _outgoing_note_to_json(note) {
     // [u8; 64] -> [[u8; 32], 2]
-    const ciphertext = u8aToU8a(note.ciphertext);
-    const cipher0 = Array.from(ciphertext.slice(0, 32));
-    const cipher1 = Array.from(ciphertext.slice(32, 64));
+    const ciphertext = note.ciphertext;
+    const cipher0 = Array.from(ciphertext[0]);
+    const cipher1 = Array.from(ciphertext[1]);
     return {
       ephemeral_public_key: Array.from(u8aToU8a(note.ephemeral_public_key)),
       ciphertext: [cipher0, cipher1]
@@ -66,10 +66,10 @@ export default class Api {
 
   // Converts an `light incoming note` into a JSON object.
   _light_incoming_note_to_json(note) {
-    const ciphertext = u8aToU8a(note.ciphertext); // hex to u8 array
-    const cipher0 = Array.from(ciphertext.slice(0, 32));
-    const cipher1 = Array.from(ciphertext.slice(32, 64));
-    const cipher2 = Array.from(ciphertext.slice(64, 96));
+    const ciphertext = note.ciphertext; // hex to u8 array
+    const cipher0 = Array.from(ciphertext[0]);
+    const cipher1 = Array.from(ciphertext[1]);
+    const cipher2 = Array.from(ciphertext[2]);
     return {
       ephemeral_public_key: Array.from(u8aToU8a(note.ephemeral_public_key)),
       ciphertext: [cipher0, cipher1, cipher2]
@@ -79,10 +79,10 @@ export default class Api {
   // Converts an `incoming note` into a JSON object.
   _incoming_note_to_json(note) {
     // hex -> [u8; 96] -> [[u8; 32]; 3]
-    const ciphertext = u8aToU8a(note.ciphertext);
-    const cipher0 = Array.from(ciphertext.slice(0, 32));
-    const cipher1 = Array.from(ciphertext.slice(32, 64));
-    const cipher2 = Array.from(ciphertext.slice(64, 96));
+    const ciphertext = note.ciphertext;
+    const cipher0 = Array.from(ciphertext[0]);
+    const cipher1 = Array.from(ciphertext[1]);
+    const cipher2 = Array.from(ciphertext[2]);
     return {
       ephemeral_public_key: Array.from(
         u8aToU8a(note.ephemeral_public_key)
@@ -152,8 +152,6 @@ export default class Api {
           this._outgoing_note_to_json(sender[1]),
         ];
       });
-      console.log('recievers ', receivers[0][0]);
-      console.log('recievers ', receivers[0][1]);
       
       if (this.pullCallback) {
         this.pullCallback(
