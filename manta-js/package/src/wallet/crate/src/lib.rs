@@ -22,7 +22,14 @@ extern crate alloc;
 extern crate console_error_panic_hook;
 
 use crate::types::*;
-use alloc::{boxed::Box, format, rc::Rc, string::{String, ToString}, vec, vec::Vec};
+use alloc::{
+    boxed::Box,
+    format,
+    rc::Rc,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use core::{cell::RefCell, fmt::Debug};
 use js_sys::{JsString, Promise};
 use manta_accounting::{
@@ -205,7 +212,11 @@ impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
 
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
-impl_js_compatible!(ConfigTransferPost, config::TransferPost, "Transfer Post Type");
+impl_js_compatible!(
+    ConfigTransferPost,
+    config::TransferPost,
+    "Transfer Post Type"
+);
 impl_js_compatible!(VirtualAsset, config::IdentifiedAsset, "Virtual Asset Type");
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -299,7 +310,7 @@ impl TransferPost {
                 let raw: RawAuthorizationSignature = x.try_into().unwrap();
                 raw.try_into().unwrap()
             }),
-            asset_id: asset_id.map(|id| field_from_id_string(id)).map(|x| {
+            asset_id: asset_id.map(field_from_id_string).map(|x| {
                 AssetId(
                     Decode::decode(x)
                         .expect("Decoding a field element from [u8; 32] is not allowed to fail"),
@@ -328,7 +339,12 @@ impl From<config::TransferPost> for TransferPost {
                 .collect(),
             sender_posts: post.body.sender_posts,
             receiver_posts: post.body.receiver_posts,
-            sinks: post.body.sinks.into_iter().map(|s| s.to_le_bytes()).collect(),
+            sinks: post
+                .body
+                .sinks
+                .into_iter()
+                .map(|s| s.to_le_bytes())
+                .collect(),
             proof: post.body.proof,
         }
     }
@@ -457,7 +473,7 @@ impl Wallet {
     pub fn balance(&self, id: String) -> String {
         let asset_id = id.parse::<u128>().ok();
         let asset_id_type = asset_id
-            .map(|id| field_from_id_u128(id))
+            .map(field_from_id_u128)
             .map(|x| {
                 Decode::decode(x)
                     .expect("Decoding a field element from [u8; 32] is not allowed to fail")
@@ -589,7 +605,7 @@ impl Wallet {
     #[inline]
     pub fn check(&self, transaction: &Transaction) -> Result<TransactionKind, Asset> {
         // FIXME: Use a better API so we can remove the `clone`.
-        self.check(&transaction.clone().into())
+        self.check(&transaction.clone())
             .map(Into::into)
             .map_err(Into::into)
     }
@@ -639,12 +655,11 @@ impl Wallet {
                     .await
                     .map(|response| {
                         let resps = response.0.clone();
-                        let posts = resps.into_iter()
+                        let posts = resps
+                            .into_iter()
                             .map(|x| TransferPost::from(x.0))
                             .collect::<Vec<_>>();
-                        let txs = response.0.into_iter()
-                            .map(|x| x.1)
-                            .collect::<Vec<_>>();
+                        let txs = response.0.into_iter().map(|x| x.1).collect::<Vec<_>>();
                         (posts, txs)
                     });
                 this.signer_mut().set_network(None);
@@ -676,18 +691,25 @@ impl Wallet {
         })
     }
 
+    /// Sign Identity proof, signer creates a ToPublic post from randomized inputs
+    /// @TODO: fix JSObject bug with `Vec<VirtualAsset>`
     #[inline]
-    pub fn identity_proof(
-        &self,
-        virtual_asset: VirtualAsset,
-        network: Network,
-    ) -> Promise {
+    pub fn identity_proof(&self, virtual_asset: VirtualAsset, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer_mut().set_network(Some(network.into()));
 
                 let virtual_assets: Vec<config::IdentifiedAsset> = vec![virtual_asset.into()];
-                let response = this.identity_proof(virtual_assets).await;
+                let response = this.identity_proof(virtual_assets).await.map(|response| {
+                    response
+                        .0
+                        .into_iter()
+                        .map(|option_identity| {
+                            option_identity
+                                .map(|identity| TransferPost::from(identity.transfer_post))
+                        })
+                        .collect::<Vec<_>>()
+                });
                 this.signer_mut().set_network(None);
                 response
             })
@@ -821,7 +843,9 @@ impl ledger::Write<Vec<config::TransferPost>> for SBTPolkadotJsLedger {
 
 /// Wallet Error
 #[wasm_bindgen]
-pub struct SBTWalletError(wallet::Error<manta_pay::config::Config, SBTPolkadotJsLedger, SignerType>);
+pub struct SBTWalletError(
+    wallet::Error<manta_pay::config::Config, SBTPolkadotJsLedger, SignerType>,
+);
 
 /// Wallet Type
 type SBTWalletType = signer::client::http::Wallet<SBTPolkadotJsLedger>;
@@ -854,7 +878,7 @@ impl SBTWallet {
     pub fn balance(&self, id: String) -> String {
         let asset_id = id.parse::<u128>().ok();
         let asset_id_type = asset_id
-            .map(|id| field_from_id_u128(id))
+            .map(field_from_id_u128)
             .map(|x| {
                 Decode::decode(x)
                     .expect("Decoding a field element from [u8; 32] is not allowed to fail")
@@ -986,7 +1010,7 @@ impl SBTWallet {
     #[inline]
     pub fn check(&self, transaction: &Transaction) -> Result<TransactionKind, Asset> {
         // FIXME: Use a better API so we can remove the `clone`.
-        self.check(&transaction.clone().into())
+        self.check(&transaction.clone())
             .map(Into::into)
             .map_err(Into::into)
     }
@@ -1036,12 +1060,11 @@ impl SBTWallet {
                     .await
                     .map(|response| {
                         let resps = response.0.clone();
-                        let posts = resps.into_iter()
+                        let posts = resps
+                            .into_iter()
                             .map(|x| TransferPost::from(x.0))
                             .collect::<Vec<_>>();
-                        let txs = response.0.into_iter()
-                            .map(|x| x.1)
-                            .collect::<Vec<_>>();
+                        let txs = response.0.into_iter().map(|x| x.1).collect::<Vec<_>>();
                         (posts, txs)
                     });
                 this.signer_mut().set_network(None);
@@ -1073,18 +1096,25 @@ impl SBTWallet {
         })
     }
 
+    /// Sign Identity proof, signer creates a ToPublic post from randomized inputs
+    /// @TODO: fix JSObject bug with `Vec<VirtualAsset>`
     #[inline]
-    pub fn identity_proof(
-        &self,
-        virtual_asset: VirtualAsset,
-        network: Network,
-    ) -> Promise {
+    pub fn identity_proof(&self, virtual_asset: VirtualAsset, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer_mut().set_network(Some(network.into()));
 
                 let virtual_assets: Vec<config::IdentifiedAsset> = vec![virtual_asset.into()];
-                let response = this.identity_proof(virtual_assets).await;
+                let response = this.identity_proof(virtual_assets).await.map(|response| {
+                    response
+                        .0
+                        .into_iter()
+                        .map(|option_identity| {
+                            option_identity
+                                .map(|identity| TransferPost::from(identity.transfer_post))
+                        })
+                        .collect::<Vec<_>>()
+                });
                 this.signer_mut().set_network(None);
                 response
             })

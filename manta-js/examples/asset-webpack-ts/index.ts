@@ -4,7 +4,7 @@ import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
 async function main() {
-    await toSBTPrivateTest();
+   // await toSBTPrivateTest();
     await identityProofGen();
     //await toPrivateOnlySignTest();
     //await toPrivateTest();
@@ -293,9 +293,11 @@ const  identityProofGen = async () => {
     const addressBytes = privateWallet.convertPrivateAddressToJson(privateAddress);
     console.log("Private address in json form: ", addressBytes);
 
-    const virtualAsset = '{"identifier": {"is_transparent":false,"utxo_commitment_randomness":[216,90,232,90,231,73,221,203,14,202,12,133,7,95,184,229,85,239,159,122,243,51,48,108,228,79,228,52,47,111,233,20]}, "asset": {"id":[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"value":1}}';
+    const virtualAsset = '{"identifier":{"is_transparent":false,"utxo_commitment_randomness":[197,181,236,179,236,2,154,216,118,233,242,255,147,38,126,198,116,215,227,197,96,86,249,60,177,171,242,58,4,71,115,22]},"asset":{"id":[105,161,78,174,148,101,81,165,157,39,210,189,199,138,152,217,144,168,13,15,175,65,142,114,174,116,233,207,103,69,130,8],"value":248335983880879439675655614772184357380}}';
     const identityProof = await privateWallet.getIdentityProof(virtualAsset);
-    console.log("Identity Proof: ", identityProof);
+    console.log("Idnetity Proof: ", identityProof);
+    //console.log("type of sink: ", new BN(identityProof[0].transfer_post.body.sinks[0]).toString());
+    console.log("Identity Proof JSON: ", JSON.stringify(identityProof));
 }
 
 main();
