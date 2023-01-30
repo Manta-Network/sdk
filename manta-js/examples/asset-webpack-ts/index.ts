@@ -7,7 +7,9 @@ import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-da
 async function main() {
     await toPrivateOnlySignTest();
     await toPrivateTest();
+    await privateTransferOnlySignTest();
     await privateTransferTest();
+    await toPublicOnlySignTest();
     await toPublicTest();
     await publicTransferTest();
     console.log("END");
@@ -102,6 +104,35 @@ const privateTransferTest = async () => {
     }
 }
 
+const privateTransferOnlySignTest = async () => {
+    const privateWalletConfig = {
+        environment: Environment.Development,
+        network: Network.Dolphin
+    }
+
+    const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    const polkadotConfig = await getPolkadotSignerAndAddress();
+
+    const assetId = new BN("1"); // DOL
+    const amount = new BN("5000000000000000000"); // 5 units
+
+    const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
+
+    await privateWallet.initalWalletSync();
+
+    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    console.log("The initial private balance is: ", initialPrivateBalance.toString());
+
+    let signResult = await privateWallet.privateTransferBuild(assetId, amount, toPrivateTestAddress, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+
+    console.log("The result of the signing: ", signResult);
+
+    console.log("Full: ", JSON.stringify(signResult.txs));
+
+    console.log("For xcm remote transact payload use: " + getXCMRemoteTransactPayload(signResult));
+}
+
+
 /// Test to sign a transaction that converts 10 DOL to pDOL,
 /// without publishing the transaction.
 const toPrivateOnlySignTest = async () => {
@@ -175,6 +206,37 @@ const toPrivateTest = async () => {
             break;
         }
     }
+}
+
+/// Test to execute a `ToPublic` transaction without submitting it.
+const toPublicOnlySignTest = async () => {
+
+    const privateWalletConfig = {
+        environment: Environment.Development,
+        network: Network.Dolphin
+    }
+
+    const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    const polkadotConfig = await getPolkadotSignerAndAddress();
+
+    const privateAddress = await privateWallet.getZkAddress();
+    console.log("The private address is: ", privateAddress);
+
+    const assetId = new BN("1"); // DOL
+    const amount = new BN("5000000000000000000"); // 5 units
+
+    await privateWallet.initalWalletSync();
+
+    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    console.log("The inital private balance is: ", initialPrivateBalance.toString());
+
+    let signResult = await privateWallet.toPublicBuild(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+
+    console.log("The result of the signing: ", signResult);
+
+    console.log("Full: ", JSON.stringify(signResult.txs));
+
+    console.log("For xcm remote transact payload use: " + getXCMRemoteTransactPayload(signResult));
 }
 
 /// Test to execute a `ToPublic` transaction.
