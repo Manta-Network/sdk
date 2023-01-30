@@ -3,7 +3,6 @@ import { MantaPrivateWallet, Environment, Network, MantaUtilities, getXCMRemoteT
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
-
 async function main() {
     await toPrivateOnlySignTest();
     await toPrivateTest();
