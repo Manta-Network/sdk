@@ -1,5 +1,5 @@
 // @ts-ignore
-import { MantaPrivateWallet, Environment, Network, MantaUtilities, SignedTransaction } from 'manta.js';
+import { MantaPrivateWallet, Environment, Network, MantaUtilities, getXCMRemoteTransactPayload } from 'manta.js';
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
@@ -132,13 +132,6 @@ const toPrivateOnlySignTest = async () => {
     console.log("Full: ", JSON.stringify(signResult.txs));
 
     console.log("For xcm remote transact payload use: " + getXCMRemoteTransactPayload(signResult));
-}
-
-// removes first 3 bytes and json bits of sign-result
-async function getXCMRemoteTransactPayload(signResult: any): SignedTransaction {
-    let res = JSON.stringify(signResult.txs).slice(10);
-    let raw = res.replace("[", "").replace("\"", "").replace("]", "");
-    return raw;
 }
 
 /// Test to execute a `ToPrivate` transaction.
