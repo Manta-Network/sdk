@@ -54,7 +54,7 @@ export default class Api {
 
   // Converts an `outgoing note` into a JSON object.
   _outgoing_note_to_json(note) {
-    // [u8; 64] -> [[u8; 32], 2]
+    // [[u8; 32], 2]
     const ciphertext = note.ciphertext;
     const cipher0 = Array.from(ciphertext[0]);
     const cipher1 = Array.from(ciphertext[1]);
@@ -66,7 +66,8 @@ export default class Api {
 
   // Converts an `light incoming note` into a JSON object.
   _light_incoming_note_to_json(note) {
-    const ciphertext = note.ciphertext; // hex to u8 array
+    // [[u8; 32], 3]
+    const ciphertext = note.ciphertext;
     const cipher0 = Array.from(ciphertext[0]);
     const cipher1 = Array.from(ciphertext[1]);
     const cipher2 = Array.from(ciphertext[2]);
@@ -78,7 +79,7 @@ export default class Api {
 
   // Converts an `incoming note` into a JSON object.
   _incoming_note_to_json(note) {
-    // hex -> [u8; 96] -> [[u8; 32]; 3]
+    // [[u8; 32]; 3]
     const ciphertext = note.ciphertext;
     const cipher0 = Array.from(ciphertext[0]);
     const cipher1 = Array.from(ciphertext[1]);
@@ -103,8 +104,8 @@ export default class Api {
 
   // Converts an `utxo` into a JSON object.
   _utxo_to_json(utxo) {
-    const asset_id = Array.from(u8aToU8a(utxo.public_asset.id)); // hex -> [u8; 32]
-    const asset_value = Array.from(u8aToU8a(utxo.public_asset.value)); // to [u8; 16]
+    const asset_id = Array.from(u8aToU8a(utxo.public_asset.id));
+    const asset_value = Array.from(u8aToU8a(utxo.public_asset.value));
     return {
       is_transparent: utxo.is_transparent,
       public_asset: {
@@ -133,29 +134,25 @@ export default class Api {
         base64Decode(result.receivers.toString())
       );
       $.assert($Receivers, decodedReceivers);
-      let receivers = [];
-      if (decodedReceivers.length > 0) {
-        receivers = decodedReceivers.map((receiver) => {
-          return [
-            this._utxo_to_json(receiver[0]),
-            this._full_incoming_note_to_jons(receiver[1])
-          ];
-        });
-      }
+      const receivers = decodedReceivers.map((receiver) => {
+        return [
+          this._utxo_to_json(receiver[0]),
+          this._full_incoming_note_to_jons(receiver[1])
+        ];
+      });
 
       const decodedSenders = $Senders.decode(
         base64Decode(result.senders.toString())
       );
       $.assert($Senders, decodedSenders);
-      let senders = [];
-      if (decodedSenders.length > 0) {
-        senders = decodedSenders.map((sender) => {
-          return [
-            Array.from(u8aToU8a(sender[0])),
-            this._outgoing_note_to_json(sender[1]),
-          ];
-        });
-      }
+      const senders = decodedSenders.map((sender) => {
+        return [
+          Array.from(u8aToU8a(sender[0])),
+          this._outgoing_note_to_json(sender[1]),
+        ];
+      });
+      console.log('receivers: ', receivers);
+      console.log('senders: ', senders);
       
       if (this.pullCallback) {
         this.pullCallback(
@@ -230,36 +227,36 @@ export const SUCCESS = 'success';
 export const FAILURE = 'failure';
 
 const $Asset = $.object(
-  $.field("id", $.sizedUint8Array(32)),
-  $.field("value", $.sizedUint8Array(16))
+  $.field('id', $.sizedUint8Array(32)),
+  $.field('value', $.sizedUint8Array(16))
 );
 
 const $Utxo = $.object(
-  $.field("is_transparent", $.bool),
-  $.field("public_asset", $Asset),
-  $.field("commitment", $.sizedUint8Array(32))
+  $.field('is_transparent', $.bool),
+  $.field('public_asset', $Asset),
+  $.field('commitment', $.sizedUint8Array(32))
 );
 
 const $IncomingNote = $.object(
-  $.field("ephemeral_public_key", $.sizedUint8Array(32)),
-  $.field("tag", $.sizedUint8Array(32)),
-  $.field("ciphertext", $.sizedArray($.sizedUint8Array(32), 3))
+  $.field('ephemeral_public_key', $.sizedUint8Array(32)),
+  $.field('tag', $.sizedUint8Array(32)),
+  $.field('ciphertext', $.sizedArray($.sizedUint8Array(32), 3))
 );
 
 const $LightIncomingNote = $.object(
-  $.field("ephemeral_public_key", $.sizedUint8Array(32)),
-  $.field("ciphertext", $.sizedArray($.sizedUint8Array(32), 3))
+  $.field('ephemeral_public_key', $.sizedUint8Array(32)),
+  $.field('ciphertext', $.sizedArray($.sizedUint8Array(32), 3))
 );
 
 const $FullIncomingNote = $.object(
-  $.field("address_partition", $.u8),
-  $.field("incoming_note", $IncomingNote),
-  $.field("light_incoming_note", $LightIncomingNote)
+  $.field('address_partition', $.u8),
+  $.field('incoming_note', $IncomingNote),
+  $.field('light_incoming_note', $LightIncomingNote)
 );
 
 const $OutgoingNote = $.object(
-  $.field("ephemeral_public_key", $.sizedUint8Array(32)),
-  $.field("ciphertext", $.sizedArray($.sizedUint8Array(32), 2))
+  $.field('ephemeral_public_key', $.sizedUint8Array(32)),
+  $.field('ciphertext', $.sizedArray($.sizedUint8Array(32), 2))
 );
 
 export const $Receivers = $.array($.tuple($Utxo, $FullIncomingNote));
