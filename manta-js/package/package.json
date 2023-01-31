@@ -14,8 +14,8 @@
   "scripts": {
     "lint": "eslint \"{**/*,*}.{js,ts}\"",
     "format": "eslint \"{**/*,*}.{js,ts}\" --fix",
-    "clean": "rimraf dist/browser",
-    "prebuild": "yarn run clean",
+    "clean": "rimraf dist",
+    "prebuild": "rimraf dist/browser",
     "wasm-postbuild": "rm ./dist/browser/wallet/crate/pkg/.gitignore",
     "wasm-dev": "wasm-pack build ./src/wallet/crate",
     "wasm": "wasm-pack build ./src/wallet/crate --out-dir ../../../dist/browser/wallet/crate/pkg",
@@ -25,7 +25,7 @@
     "wasm-dev-node": "wasm-pack build --target nodejs ./src/wallet/crate",
     "wasm-node": "wasm-pack build ./src/wallet/crate --target nodejs --out-dir ../../../dist/node/wallet/crate/pkg",
     "build-node": "yarn prebuild-node && yarn wasm-node && tsc --module node16 --outDir ./dist/node && yarn wasm-postbuild-node",
-    "build-all": "yarn build && yarn build-node"
+    "build-all": "yarn clean && yarn build && yarn build-node"
   },
   "dependencies": {
     "@polkadot/api": "6.8.1",
