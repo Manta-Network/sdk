@@ -8,6 +8,8 @@ This package implements a Javascript SDK for connecting with the Manta Network.
 yarn install manta.js
 ```
 
+> If using sdk in a node.js enviroment please go to [Node Specific](#node-specific)
+
 ### Local Development
 
 1. `git clone https://github.com/Manta-Network/sdk.git`
@@ -31,7 +33,12 @@ Refer to `/examples` for more thorough examples, and how to run them.
 
 If running in node.js the wasm module assumes browser DOM exists, you must export Web API functions from node in your project as seen below.
 
+Node supported package is exported using the following path: `manta.js/node` see code snippit below.
+
+This node package is only compatible with node16 and up, if using typescript you must set ```"moduleResolution": "node16"``` in `tsconfig.json` or as a compiler flag
+
 ```javascript
+import { MantaPrivateWallet, Environment, Network } from 'manta.js/node'
 import fetch from 'node-fetch';
 
 // @ts-ignore
