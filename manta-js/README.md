@@ -8,14 +8,14 @@ This package implements a Javascript SDK for connecting with the Manta Network.
 yarn install manta.js
 ```
 
-> If using sdk in a node.js enviroment please go to [Node Specific](#node-specific)
+> If using sdk in a node.js environment please go to [Node Specific](#node-specific)
 
 ### Local Development
 
 1. `git clone https://github.com/Manta-Network/sdk.git`
 2. `cd sdk/manta-js/package`
 3. `yarn`
-4. `yarn build` for use in browser or `yarn build-node` for use in node.js
+4. `yarn build-all` (Note: go to [Node Specific](#node-specific) if running in node.js environment)
 5. add `"manta.js": "file:/{LOCAL PATH OF sdk/manta-js/package}` to your project's package.json
 6. `yarn upgrade manta.js` in your project's directory
 
