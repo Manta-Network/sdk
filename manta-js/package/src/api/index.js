@@ -151,8 +151,6 @@ export default class Api {
           this._outgoing_note_to_json(sender[1]),
         ];
       });
-      console.log('receivers: ', receivers);
-      console.log('senders: ', senders);
       
       if (this.pullCallback) {
         this.pullCallback(
