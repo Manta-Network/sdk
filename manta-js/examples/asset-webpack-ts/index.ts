@@ -2,9 +2,10 @@
 import { MantaPrivateWallet, SbtMantaPrivateWallet, Environment, Network, MantaUtilities } from 'manta.js';
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
+import {hexToU8a, u8aToBn} from '@polkadot/util'
 
 async function main() {
-   // await toSBTPrivateTest();
+    await toSBTPrivateTest();
     await identityProofGen();
     //await toPrivateOnlySignTest();
     //await toPrivateTest();
@@ -243,7 +244,25 @@ const toSBTPrivateTest = async () => {
     }
     await privateWallet.initalWalletSync();
 
-    await privateWallet.reserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+    const callback = async (status: any, events: any, dispatchError: any) => {
+        if (dispatchError) {
+            if (dispatchError.isModule) {
+                const moduleError = dispatchError.asModule;
+                // polkadot.js version is older need to convert to BN
+                const errorInfo = {index: moduleError.index, error: u8aToBn(moduleError.error)};
+                // for module errors, we have the section indexed, lookup
+                const decoded = privateWallet.api.registry.findMetaError(errorInfo);
+                const { docs, name, section } = decoded;
+
+                console.log(`${section}.${name}: ${docs.join(' ')}`);
+            } else {
+                // Other, CannotLookup, BadOrigin, no extra info
+                console.log(dispatchError.toString());
+            }
+        }
+    };
+
+    await privateWallet.reserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, callback);
     // pause to wait for tx to submit (maybe change above funtion to wait for finalization?)
     await new Promise(r => setTimeout(r, 5000));
 
@@ -258,7 +277,7 @@ const toSBTPrivateTest = async () => {
     console.log("NFT AssetId: ", assetId.toString());
     console.log("NFT Present: ", initalPrivateBalance.toString());
 
-    const transaction_datas = await privateWallet.mintSbt(assetId, numberOfMints, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, metadata);
+    const transaction_datas = await privateWallet.mintSbt(assetId, numberOfMints, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, metadata, callback);
     console.log("transaction_datas:" + JSON.stringify(transaction_datas));
 
     while (true) {

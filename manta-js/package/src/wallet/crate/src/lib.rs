@@ -33,7 +33,6 @@ use alloc::{
 use core::{cell::RefCell, fmt::Debug};
 use js_sys::{JsString, Promise};
 use manta_accounting::{
-    asset,
     transfer::canonical,
     wallet::{
         self,
@@ -196,7 +195,7 @@ impl_js_compatible!(
     manta_accounting::transfer::Asset<config::Config>,
     "Asset"
 );
-impl_js_compatible!(AssetMetadata, asset::AssetMetadata, "Asset Metadata");
+impl_js_compatible!(AssetMetadata, signer::AssetMetadata, "Asset Metadata");
 impl_js_compatible!(
     Transaction,
     canonical::Transaction<config::Config>,

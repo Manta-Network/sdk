@@ -54,7 +54,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
   }
 
   /// Reserve Sbt to whitelist to mint SBT
-  async reserveSbt(polkadotSigner: Signer, polkadotAddress: Address): Promise<void> {
+  async reserveSbt(polkadotSigner: Signer, polkadotAddress: Address, callback?: any): Promise<void> {
     await this.waitForWallet();
     this.walletIsBusy = true;
     await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
@@ -63,22 +63,29 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
     const reserveSbt = this.api.tx.mantaSbt.reserveSbt()
 
     try {
-      await reserveSbt.signAndSend(polkadotAddress, (_status:any, _events:any) => { });
+      await reserveSbt.signAndSend(polkadotAddress, ({ status, events, dispatchError }) => {
+        if (callback) {
+          callback(status, events, dispatchError)
+        }
+      });
     } catch (error) {
       console.error('Transaction failed', error);
     }
-    this.log('Reserve SBT transaction finished.');
   }
 
   /// Executes a "To Private" transaction for SBT.
-  async mintSbt(assetId: BN, numberOfMints: number, polkadotSigner: Signer, polkadotAddress: Address, metadata: string[]) {
+  async mintSbt(assetId: BN, numberOfMints: number, polkadotSigner: Signer, polkadotAddress: Address, metadata: string[], callback?: any) {
     const {batchTx, transaction_datas} = await this.buildSbtBatch(polkadotSigner, polkadotAddress, assetId, numberOfMints, metadata);
     // transaction rejected by signer
     if (batchTx === null) {
       return;
     }
     try {
-      await batchTx.signAndSend(polkadotAddress, (_status:any, _events:any) => { });
+      await batchTx.signAndSend(polkadotAddress, ({ status, events, dispatchError }) => {
+        if (callback) {
+          callback(status, events, dispatchError)
+        }
+      });
       return transaction_datas;
     } catch (error) {
       console.error('Transaction failed', error);
