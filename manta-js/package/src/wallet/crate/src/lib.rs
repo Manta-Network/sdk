@@ -42,7 +42,7 @@ use manta_accounting::{
 use manta_crypto::signature::schnorr;
 use manta_pay::{
     config::{self, utxo},
-    signer,
+    signer::{self, base},
 };
 use manta_util::{
     codec::Decode,
@@ -182,6 +182,8 @@ macro_rules! impl_js_compatible {
     };
 }
 
+impl_js_compatible!(AccountTable, signer::AccountTable, "Account Table");
+impl_js_compatible!(Address, config::Address, "Address");
 impl_js_compatible!(AssetId, utxo::AssetId, "AssetId");
 impl_js_compatible!(
     Asset,
@@ -189,6 +191,7 @@ impl_js_compatible!(
     "Asset"
 );
 impl_js_compatible!(AssetMetadata, signer::AssetMetadata, "Asset Metadata");
+impl_js_compatible!(MultiProvingContext, config::MultiProvingContext, "Multi Proving Context");
 impl_js_compatible!(
     Transaction,
     canonical::Transaction<config::Config>,
@@ -201,6 +204,23 @@ impl_js_compatible!(
 );
 impl_js_compatible!(SenderPost, config::SenderPost, "Sender Post");
 impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
+impl_js_compatible!(Parameters, config::Parameters, "Parameters");
+impl_js_compatible!(IdentifiedAsset, config::IdentifiedAsset, "Identified Asset");
+impl_js_compatible!(IdentityProof, config::IdentityProof, "Identity Proof");
+impl_js_compatible!(TransactionData, config::TransactionData, "Transaction Data");
+
+impl_js_compatible!(UtxoAccumulator, base::UtxoAccumulator, "Utxo Accumulator");
+impl_js_compatible!(SignerRng, signer::SignerRng, "Signer Rng");
+impl_js_compatible!(SignerParameters, base::SignerParameters, "Signer Parameters");
+impl_js_compatible!(SignerState, base::SignerState, "Signer State");
+impl_js_compatible!(SignRequest, signer::SignRequest, "Signing Request");
+impl_js_compatible!(SignResponse, signer::SignResponse, "Signing Response");
+impl_js_compatible!(SignError, signer::SignError, "Signing Error");
+impl_js_compatible!(SignResult, signer::SignResult, "Signing Result");
+impl_js_compatible!(SyncRequest, signer::SyncRequest, "Synchronization Request");
+impl_js_compatible!(SyncResponse, signer::SyncResponse, "Synchronization Response");
+impl_js_compatible!(SyncError, signer::SyncError, "Synchronization Error");
+impl_js_compatible!(SyncResult, signer::SyncResult, "Synchronization Result");
 
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
@@ -405,6 +425,8 @@ pub struct SignerError(reqwest::Error);
 type SignerType = signer::base::Signer;
 
 /// Signer Client
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde", deny_unknown_fields)]
 #[wasm_bindgen]
 pub struct Signer(SignerType);
 
@@ -414,13 +436,86 @@ impl Signer {
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
-        accounts: signer::AccountTable,
-        parameters: config::Parameters,
-        proving_context: config::MultiProvingContext,
-        utxo_accumulator: signer::base::UtxoAccumulator,
-        rng: signer::SignerRng,
+        accounts: AccountTable,
+        parameters: Parameters,
+        proving_context: MultiProvingContext,
+        utxo_accumulator: UtxoAccumulator,
+        rng: SignerRng,
     ) -> Self {
-        Self(SignerType::new(accounts, parameters, proving_context, utxo_accumulator, rng))
+        Self(SignerType::new(accounts.into(), parameters.into(), proving_context.into(), utxo_accumulator.into(), rng.into()))
+    }
+
+    /// Returns a shared reference to the signer parameters.
+    #[inline]
+    pub fn parameters(&self) -> &SignerParameters {
+        &self.0.parameters().into()
+    }
+
+    /// Returns a shared reference to the signer state.
+    #[inline]
+    pub fn state(&self) -> &SignerState {
+        &self.0.state().into()
+    }
+
+    /// Updates the internal ledger state, returning the new asset distribution.
+    #[inline]
+    pub fn sync(
+        &mut self,
+        request: SyncRequest,
+    ) -> SyncResult {
+        self.as_mut().sync(request.into()).into()
+    }
+
+    /// Generates an [`IdentityProof`] for `identified_asset` by
+    /// signing a virtual [`ToPublic`](transfer::canonical::ToPublic) transaction.
+    #[inline]
+    pub fn identity_proof(
+        &mut self,
+        identified_asset: IdentifiedAsset,
+    ) -> Option<IdentityProof> {
+        self.as_mut().identity_proof(identified_asset.into()).map(Into::into)
+    }
+
+    /// Signs the `transaction`, generating transfer posts.
+    #[inline]
+    pub fn sign(&mut self, transaction: Transaction) -> SignResult {
+        self.as_mut().sign(transaction.into()).into()
+    }
+
+    /// Returns a vector with the [`IdentityProof`] corresponding to each [`IdentifiedAsset`] in `identified_assets`.
+    #[inline]
+    pub fn batched_identity_proof(
+        &mut self,
+        identified_assets: Vec<IdentifiedAsset>,
+    ) -> Vec<Option<IdentityProof>> {
+        identified_assets.into_iter().map(|identified_asset| self.identity_proof(identified_asset)).collect()
+    }
+
+    /// Returns the [`Address`] corresponding to `self`.
+    #[inline]
+    pub fn address(&mut self) -> Address {
+        self.as_mut().address().into()
+    }
+
+    /// Returns the associated [`TransactionData`] of `post`, namely the [`Asset`] and the
+    /// [`Identifier`]. Returns `None` if `post` has an invalid shape, or if `self` doesn't own the
+    /// underlying assets in `post`.
+    #[inline]
+    pub fn transaction_data(&self, post: TransferPost) -> Option<TransactionData> {
+        self.as_ref().transaction_data(post.into()).map(Into::into)
+    }
+
+    /// Returns a vector with the [`TransactionData`] of each well-formed [`TransferPost`] owned by
+    /// `self`.
+    #[inline]
+    pub fn batched_transaction_data(
+        &self,
+        posts: Vec<TransferPost>,
+    ) -> Vec<Option<TransactionData>> {
+            posts
+                .into_iter()
+                .map(|p| self.transaction_data(p))
+                .collect()
     }
 }
 
