@@ -1,6 +1,6 @@
 {
     "name": "manta-wasm-wallet",
-    "version": "1.5.2",
+    "version": "1.5.1",
     "main": "./crate/pkg",
     "scripts": {
         "build": "webpack",
