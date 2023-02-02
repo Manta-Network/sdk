@@ -53,44 +53,14 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
     }
   }
 
-  /// Reserve Sbt to whitelist to mint SBT
-  async reserveSbt(polkadotSigner: Signer, polkadotAddress: Address, callback?: any): Promise<void> {
+  /// Builds reserveSbt tx to whitelist to mint SBT
+  async buildReserveSbt(polkadotSigner: Signer, polkadotAddress: Address): Promise<SubmittableExtrinsic<"promise", any>> {
     await this.waitForWallet();
     this.walletIsBusy = true;
     await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
     this.walletIsBusy = false;
 
-    const reserveSbt = this.api.tx.mantaSbt.reserveSbt()
-
-    try {
-      await reserveSbt.signAndSend(polkadotAddress, ({ status, events, dispatchError }) => {
-        if (callback) {
-          callback(status, events, dispatchError)
-        }
-      });
-    } catch (error) {
-      console.error('Transaction failed', error);
-    }
-  }
-
-  /// Executes a "To Private" transaction for SBT.
-  async mintSbt(assetId: BN, numberOfMints: number, polkadotSigner: Signer, polkadotAddress: Address, metadata: string[], callback?: any) {
-    const {batchTx, transaction_datas} = await this.buildSbtBatch(polkadotSigner, polkadotAddress, assetId, numberOfMints, metadata);
-    // transaction rejected by signer
-    if (batchTx === null) {
-      return;
-    }
-    try {
-      await batchTx.signAndSend(polkadotAddress, ({ status, events, dispatchError }) => {
-        if (callback) {
-          callback(status, events, dispatchError)
-        }
-      });
-      return transaction_datas;
-    } catch (error) {
-      console.error('Transaction failed', error);
-    }
-    this.log('Mint SBT transaction finished.');
+    return this.api.tx.mantaSbt.reserveSbt()
   }
 
   toHexString(byteArray: Uint8Array) {
@@ -99,7 +69,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
       '');
   }
 
-  private async buildSbtBatch(polkadotSigner: Signer, polkadotAddress: Address, startingAssetId: BN, numberOfMints: number, metadata: string[]) {
+  async buildSbtBatch(polkadotSigner: Signer, polkadotAddress: Address, startingAssetId: BN, numberOfMints: number, metadata: string[]): Promise<{batchTx: SubmittableExtrinsic<"promise", any>, transactionDatas: string[]} | null> {
     if (numberOfMints != metadata.length) {
       console.error('Number of mints does not correspond to metadata');
       return null
@@ -112,7 +82,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
       const amount = new BN("1"); // 1 nft
 
       const transactions = [];
-      const transaction_datas = [];
+      const transactionDatas = [];
       for (let i = 0; i < numberOfMints; i++ ) {
         const transactionUnsigned = await this.toPrivateBuildUnsigned(startingAssetId, amount);
         startingAssetId = startingAssetId.add(new BN("1"));
@@ -123,7 +93,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
         console.log("transaction_data:" + JSON.stringify(transaction_data));
         const to_private_tx_data = transaction_data[0]["ToPrivate"][0]["utxo_commitment_randomness"];
         console.log("tx_data of private:" + JSON.stringify(to_private_tx_data));
-        transaction_datas.push(this.toHexString(to_private_tx_data));
+        transactionDatas.push(this.toHexString(to_private_tx_data));
         const posts = posts_txs[0];
         for (let j = 0; j < posts.length; j++) {
           const convertedPost = this.transferPost(posts[j]);
@@ -136,7 +106,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
       const batchTx = this.api.tx.utility.batchAll(transactions);
       return {
         batchTx,
-        transaction_datas
+        transactionDatas
       }
     } catch {
       console.error('Unable to build mintSbt transaction');

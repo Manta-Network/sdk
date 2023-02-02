@@ -2,7 +2,7 @@
 import { MantaPrivateWallet, SbtMantaPrivateWallet, Environment, Network, MantaUtilities } from 'manta.js';
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
-import {hexToU8a, u8aToBn} from '@polkadot/util'
+import { u8aToBn } from '@polkadot/util'
 
 async function main() {
     await toSBTPrivateTest();
@@ -244,7 +244,16 @@ const toSBTPrivateTest = async () => {
     }
     await privateWallet.initalWalletSync();
 
-    const callback = async (status: any, events: any, dispatchError: any) => {
+    const reserveSbt = await privateWallet.buildReserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+    const reserveGasFee = await reserveSbt.paymentInfo(polkadotConfig.polkadotAddress);
+    console.log("reserveSbt Gas Fee: ",`
+        class=${reserveGasFee.class.toString()},
+        weight=${reserveGasFee.weight.toString()},
+        partialFee=${reserveGasFee.partialFee.toHuman()}
+    `);
+
+    // example of some error handling of tx result
+    await reserveSbt.signAndSend(polkadotConfig.polkadotAddress, (status: any, events: any, dispatchError: any) => {
         if (dispatchError) {
             if (dispatchError.isModule) {
                 const moduleError = dispatchError.asModule;
@@ -254,16 +263,15 @@ const toSBTPrivateTest = async () => {
                 const decoded = privateWallet.api.registry.findMetaError(errorInfo);
                 const { docs, name, section } = decoded;
 
-                console.log(`${section}.${name}: ${docs.join(' ')}`);
+                console.error("Call failed", `${section}.${name}: ${docs.join(' ')}`);
             } else {
                 // Other, CannotLookup, BadOrigin, no extra info
-                console.log(dispatchError.toString());
+                console.error("Call failed", dispatchError.toString());
             }
         }
-    };
+    });
 
-    await privateWallet.reserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, callback);
-    // pause to wait for tx to submit (maybe change above funtion to wait for finalization?)
+    // pause to wait for tx to submit
     await new Promise(r => setTimeout(r, 5000));
 
     const assetIdRange = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
@@ -277,8 +285,34 @@ const toSBTPrivateTest = async () => {
     console.log("NFT AssetId: ", assetId.toString());
     console.log("NFT Present: ", initalPrivateBalance.toString());
 
-    const transaction_datas = await privateWallet.mintSbt(assetId, numberOfMints, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, metadata, callback);
-    console.log("transaction_datas:" + JSON.stringify(transaction_datas));
+    const sbtMint = await privateWallet.buildSbtBatch(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, assetId, numberOfMints, metadata);
+    const sbtMintGas = await sbtMint.batchTx.paymentInfo(polkadotConfig.polkadotAddress);
+    console.log("mintSbt Gas Fee: ",`
+        class=${sbtMintGas.class.toString()},
+        weight=${sbtMintGas.weight.toString()},
+        partialFee=${sbtMintGas.partialFee.toHuman()}
+    `);
+
+    // example of some error handling of tx result
+    await sbtMint.batchTx.signAndSend(polkadotConfig.polkadotAddress, (status: any, events: any, dispatchError: any) => {
+        if (dispatchError) {
+            if (dispatchError.isModule) {
+                const moduleError = dispatchError.asModule;
+                // polkadot.js version is older need to convert to BN
+                const errorInfo = {index: moduleError.index, error: u8aToBn(moduleError.error)};
+                // for module errors, we have the section indexed, lookup
+                const decoded = privateWallet.api.registry.findMetaError(errorInfo);
+                const { docs, name, section } = decoded;
+
+                console.error("Call failed", `${section}.${name}: ${docs.join(' ')}`);
+            } else {
+                // Other, CannotLookup, BadOrigin, no extra info
+                console.error("Call failed", dispatchError.toString());
+            }
+        }
+    });
+
+    console.log("transaction_datas:" + JSON.stringify(sbtMint.transactionDatas));
 
     while (true) {
         await new Promise(r => setTimeout(r, 5000));
