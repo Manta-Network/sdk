@@ -402,7 +402,7 @@ impl ledger::Write<Vec<config::TransferPost>> for PolkadotJsLedger {
 pub struct SignerError(reqwest::Error);
 
 /// Signer Type
-type SignerType = signer::client::http::Client;
+type SignerType = signer::base::Signer;
 
 /// Signer Client
 #[wasm_bindgen]
@@ -410,12 +410,17 @@ pub struct Signer(SignerType);
 
 #[wasm_bindgen]
 impl Signer {
-    /// Builds a new signer connection with the given `server_url`.
+    /// Builds a new [`Signer`] from `accounts`, `parameters`, `proving_context` and `utxo_accumulator`.
     #[inline]
     #[wasm_bindgen(constructor)]
-    pub fn new(server_url: String) -> Option<Signer> {
-        console_error_panic_hook::set_once();
-        Some(Self(SignerType::new(server_url).ok()?))
+    pub fn new(
+        accounts: signer::AccountTable,
+        parameters: config::Parameters,
+        proving_context: config::MultiProvingContext,
+        utxo_accumulator: signer::base::UtxoAccumulator,
+        rng: signer::SignerRng,
+    ) -> Self {
+        Self(SignerType::new(accounts, parameters, proving_context, utxo_accumulator, rng))
     }
 }
 
