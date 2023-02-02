@@ -173,13 +173,13 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       await this.waitForWallet();
       this.walletIsBusy = true;
       const balanceString = await this.wasmWallet.balance(assetId.toString());
-      const balance = new BN(balanceString)
+      const balance = new BN(balanceString);
       this.walletIsBusy = false;
       return balance;
     } catch (e) {
       this.walletIsBusy = false;
       console.error('Failed to fetch private balance.',e);
-      return null
+      return null;
     }
   }
 
