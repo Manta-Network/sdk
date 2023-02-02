@@ -1,8 +1,12 @@
 {
   "name": "manta.js",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "manta.js sdk",
-  "main": "./dist/index.js",
+  "main": "./dist/browser/index.js",
+  "exports": {
+    ".": "./dist/browser/index.js",
+    "./node": "./dist/node/index.js"
+  },
   "files": [
     "dist",
     "tsconfig.json"
@@ -11,11 +15,17 @@
     "lint": "eslint \"{**/*,*}.{js,ts}\"",
     "format": "eslint \"{**/*,*}.{js,ts}\" --fix",
     "clean": "rimraf dist",
-    "prebuild": "yarn run clean",
-    "wasm-postbuild": "rm ./dist/wallet/crate/pkg/.gitignore",
+    "prebuild-browser": "rimraf dist/browser",
+    "wasm-postbuild": "rm ./dist/browser/wallet/crate/pkg/.gitignore",
     "wasm-dev": "wasm-pack build ./src/wallet/crate",
-    "wasm": "wasm-pack build ./src/wallet/crate --out-dir ../../../dist/wallet/crate/pkg",
-    "build": "yarn prebuild && yarn wasm && yarn wasm-dev && tsc && yarn wasm-postbuild"
+    "wasm": "wasm-pack build ./src/wallet/crate --out-dir ../../../dist/browser/wallet/crate/pkg",
+    "build-browser": "yarn prebuild-browser && yarn wasm && yarn wasm-dev && tsc --outDir ./dist/browser && yarn wasm-postbuild",
+    "prebuild-node": "rimraf dist/node",
+    "wasm-postbuild-node": "rm ./dist/node/wallet/crate/pkg/.gitignore",
+    "wasm-dev-node": "wasm-pack build --target nodejs ./src/wallet/crate",
+    "wasm-node": "wasm-pack build ./src/wallet/crate --target nodejs --out-dir ../../../dist/node/wallet/crate/pkg",
+    "build-node": "yarn prebuild-node && yarn wasm-node && tsc --module node16 --outDir ./dist/node && yarn wasm-postbuild-node",
+    "build-all": "yarn clean && yarn build-browser && yarn build-node"
   },
   "dependencies": {
     "@polkadot/api": "6.8.1",
