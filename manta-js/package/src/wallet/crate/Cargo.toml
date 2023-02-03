@@ -26,7 +26,7 @@ maintenance = { status = "actively-developed" }
 
 [lib]
 path = "src/lib.rs"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 # Disable app restart functionality which does not work in dev mode, only in actual builds.
 disable-restart = []
@@ -36,7 +36,7 @@ console_error_panic_hook = { version = "0.1.7", default-features = false }
 js-sys = { version = "0.3.60", default-features = false }
 manta-accounting = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/good_stateless_signer", default-features = false, features = ["serde"] }
 manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/good_stateless_signer", default-features = false, features = ["serde"] }
-manta-pay = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/good_stateless_signer", default-features = true, features = ["arkworks","groth16", "network", "http", "scale", "serde"] }
+manta-pay = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/good_stateless_signer", default-features = true, features = ["arkworks", "groth16", "network", "http", "scale", "serde", "wallet"] }
 manta-util = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/good_stateless_signer", default-features = false, features = ["serde", "reqwest"] }
 scale-codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive", "max-encoded-len"] }
 serde_json = { version = "1.0.89", default-features = false, features = ["alloc", "arbitrary_precision"] }
