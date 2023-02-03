@@ -343,7 +343,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
-  private static async initWasmSdk(api: ApiPromise, config:PrivateWalletConfig): Promise<InitWasmResult> {
+  protected static async initWasmSdk(api: ApiPromise, config:PrivateWalletConfig): Promise<InitWasmResult> {
     const wasm = await import('./wallet/crate/pkg/manta_wasm_wallet');
     const wasmSigner = new wasm.Signer(SIGNER_URL);
     const wasmApiConfig = new ApiConfig(

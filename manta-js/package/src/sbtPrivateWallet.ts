@@ -1,8 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
-import { SBTWallet } from './wallet/crate/pkg/manta_wasm_wallet';
-import {MantaPrivateWallet, Network, SIGNER_URL, DEFAULT_PULL_SIZE } from './privateWallet';
-import {Address, PrivateWalletConfig, InitWasmResult} from './sdk.interfaces';
-import Api, {ApiConfig} from './api/index';
+import { Wallet } from './wallet/crate/pkg/manta_wasm_wallet';
+import {MantaPrivateWallet, Network } from './privateWallet';
+import {Address, PrivateWalletConfig} from './sdk.interfaces';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import BN from 'bn.js';
 
@@ -11,34 +10,15 @@ const COLLECTION_ID = new BN("0");
 
 /// SbtMantaPrivateWallet class
 export class SbtMantaPrivateWallet extends MantaPrivateWallet {
-  wasmWallet: SBTWallet;
-
-  constructor(api: ApiPromise, wasm: any, wasmWallet: SBTWallet, network: Network, wasmApi: any, loggingEnabled: boolean) {
+  constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, wasmApi: any, loggingEnabled: boolean) {
     super(api, wasm, wasmWallet, network, wasmApi, loggingEnabled, true);
   }
 
   /// Initializes the SbtMantaPrivateWallet class, for a corresponding environment and network.
   static async initSBT(config: PrivateWalletConfig): Promise<SbtMantaPrivateWallet> {
     const { api } = await SbtMantaPrivateWallet.initApi(config.environment, config.network, Boolean(config.loggingEnabled));
-    const { wasm, wasmWallet, wasmApi } = await SbtMantaPrivateWallet.initSBTWasmSdk(api,config);
+    const { wasm, wasmWallet, wasmApi } = await SbtMantaPrivateWallet.initWasmSdk(api,config);
     return new SbtMantaPrivateWallet(api,wasm,wasmWallet,config.network,wasmApi,Boolean(config.loggingEnabled));
-  }
-
-  /// Private helper method for internal use to initialize manta-wasm-wallet for SBT.
-  private static async initSBTWasmSdk(api: ApiPromise, config:PrivateWalletConfig): Promise<InitWasmResult> {
-    const wasm = await import('./wallet/crate/pkg/manta_wasm_wallet');
-    const wasmSigner = new wasm.Signer(SIGNER_URL);
-    const wasmApiConfig = new ApiConfig(
-      (config.maxReceiversPullSize ?? DEFAULT_PULL_SIZE), (config.maxSendersPullSize ?? DEFAULT_PULL_SIZE), config.pullCallback, config.errorCallback, Boolean(config.loggingEnabled)
-    );
-    const wasmApi = new Api(api,wasmApiConfig);
-    const wasmLedger = new wasm.SBTPolkadotJsLedger(wasmApi);
-    const wasmWallet = new wasm.SBTWallet(wasmLedger, wasmSigner);
-    return {
-      wasm,
-      wasmWallet,
-      wasmApi
-    };
   }
 
   /// Gets metadata of SBT, corresponds to image
