@@ -5,9 +5,6 @@ import {Address, PrivateWalletConfig} from './sdk.interfaces';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import BN from 'bn.js';
 
-// Collection of  sbt is hardcoded to 0 in runtime
-const COLLECTION_ID = new BN("0");
-
 /// SbtMantaPrivateWallet class
 export class SbtMantaPrivateWallet extends MantaPrivateWallet {
   constructor(api: ApiPromise, wasm: any, wasmWallet: Wallet, network: Network, wasmApi: any, loggingEnabled: boolean) {
@@ -23,13 +20,19 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
 
   /// Gets metadata of SBT, corresponds to image
   async getSBTMetadata(assetId: BN): Promise<string | null> {
-    const metadata = await this.api.query.uniques.instanceMetadataOf(COLLECTION_ID, assetId);
+    const metadata: any = await this.api.query.assetManager.assetIdMetadata(assetId);
     if (metadata.isNone) {
       return null
     } else {
       // will not fail due to check above
-      const data = metadata.unwrap().data.toString();
-      return hex2a(data)
+      const data = metadata.unwrap();
+
+      if (data.isSbt) {
+        const asciiHex = data.asSbt.toString()
+        return hex2a(asciiHex)
+      } else {
+        return null;
+      }
     }
   }
 
