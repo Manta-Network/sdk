@@ -464,7 +464,7 @@ pub struct IdentifiedAsset {
 
 #[wasm_bindgen]
 impl IdentifiedAsset {
-    ///
+    /// Builds a new [`IdentifiedAsset`].
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(identifier: Identifier, asset: Asset) -> Self {
