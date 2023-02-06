@@ -243,6 +243,12 @@ impl_js_compatible!(
 );
 impl_js_compatible!(SyncError, signer::SyncError, "Synchronization Error");
 impl_js_compatible!(SyncResult, signer::SyncResult, "Synchronization Result");
+impl_js_compatible!(SignWithTransactionDataResponse, signer::SignWithTransactionDataResponse, "Sign With Transaction Data Response");
+impl_js_compatible!(
+    SignWithTransactionDataResult,
+    signer::SignWithTransactionDataResult,
+    "Sign With Transaction Data Result"
+);
 
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
@@ -763,6 +769,17 @@ impl Signer {
     ) -> TransactionDataResponse {
         self.as_ref().batched_transaction_data(posts.0 .0).into()
     }
+
+    ///
+    #[inline]
+    pub fn sign_with_transaction_data(
+        &mut self,
+        transaction: Transaction,
+    ) -> SignWithTransactionDataResult {
+        self.as_mut()
+            .sign_with_transaction_data(transaction.into())
+            .into()
+    }
 }
 
 /// Wallet Error
@@ -1045,6 +1062,27 @@ impl Wallet {
                     .identity_proof(request.0 .0)
                     .await
                     .map(Into::<IdentityResponse>::into);
+                //this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
+    ///
+    #[inline]
+    pub fn sign_with_transaction_data(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                //this.signer_mut().set_network(Some(network.into()));
+                let response = this
+                    .sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
+                    .await
+                    .map(SignWithTransactionDataResponse::from);
                 //this.signer_mut().set_network(None);
                 response
             })
