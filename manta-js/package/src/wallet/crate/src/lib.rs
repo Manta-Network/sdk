@@ -765,268 +765,289 @@ impl Signer {
     }
 }
 
-// /// Wallet Error
-// #[wasm_bindgen]
-// pub struct WalletError(wallet::Error<manta_pay::config::Config, PolkadotJsLedger, SignerType>);
+/// Wallet Error
+#[wasm_bindgen]
+pub struct WalletError(base::WalletError<PolkadotJsLedger>);
 
-// /// Wallet Type
-// type WalletType = signer::client::http::Wallet<PolkadotJsLedger>;
+/// Wallet Type
+type WalletType = base::Wallet<PolkadotJsLedger>;
 
-// /// Wallet with Polkadot-JS API Connection
-// #[wasm_bindgen]
-// pub struct Wallet(Rc<RefCell<WalletType>>);
+/// Wallet with Polkadot-JS API Connection
+#[wasm_bindgen]
+pub struct Wallet(Rc<RefCell<WalletType>>);
 
-// #[wasm_bindgen]
-// impl Wallet {
-//     /// Starts a new [`Wallet`] from existing `signer` and `ledger` connections.
-//     ///
-//     /// # Setting Up the Wallet
-//     ///
-//     /// Creating a [`Wallet`] using this method should be followed with a call to [`sync`] or
-//     /// [`recover`] to retrieve the current checkpoint and balance for this [`Wallet`]. If the
-//     /// backing `signer` is known to be already initialized, a call to [`sync`] is enough,
-//     /// otherwise, a call to [`recover`] is necessary to retrieve the full balance state.
-//     ///
-//     /// [`sync`]: Self::sync
-//     /// [`recover`]: Self::recover
-//     #[inline]
-//     #[wasm_bindgen(constructor)]
-//     pub fn new(ledger: PolkadotJsLedger, signer: Signer) -> Self {
-//         Self(Rc::new(RefCell::new(WalletType::new(ledger, signer.0))))
-//     }
+#[wasm_bindgen]
+impl Wallet {
+    /// Starts a new [`Wallet`] from existing `signer` and `ledger` connections.
+    ///
+    /// # Setting Up the Wallet
+    ///
+    /// Creating a [`Wallet`] using this method should be followed with a call to [`sync`] or
+    /// [`recover`] to retrieve the current checkpoint and balance for this [`Wallet`]. If the
+    /// backing `signer` is known to be already initialized, a call to [`sync`] is enough,
+    /// otherwise, a call to [`recover`] is necessary to retrieve the full balance state.
+    ///
+    /// [`sync`]: Self::sync
+    /// [`recover`]: Self::recover
+    #[inline]
+    #[wasm_bindgen(constructor)]
+    pub fn new(ledger: PolkadotJsLedger, signer: Signer) -> Self {
+        Self(Rc::new(RefCell::new(WalletType::new(ledger, signer.0))))
+    }
 
-//     /// Returns the current balance associated with this `id`.
-//     #[inline]
-//     pub fn balance(&self, id: String) -> String {
-//         let asset_id = id.parse::<u128>().ok();
-//         let asset_id_type = asset_id
-//             .map(|id| field_from_id_u128(id))
-//             .map(|x| {
-//                 Decode::decode(x)
-//                     .expect("Decoding a field element from [u8; 32] is not allowed to fail")
-//             })
-//             .expect("asset should have value");
-//         self.0.borrow().balance(&asset_id_type).to_string()
-//     }
+    /// Returns the current balance associated with this `id`.
+    #[inline]
+    pub fn balance(&self, id: String) -> String {
+        let asset_id = id.parse::<u128>().ok();
+        let asset_id_type = asset_id
+            .map(|id| field_from_id_u128(id))
+            .map(|x| {
+                Decode::decode(x)
+                    .expect("Decoding a field element from [u8; 32] is not allowed to fail")
+            })
+            .expect("asset should have value");
+        self.0.borrow().balance(&asset_id_type).to_string()
+    }
 
-//     /// Returns true if `self` contains at least `asset.value` of the asset of kind `asset.id`.
-//     #[inline]
-//     pub fn contains(&self, asset: Asset) -> bool {
-//         self.0.borrow().contains(&asset.into())
-//     }
+    /// Returns true if `self` contains at least `asset.value` of the asset of kind `asset.id`.
+    #[inline]
+    pub fn contains(&self, asset: Asset) -> bool {
+        self.0.borrow().contains(&asset.into())
+    }
 
-//     /// Returns a shared reference to the balance state associated to `self`.
-//     #[inline]
-//     pub fn assets(&self) -> JsValue {
-//         borrow_js(self.0.borrow().assets())
-//     }
+    /// Returns a shared reference to the balance state associated to `self`.
+    #[inline]
+    pub fn assets(&self) -> JsValue {
+        borrow_js(self.0.borrow().assets())
+    }
 
-//     /// Returns the [`Checkpoint`](ledger::Connection::Checkpoint) representing the current state
-//     /// of this wallet.
-//     #[inline]
-//     pub fn checkpoint(&self) -> JsValue {
-//         borrow_js(self.0.borrow().checkpoint())
-//     }
+    /// Returns the [`Checkpoint`](ledger::Connection::Checkpoint) representing the current state
+    /// of this wallet.
+    #[inline]
+    pub fn checkpoint(&self) -> JsValue {
+        borrow_js(self.0.borrow().checkpoint())
+    }
 
-//     /// Calls `f` on a mutably borrowed value of `self` converting the future into a JS [`Promise`].
-//     #[allow(clippy::await_holding_refcell_ref)] // NOTE: JS is single-threaded so we can't panic.
-//     #[inline]
-//     fn with_async<T, E, F>(&self, f: F) -> Promise
-//     where
-//         T: Serialize,
-//         E: Debug,
-//         F: 'static + for<'w> FnOnce(&'w mut WalletType) -> LocalBoxFutureResult<'w, T, E>,
-//     {
-//         let this = self.0.clone();
-//         let response = future_to_promise(async move {
-//             f(&mut this.borrow_mut())
-//                 .await
-//                 .map(into_js)
-//                 .map_err(|err| into_js(format!("Error during asynchronous call: {err:?}")))
-//         });
-//         self.0.clone().borrow_mut().signer_mut().set_network(None);
-//         response
-//     }
+    /// Calls `f` on a mutably borrowed value of `self` converting the future into a JS [`Promise`].
+    #[allow(clippy::await_holding_refcell_ref)] // NOTE: JS is single-threaded so we can't panic.
+    #[inline]
+    fn with_async<T, E, F>(&self, f: F) -> Promise
+    where
+        T: Serialize,
+        E: Debug,
+        F: 'static + for<'w> FnOnce(&'w mut WalletType) -> LocalBoxFutureResult<'w, T, E>,
+    {
+        let this = self.0.clone();
+        let response = future_to_promise(async move {
+            f(&mut this.borrow_mut())
+                .await
+                .map(into_js)
+                .map_err(|err| into_js(format!("Error during asynchronous call: {err:?}")))
+        });
+        //self.0.clone().borrow_mut().signer_mut().set_network(None);
+        response
+    }
 
-//     /// Performs full wallet recovery.
-//     ///
-//     /// # Failure Conditions
-//     ///
-//     /// This method returns an element of type [`Error`] on failure, which can result from any
-//     /// number of synchronization issues between the wallet, the ledger, and the signer. See the
-//     /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
-//     /// how to resolve them.
-//     ///
-//     /// [`Error`]: wallet::Error
-//     /// [`InconsistencyError`]: wallet::InconsistencyError
-//     #[inline]
-//     pub fn restart(&self, network: Network) -> Promise {
-//         self.with_async(|this| {
-//             Box::pin(async {
-//                 this.signer_mut().set_network(Some(network.into()));
-//                 let response = this.restart().await;
-//                 this.signer_mut().set_network(None);
-//                 response
-//             })
-//         })
-//     }
+    /// Performs full wallet recovery.
+    ///
+    /// # Failure Conditions
+    ///
+    /// This method returns an element of type [`Error`] on failure, which can result from any
+    /// number of synchronization issues between the wallet, the ledger, and the signer. See the
+    /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
+    /// how to resolve them.
+    ///
+    /// [`Error`]: wallet::Error
+    /// [`InconsistencyError`]: wallet::InconsistencyError
+    #[inline]
+    pub fn restart(&self, network: Network) -> Promise {
+        let _ = network;
+        self.with_async(|this| {
+            Box::pin(async {
+                //this.signer_mut().set_network(Some(network.into()));
+                let response = this.restart().await;
+                //this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
 
-//     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
-//     /// continuously calling [`sync_partial`](Self::sync_partial) until all the ledger data has
-//     /// arrived at and has been synchronized with the wallet.
-//     ///
-//     /// # Failure Conditions
-//     ///
-//     /// This method returns an element of type [`Error`] on failure, which can result from any
-//     /// number of synchronization issues between the wallet, the ledger, and the signer. See the
-//     /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
-//     /// how to resolve them.
-//     ///
-//     /// [`Error`]: wallet::Error
-//     /// [`InconsistencyError`]: wallet::InconsistencyError
-//     #[inline]
-//     pub fn sync(&self, network: Network) -> Promise {
-//         self.with_async(|this| {
-//             Box::pin(async {
-//                 this.signer_mut().set_network(Some(network.into()));
-//                 let response = this.sync().await;
-//                 this.signer_mut().set_network(None);
-//                 response
-//             })
-//         })
-//     }
+    /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
+    /// continuously calling [`sync_partial`](Self::sync_partial) until all the ledger data has
+    /// arrived at and has been synchronized with the wallet.
+    ///
+    /// # Failure Conditions
+    ///
+    /// This method returns an element of type [`Error`] on failure, which can result from any
+    /// number of synchronization issues between the wallet, the ledger, and the signer. See the
+    /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
+    /// how to resolve them.
+    ///
+    /// [`Error`]: wallet::Error
+    /// [`InconsistencyError`]: wallet::InconsistencyError
+    #[inline]
+    pub fn sync(&self, network: Network) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                // this.signer_mut().set_network(Some(network.into()));
+                let response = this.sync().await;
+                //this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
 
-//     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
-//     /// a [`ControlFlow`] for matching against to determine if the wallet requires more
-//     /// synchronization.
-//     ///
-//     /// # Failure Conditions
-//     ///
-//     /// This method returns an element of type [`Error`] on failure, which can result from any
-//     /// number of synchronization issues between the wallet, the ledger, and the signer. See the
-//     /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
-//     /// how to resolve them.
-//     ///
-//     /// [`Error`]: wallet::Error
-//     /// [`InconsistencyError`]: wallet::InconsistencyError
-//     #[inline]
-//     pub fn sync_partial(&self, network: Network) -> Promise {
-//         self.with_async(|this| {
-//             Box::pin(async {
-//                 this.signer_mut().set_network(Some(network.into()));
-//                 let response = this.sync_partial().await;
-//                 this.signer_mut().set_network(None);
-//                 response
-//             })
-//         })
-//     }
+    /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
+    /// a [`ControlFlow`] for matching against to determine if the wallet requires more
+    /// synchronization.
+    ///
+    /// # Failure Conditions
+    ///
+    /// This method returns an element of type [`Error`] on failure, which can result from any
+    /// number of synchronization issues between the wallet, the ledger, and the signer. See the
+    /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
+    /// how to resolve them.
+    ///
+    /// [`Error`]: wallet::Error
+    /// [`InconsistencyError`]: wallet::InconsistencyError
+    #[inline]
+    pub fn sync_partial(&self, network: Network) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                // this.signer_mut().set_network(Some(network.into()));
+                let response = this.sync_partial().await;
+                // this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
 
-//     /// Checks if `transaction` can be executed on the balance state of `self`, returning the
-//     /// kind of update that should be performed on the balance state if the transaction is
-//     /// successfully posted to the ledger.
-//     ///
-//     /// # Safety
-//     ///
-//     /// This method is already called by [`post`](Self::post), but can be used by custom
-//     /// implementations to perform checks elsewhere.
-//     #[inline]
-//     pub fn check(&self, transaction: &Transaction) -> Result<TransactionKind, Asset> {
-//         // FIXME: Use a better API so we can remove the `clone`.
-//         self.check(&transaction.clone().into())
-//             .map(Into::into)
-//             .map_err(Into::into)
-//     }
+    // TODO: check is not a pub method, make it?
+    // /// Checks if `transaction` can be executed on the balance state of `self`, returning the
+    // /// kind of update that should be performed on the balance state if the transaction is
+    // /// successfully posted to the ledger.
+    // ///
+    // /// # Safety
+    // ///
+    // /// This method is already called by [`post`](Self::post), but can be used by custom
+    // /// implementations to perform checks elsewhere.
+    // #[inline]
+    // pub fn check(&self, transaction: &Transaction) -> Result<TransactionKind, Asset> {
+    //     // FIXME: Use a better API so we can remove the `clone`.
+    //     self.0.borrow().check(&transaction.clone().into())
+    //         .map(Into::into)
+    //         .map_err(Into::into)
+    // }
 
-//     /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for context. This
-//     /// method _does not_ automatically sychronize with the ledger. To do this, call the
-//     /// [`sync`](Self::sync) method separately.
-//     #[inline]
-//     pub fn sign(
-//         &self,
-//         transaction: Transaction,
-//         metadata: Option<AssetMetadata>,
-//         network: Network,
-//     ) -> Promise {
-//         self.with_async(|this| {
-//             Box::pin(async {
-//                 this.signer_mut().set_network(Some(network.into()));
-//                 let response = this
-//                     .sign(transaction.into(), metadata.map(Into::into))
-//                     .await
-//                     .map(|response| {
-//                         response
-//                             .posts
-//                             .into_iter()
-//                             .map(TransferPost::from)
-//                             .collect::<Vec<_>>()
-//                     });
-//                 this.signer_mut().set_network(None);
-//                 response
-//             })
-//         })
-//     }
+    /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for context. This
+    /// method _does not_ automatically sychronize with the ledger. To do this, call the
+    /// [`sync`](Self::sync) method separately.
+    #[inline]
+    pub fn sign(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                //this.signer_mut().set_network(Some(network.into()));
+                let response = this
+                    .sign(transaction.into(), metadata.map(Into::into))
+                    .await
+                    .map(|response| {
+                        response
+                            .posts
+                            .into_iter()
+                            .map(TransferPost::from)
+                            .collect::<Vec<_>>()
+                    });
+                //this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
 
-//     /// Posts a transaction to the ledger, returning a success [`Response`] if the `transaction`
-//     /// was successfully posted to the ledger. This method automatically synchronizes with the
-//     /// ledger before posting, _but not after_. To amortize the cost of future calls to [`post`],
-//     /// the [`sync`] method can be used to synchronize with the ledger.
-//     ///
-//     /// # Failure Conditions
-//     ///
-//     /// This method returns a [`Response`] when there were no errors in producing transfer data and
-//     /// sending and receiving from the ledger, but instead the ledger just did not accept the
-//     /// transaction as is. This could be caused by an external update to the ledger while the signer
-//     /// was building the transaction that caused the wallet and the ledger to get out of sync. In
-//     /// this case, [`post`] can safely be called again, to retry the transaction.
-//     ///
-//     /// This method returns an error in any other case. The internal state of the wallet is kept
-//     /// consistent between calls and recoverable errors are returned for the caller to handle.
-//     ///
-//     /// [`Response`]: ledger::Write::Response
-//     /// [`post`]: Self::post
-//     /// [`sync`]: Self::sync
-//     #[inline]
-//     pub fn post(
-//         &self,
-//         transaction: Transaction,
-//         metadata: Option<AssetMetadata>,
-//         network: Network,
-//     ) -> Promise {
-//         self.with_async(|this| {
-//             Box::pin(async {
-//                 this.signer_mut().set_network(Some(network.into()));
-//                 let response = this
-//                     .post(transaction.into(), metadata.map(Into::into))
-//                     .await;
-//                 this.signer_mut().set_network(None);
-//                 response
-//             })
-//         })
-//     }
+    /// Posts a transaction to the ledger, returning a success [`Response`] if the `transaction`
+    /// was successfully posted to the ledger. This method automatically synchronizes with the
+    /// ledger before posting, _but not after_. To amortize the cost of future calls to [`post`],
+    /// the [`sync`] method can be used to synchronize with the ledger.
+    ///
+    /// # Failure Conditions
+    ///
+    /// This method returns a [`Response`] when there were no errors in producing transfer data and
+    /// sending and receiving from the ledger, but instead the ledger just did not accept the
+    /// transaction as is. This could be caused by an external update to the ledger while the signer
+    /// was building the transaction that caused the wallet and the ledger to get out of sync. In
+    /// this case, [`post`] can safely be called again, to retry the transaction.
+    ///
+    /// This method returns an error in any other case. The internal state of the wallet is kept
+    /// consistent between calls and recoverable errors are returned for the caller to handle.
+    ///
+    /// [`Response`]: ledger::Write::Response
+    /// [`post`]: Self::post
+    /// [`sync`]: Self::sync
+    #[inline]
+    pub fn post(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: Network,
+    ) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                //this.signer_mut().set_network(Some(network.into()));
+                let response = this
+                    .post(transaction.into(), metadata.map(Into::into))
+                    .await;
+                //this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
 
-//     /// Returns public receiving keys according to the `request`.
-//     #[inline]
-//     pub fn receiving_keys(&self, network: Network) -> Promise {
-//         self.with_async(|this| {
-//             Box::pin(async {
-//                 this.signer_mut().set_network(Some(network.into()));
-//                 let response = this.address().await;
-//                 this.signer_mut().set_network(None);
-//                 response
-//             })
-//         })
-//     }
+    /// Returns public receiving keys according to the `request`.
+    #[inline]
+    pub fn address(&self, network: Network) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                //this.signer_mut().set_network(Some(network.into()));
+                let response = this.address().await;
+                //this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
 
-//     /// Returns public receiving keys according to the `request`.
-//     #[inline]
-//     pub fn address(&self, network: Network) -> Promise {
-//         self.with_async(|this| {
-//             Box::pin(async {
-//                 this.signer_mut().set_network(Some(network.into()));
-//                 let response = this.address().await;
-//                 this.signer_mut().set_network(None);
-//                 response
-//             })
-//         })
-//     }
-// }
+    ///
+    #[inline]
+    pub fn transaction_data(&self, request: TransactionDataRequest, network: Network) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                //this.signer_mut().set_network(Some(network.into()));
+                let response = this
+                    .transaction_data(request.0 .0)
+                    .await
+                    .map(Into::<TransactionDataResponse>::into);
+                //this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
+    ///
+    #[inline]
+    pub fn identity_proof(&self, request: IdentityRequest, network: Network) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                //this.signer_mut().set_network(Some(network.into()));
+                let response = this
+                    .identity_proof(request.0 .0)
+                    .await
+                    .map(Into::<IdentityResponse>::into);
+                //this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+}
