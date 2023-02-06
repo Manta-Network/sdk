@@ -209,7 +209,22 @@ impl_js_compatible!(SenderPost, config::SenderPost, "Sender Post");
 impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
 impl_js_compatible!(IdentityProof, config::IdentityProof, "Identity Proof");
 impl_js_compatible!(TransactionData, config::TransactionData, "Transaction Data");
-
+impl_js_compatible!(IdentityRequest, signer::IdentityRequest, "Identity Request");
+impl_js_compatible!(
+    TransactionDataRequest,
+    signer::TransactionDataRequest,
+    "Transaction Data Request"
+);
+impl_js_compatible!(
+    TransactionDataResponse,
+    signer::TransactionDataResponse,
+    "Transaction Data Response"
+);
+impl_js_compatible!(
+    IdentityResponse,
+    signer::IdentityResponse,
+    "Identity Response"
+);
 impl_js_compatible!(UtxoAccumulator, base::UtxoAccumulator, "Utxo Accumulator");
 impl_js_compatible!(
     SignerParameters,
@@ -458,6 +473,13 @@ impl From<IdentifiedAsset> for config::IdentifiedAsset {
     }
 }
 
+impl From<config::IdentifiedAsset> for IdentifiedAsset {
+    #[inline]
+    fn from(this: config::IdentifiedAsset) -> Self {
+        IdentifiedAsset::new(Identifier(this.identifier), this.asset.into())
+    }
+}
+
 /// Transfer Post
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
@@ -649,8 +671,16 @@ type SignerType = base::Signer;
 pub struct Signer(SignerType);
 
 impl AsMut<SignerType> for Signer {
+    #[inline]
     fn as_mut(&mut self) -> &mut SignerType {
         &mut self.0
+    }
+}
+
+impl AsRef<SignerType> for Signer {
+    #[inline]
+    fn as_ref(&self) -> &SignerType {
+        &self.0
     }
 }
 
@@ -696,14 +726,16 @@ impl Signer {
         self.as_mut().sign(transaction.into()).into()
     }
 
-    // /// Returns a vector with the [`IdentityProof`] corresponding to each [`IdentifiedAsset`] in `identified_assets`.
-    // #[inline]
-    // pub fn batched_identity_proof(
-    //     &mut self,
-    //     identified_assets: Vec<IdentifiedAsset>,
-    // ) -> Vec<Option<IdentityProof>> {
-    //     self.as_mut().batched_identity_proof(identified_assets.into()).into_iter().map(|option| option.map(Into::into)).collect()
-    // }
+    /// Returns a vector with the [`IdentityProof`] corresponding to each [`IdentifiedAsset`] in `identified_assets`.
+    #[inline]
+    pub fn batched_identity_proof(
+        &mut self,
+        identity_request: IdentityRequest,
+    ) -> IdentityResponse {
+        self.as_mut()
+            .batched_identity_proof(identity_request.0 .0)
+            .into()
+    }
 
     /// Returns the [`Address`] corresponding to `self`.
     #[inline]
@@ -722,15 +754,15 @@ impl Signer {
             .unwrap()
     }
 
-    // /// Returns a vector with the [`TransactionData`] of each well-formed [`TransferPost`] owned by
-    // /// `self`.
-    // #[inline]
-    // pub fn batched_transaction_data(&self, posts: Vec<TransferPost>) -> Vec<TransactionData> {
-    //     posts
-    //         .into_iter()
-    //         .map(|p| self.transaction_data(p))
-    //         .collect()
-    // }
+    /// Returns a vector with the [`TransactionData`] of each well-formed [`TransferPost`] owned by
+    /// `self`.
+    #[inline]
+    pub fn batched_transaction_data(
+        &self,
+        posts: TransactionDataRequest,
+    ) -> TransactionDataResponse {
+        self.as_ref().batched_transaction_data(posts.0 .0).into()
+    }
 }
 
 // /// Wallet Error
