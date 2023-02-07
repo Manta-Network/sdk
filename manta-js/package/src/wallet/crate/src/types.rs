@@ -286,9 +286,8 @@ impl TryFrom<RawPullResponse> for ReadResponse<SyncData<config::Config>> {
                     .map(|(comm, note)| {
                         let nullifier = RawNulllifier {
                             nullifier: RawNullifierCommitment { commitment: comm },
-                            outgoing_note: note
-                                .try_into()
-                                .expect("Outgoing note convert should not failed"),
+                            outgoing_note: note, // .try_into()
+                                                 // .expect("Outgoing note convert should not failed"),
                         };
                         nullifier.try_into()
                     }) // check type
