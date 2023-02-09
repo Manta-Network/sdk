@@ -253,7 +253,6 @@ impl_js_compatible!(
 );
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, network::Network, "Network Type");
-impl_js_compatible!(NetworkError, network::NetworkError, "Network Error");
 
 /// Implements a JS-compatible wrapper for the given `$type` without the `From` implementations.
 macro_rules! impl_js_compatible_no_into {
@@ -658,13 +657,6 @@ impl ledger::Write<Vec<config::TransferPost>> for PolkadotJsLedger {
     }
 }
 
-impl From<Network> for NetworkError {
-    #[inline]
-    fn from(value: Network) -> Self {
-        Self(network::NetworkError::NonexistentWallet(value.0))
-    }
-}
-
 /// Signer Error
 #[wasm_bindgen]
 pub struct SignerError(reqwest::Error);
@@ -831,7 +823,7 @@ impl Wallet {
 
     /// Returns the current balance associated with this `id`.
     #[inline]
-    pub fn balance(&self, id: String, network: Network) -> Result<String, NetworkError> {
+    pub fn balance(&self, id: String, network: Network) -> String {
         let asset_id = id.parse::<u128>().ok();
         let asset_id_type = asset_id
             .map(field_from_id_u128)
@@ -840,49 +832,49 @@ impl Wallet {
                     .expect("Decoding a field element from [u8; 32] is not allowed to fail")
             })
             .expect("asset should have value");
-        Ok(self.0.borrow()[usize::from(network.0)]
+        self.0.borrow()[usize::from(network.0)]
             .as_ref()
-            .ok_or(NetworkError::from(network))?
+            .expect(format!("There is no wallet for the {} network", network.0).as_ref())
             .balance(&asset_id_type)
-            .to_string())
+            .to_string()
     }
 
     /// Returns true if `self` contains at least `asset.value` of the asset of kind `asset.id`.
     #[inline]
-    pub fn contains(&self, asset: Asset, network: Network) -> Result<bool, NetworkError> {
-        Ok(self.0.borrow()[usize::from(network.0)]
+    pub fn contains(&self, asset: Asset, network: Network) -> bool {
+        self.0.borrow()[usize::from(network.0)]
             .as_ref()
-            .ok_or(NetworkError::from(network))?
-            .contains(&asset.into()))
+            .expect(format!("There is no wallet for the {} network", network.0).as_ref())
+            .contains(&asset.into())
     }
 
     /// Returns the balance state associated to `self`.
     #[inline]
-    pub fn assets(&self, network: Network) -> Result<JsValue, NetworkError> {
-        Ok(borrow_js(
+    pub fn assets(&self, network: Network) -> JsValue {
+        borrow_js(
             self.0.borrow()[usize::from(network.0)]
                 .as_ref()
-                .ok_or(NetworkError::from(network))?
+                .expect(format!("There is no wallet for the {} network", network.0).as_ref())
                 .assets(),
-        ))
+        )
     }
 
     /// Returns the [`Checkpoint`](ledger::Connection::Checkpoint) representing the current state
     /// of this wallet.
     #[inline]
-    pub fn checkpoint(&self, network: Network) -> Result<JsValue, NetworkError> {
-        Ok(borrow_js(
+    pub fn checkpoint(&self, network: Network) -> JsValue {
+        borrow_js(
             self.0.borrow()[usize::from(network.0)]
                 .as_ref()
-                .ok_or(NetworkError::from(network))?
+                .expect(format!("There is no wallet for the {} network", network.0).as_ref())
                 .checkpoint(),
-        ))
+        )
     }
 
     /// Calls `f` on a mutably borrowed value of `self` converting the future into a JS [`Promise`].
     #[allow(clippy::await_holding_refcell_ref)] // NOTE: JS is single-threaded so we can't panic.
     #[inline]
-    fn with_async<T, E, F>(&self, f: F, network: Network) -> Result<Promise, NetworkError>
+    fn with_async<T, E, F>(&self, f: F, network: Network) -> Promise
     where
         T: Serialize,
         E: Debug,
@@ -890,17 +882,17 @@ impl Wallet {
     {
         let network_index = usize::from(network.0);
         if self.0.borrow()[network_index].is_none() {
-            return Err(NetworkError::from(network));
+            panic!("There is no wallet for the {} network", network.0)
         }
         let this = self.0.clone();
-        Ok(future_to_promise(async move {
+        future_to_promise(async move {
             f(this.borrow_mut()[network_index]
                 .as_mut()
                 .expect("This cannot panic because of the check above"))
             .await
             .map(into_js)
             .map_err(|err| into_js(format!("Error during asynchronous call: {err:?}")))
-        }))
+        })
     }
 
     /// Performs full wallet recovery.
@@ -915,7 +907,7 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn restart(&self, network: Network) -> Result<Promise, NetworkError> {
+    pub fn restart(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async { this.restart().await }), network)
     }
 
@@ -933,7 +925,7 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn sync(&self, network: Network) -> Result<Promise, NetworkError> {
+    pub fn sync(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async { this.sync().await }), network)
     }
 
@@ -951,7 +943,7 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn sync_partial(&self, network: Network) -> Result<Promise, NetworkError> {
+    pub fn sync_partial(&self, network: Network) -> Promise {
         self.with_async(
             |this| Box::pin(async { this.sync_partial().await }),
             network,
@@ -967,7 +959,7 @@ impl Wallet {
         transaction: Transaction,
         metadata: Option<AssetMetadata>,
         network: Network,
-    ) -> Result<Promise, NetworkError> {
+    ) -> Promise {
         self.with_async(
             |this| {
                 Box::pin(async {
@@ -1011,7 +1003,7 @@ impl Wallet {
         transaction: Transaction,
         metadata: Option<AssetMetadata>,
         network: Network,
-    ) -> Result<Promise, NetworkError> {
+    ) -> Promise {
         self.with_async(
             |this| {
                 Box::pin(async {
@@ -1025,18 +1017,14 @@ impl Wallet {
 
     /// Returns public receiving keys according to the `request`.
     #[inline]
-    pub fn address(&self, network: Network) -> Result<Promise, NetworkError> {
+    pub fn address(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async { this.address().await }), network)
     }
 
     /// Retrieves the [`TransactionData`] associated with the [`TransferPost`]s in
     /// `request`, if possible.
     #[inline]
-    pub fn transaction_data(
-        &self,
-        request: TransactionDataRequest,
-        network: Network,
-    ) -> Result<Promise, NetworkError> {
+    pub fn transaction_data(&self, request: TransactionDataRequest, network: Network) -> Promise {
         self.with_async(
             |this| {
                 Box::pin(async {
@@ -1052,11 +1040,7 @@ impl Wallet {
     /// Generates an [`IdentityProof`] for the [`IdentifiedAsset`]s in `request` by
     /// signing a virtual [`ToPublic`](canonical::ToPublic) transaction.
     #[inline]
-    pub fn identity_proof(
-        &self,
-        request: IdentityRequest,
-        network: Network,
-    ) -> Result<Promise, NetworkError> {
+    pub fn identity_proof(&self, request: IdentityRequest, network: Network) -> Promise {
         self.with_async(
             |this| {
                 Box::pin(async {
@@ -1077,7 +1061,7 @@ impl Wallet {
         transaction: Transaction,
         metadata: Option<AssetMetadata>,
         network: Network,
-    ) -> Result<Promise, NetworkError> {
+    ) -> Promise {
         self.with_async(
             |this| {
                 Box::pin(async {
