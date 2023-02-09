@@ -661,7 +661,7 @@ impl ledger::Write<Vec<config::TransferPost>> for PolkadotJsLedger {
 impl From<Network> for NetworkError {
     #[inline]
     fn from(value: Network) -> Self {
-        Self(network::NetworkError::InexistentWallet(value.0))
+        Self(network::NetworkError::NonexistentWallet(value.0))
     }
 }
 
