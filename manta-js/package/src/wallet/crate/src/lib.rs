@@ -35,6 +35,7 @@ use js_sys::{JsString, Promise};
 use manta_accounting::{
     transfer::canonical,
     wallet::{
+        self,
         ledger::{self, ReadResponse},
         signer::SyncData,
     },
@@ -42,7 +43,8 @@ use manta_accounting::{
 use manta_crypto::signature::schnorr;
 use manta_pay::{
     config::{self, utxo},
-    signer::{self, base, client::network},
+    key,
+    signer::{self, base, client::network, functions},
 };
 use manta_util::{
     codec::Decode,
@@ -253,6 +255,12 @@ impl_js_compatible!(
 );
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, network::Network, "Network Type");
+impl_js_compatible!(Mnemonic, key::Mnemonic, "Mnemonic");
+impl_js_compatible!(
+    StorageState,
+    wallet::signer::StorageState<config::Config>,
+    "Storage State"
+);
 
 /// Implements a JS-compatible wrapper for the given `$type` without the `From` implementations.
 macro_rules! impl_js_compatible_no_into {
@@ -686,23 +694,54 @@ impl AsRef<SignerType> for Signer {
 
 #[wasm_bindgen]
 impl Signer {
-    /// Builds a new [`Signer`] from `accounts`, `parameters`, `proving_context` and `utxo_accumulator`.
+    /// Builds a new [`Signer`] from `mnemonic`, `password` `parameters`,
+    /// `proving_context` and `utxo_accumulator`.
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
-        accounts: AccountTable,
+        mnemonic: Mnemonic,
+        password: &str,
         parameters: Parameters,
         proving_context: MultiProvingContext,
         utxo_accumulator: UtxoAccumulator,
-        rng: SignerRng,
     ) -> Self {
-        Self(SignerType::new(
-            accounts.into(),
+        Self(functions::new_signer(
+            mnemonic.into(),
+            password,
             parameters.0,
             proving_context.into(),
             utxo_accumulator.into(),
-            rng.0,
         ))
+    }
+
+    /// Updates `self` from `storage_state`.
+    #[inline]
+    pub fn read_from_storage(&mut self, storage_state: &StorageState) {
+        storage_state.as_ref().update_signer(self.as_mut())
+    }
+
+    /// Builds a new [`Signer`] from `storage_state`, `mnemonic`, `password`, `parameters` and `proving_context`.
+    #[inline]
+    pub fn from_storage(
+        storage_state: &StorageState,
+        mnemonic: Mnemonic,
+        password: &str,
+        parameters: Parameters,
+        proving_context: MultiProvingContext,
+    ) -> Self {
+        Self(functions::initialize_signer_from_storage(
+            storage_state.as_ref(),
+            mnemonic.into(),
+            password,
+            parameters.0,
+            proving_context.into(),
+        ))
+    }
+
+    /// Writes `self` onto `storage_state`.
+    #[inline]
+    pub fn write_to_storage(&self, storage_state: &mut StorageState) {
+        storage_state.as_mut().update_from_signer(self.as_ref())
     }
 
     /// Updates the internal ledger state, returning the new asset distribution.
@@ -834,7 +873,7 @@ impl Wallet {
             .expect("asset should have value");
         self.0.borrow()[usize::from(network.0)]
             .as_ref()
-            .expect(format!("There is no wallet for the {} network", network.0).as_ref())
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
             .balance(&asset_id_type)
             .to_string()
     }
@@ -844,7 +883,7 @@ impl Wallet {
     pub fn contains(&self, asset: Asset, network: Network) -> bool {
         self.0.borrow()[usize::from(network.0)]
             .as_ref()
-            .expect(format!("There is no wallet for the {} network", network.0).as_ref())
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
             .contains(&asset.into())
     }
 
@@ -854,7 +893,7 @@ impl Wallet {
         borrow_js(
             self.0.borrow()[usize::from(network.0)]
                 .as_ref()
-                .expect(format!("There is no wallet for the {} network", network.0).as_ref())
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
                 .assets(),
         )
     }
@@ -866,7 +905,7 @@ impl Wallet {
         borrow_js(
             self.0.borrow()[usize::from(network.0)]
                 .as_ref()
-                .expect(format!("There is no wallet for the {} network", network.0).as_ref())
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
                 .checkpoint(),
         )
     }
