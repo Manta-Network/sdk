@@ -4,7 +4,7 @@ import { base58Decode, base58Encode } from "@polkadot/util-crypto";
 import Api, { ApiConfig } from "./api/index";
 import BN from "bn.js";
 import config from "./manta-config.json";
-import { Transaction, Wallet } from "./wallet/crate/pkg/manta_wasm_wallet";
+import wasm, { Transaction, Wallet } from "./wallet/crate/pkg/manta_wasm_wallet";
 import { Signer, SubmittableExtrinsic } from "@polkadot/api/types";
 import {
   Address,
@@ -37,6 +37,33 @@ export enum Network {
   Calamari = "Calamari",
   Manta = "Manta",
 }
+
+enum FileResponseType {
+  blob = "blob",
+  json = "json",
+  text = "text",
+  arrayBuffer = "arrayBuffer"
+}
+
+const PayParameterNames = [
+  "viewing-key-derivation-function.dat",
+  "utxo-commitment-scheme.dat",
+  "utxo-accumulator-model.dat",
+  "utxo-accumulator-item-hash.dat",
+  "outgoing-base-encryption-scheme.dat",
+  "schnorr-hash-function.dat",
+  "nullifier-commitment-scheme.dat",
+  "light-incoming-base-encryption-scheme.dat",
+  "incoming-base-encryption-scheme.dat",
+  "group-generator.dat",
+  "address-partition-function.dat",
+];
+
+const PayProvingNames = [
+  "private-transfer.lfs",
+  "to-private.lfs",
+  "to-public.lfs"
+];
 
 /// MantaPrivateWallet class
 export class MantaPrivateWallet implements IMantaPrivateWallet {
@@ -445,42 +472,21 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     password: string,
     utxo_accumulator: string
   ): Promise<InitWasmResult> {
-    const wasm = await import("./wallet/crate/pkg/manta_wasm_wallet");
-    const REPO_OWNER = "Manta-Network";
-    const REPO_NAME = "manta-rs";
-    const BRANCH = "feat/good_stateless_signer";
-    const PATH = "manta-parameters/data/pay/parameters";
 
-    const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${PATH}?ref=${BRANCH}`;
+    // will replaced with Browser.runtime.getURL(url)
+    const provingPrefix = "https://media.githubusercontent.com/media/Manta-Network/manta-rs/feat/good_stateless_signer/manta-parameters/data/pay";
+    const parameterPrefix = "https://raw.githubusercontent.com/Manta-Network/manta-rs/feat/good_stateless_signer/manta-parameters/data/pay";
 
-    const parameters = await fetch(API_URL)
-      .then((response) => response.json())
-      .then((data) => {
-        // data is an array of objects, each representing a file in the directory
-        data.forEach((file) => {
-          // file.download_url is the URL to download the contents of the file
-          fetch(file.download_url).then((response) => response.text());
-        });
-      });
-    const PATH_PROVING = "manta-parameters/data/pay/proving";
-    const API_URL_PROVING = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${PATH_PROVING}?ref=${BRANCH}`;
-    const proving_context = await fetch(API_URL_PROVING)
-      .then((response) => response.json())
-      .then((data) => {
-        // data is an array of objects, each representing a file in the directory
-        data.forEach((file) => {
-          // file.download_url is the URL to download the contents of the file
-          fetch(file.download_url).then((response) => response.text());
-        });
-      });
+    const provingResults = await MantaPrivateWallet.fetchFiles(`${provingPrefix}/proving/`, PayProvingNames);
+    const parameterResults = await MantaPrivateWallet.fetchFiles(`${parameterPrefix}/parameters/`, PayParameterNames);
 
     const wasmSigner = new wasm.Signer(
       wasm.Mnemonic(mnemonic),
       password,
-      wasm.Parameters(parameters),
-      wasm.MultiProvingContext(proving_context),
-      wasm.UtxoAccumulator(utxo_accumulator)
+      wasm.Parameters(parameterResults),
+      wasm.MultiProvingContext(provingResults),
     );
+
     const wasmApiConfig = new ApiConfig(
       config.maxReceiversPullSize ?? DEFAULT_PULL_SIZE,
       config.maxSendersPullSize ?? DEFAULT_PULL_SIZE,
@@ -757,5 +763,25 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     });
 
     return json;
+  }
+
+  private static async fetchFiles(filePrefix: string, fileNames: string[]): Promise<{ [key: string]: Blob } | null> {
+    const fetchFiles = await Promise.all(fileNames.map(name => MantaPrivateWallet.fetchFile(`${filePrefix}/${name}`)));
+    const result: { [key: string]: Blob } = {};
+    fetchFiles.map((file: Blob, index: number) => {
+      result[PayParameterNames[index]] = file;
+    });
+    return result;
+  }
+
+  private static async fetchFile(url: string, responseType = FileResponseType.blob): Promise<Blob | JSON | null> {
+    let result = null;
+    try {
+      const responseData = await fetch(url);
+      result = await responseData[responseType]();
+    } catch (ex) {
+      console.error(`fetch ${url}, failed`, ex);
+    }
+    return result;
   }
 }
