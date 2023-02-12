@@ -219,6 +219,42 @@ export default class Api {
       return { Ok: FAILURE };
     }
   }
+
+  /**
+   * storage utxos data to local
+   * @param {String} key `${network.toString()}`
+   * @param {Object} data { last_check_point: "xxxx", data: Blob }
+   * @returns {Objec}
+   */
+  async saveUtxosToLocal(key, data) {
+    // in Extension, this api will be: chrome.storage.local.set
+    try {
+      localStorage.setItem(key, data);
+      return {Ok: SUCCESS};
+    } catch (ex) {
+      return {Ok: FAILURE};
+    } 
+  }
+
+  /**
+   * read utxos data from local
+   * @param {String} key `${network.toString()}`
+   * @returns {Object} { last_check_point: "xxxx", data: Blob }
+   */
+  async readUtxosFromLocal(key) {
+    // in Extension, this api will be: chrome.storage.local.get
+    return localStorage.getItem(key);
+  }
+
+  /**
+   * Sign data with the account of the extension wallet
+   * @param {JSON} data 
+   * @returns 
+   */
+  async signData(data) {
+    // sign data
+    return data;
+  }
 }
 
 export const SUCCESS = 'success';
