@@ -769,7 +769,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     const fetchFiles = await Promise.all(fileNames.map(name => MantaPrivateWallet.fetchFile(`${filePrefix}/${name}`)));
     const result: { [key: string]: Blob } = {};
     fetchFiles.map((file: Blob, index: number) => {
-      result[PayParameterNames[index]] = file;
+      result[fileNames[index]] = file;
     });
     return result;
   }
