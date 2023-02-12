@@ -314,6 +314,11 @@ macro_rules! impl_js_compatible_no_into {
 impl_js_compatible_no_into!(Address, config::Address, "Address");
 impl_js_compatible_no_into!(Parameters, config::Parameters, "Parameters");
 impl_js_compatible_no_into!(Identifier, config::Identifier, "Identifier");
+impl_js_compatible_no_into!(
+    UtxoAccumulatorModel,
+    config::UtxoAccumulatorModel,
+    "Utxo Accumulator Model"
+);
 
 /// Signer Rng
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -695,9 +700,34 @@ impl AsRef<SignerType> for Signer {
 #[wasm_bindgen]
 impl Signer {
     /// Builds a new [`Signer`] from `mnemonic`, `password` `parameters`,
-    /// `proving_context` and `utxo_accumulator`.
+    /// `proving_context` and `utxo_accumulator_model`.
+    ///
+    /// # Implementation Note
+    ///
+    /// The signer initialized in this way has an empty state and must be synchronized from scratch,
+    /// which is a time-consuming operation. One should favor the `new` and
+    /// `read_from_storage` methods when possible.
     #[inline]
     #[wasm_bindgen(constructor)]
+    pub fn new_from_model(
+        mnemonic: Mnemonic,
+        password: &str,
+        parameters: Parameters,
+        proving_context: MultiProvingContext,
+        utxo_accumulator_model: UtxoAccumulatorModel,
+    ) -> Self {
+        Self(functions::new_signer_from_model(
+            mnemonic.into(),
+            password,
+            parameters.0,
+            proving_context.into(),
+            &utxo_accumulator_model.0,
+        ))
+    }
+
+    /// Builds a new [`Signer`] from `mnemonic`, `password` `parameters`,
+    /// `proving_context` and `utxo_accumulator`.
+    #[inline]
     pub fn new(
         mnemonic: Mnemonic,
         password: &str,
