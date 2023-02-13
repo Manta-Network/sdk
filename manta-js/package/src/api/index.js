@@ -4,7 +4,8 @@
 
 import { base64Decode } from '@polkadot/util-crypto';
 import * as $ from 'scale-codec';
-import { u8aToU8a } from '@polkadot/util';
+import { u8aToU8a, stringToU8a } from '@polkadot/util';
+import { Keyring } from '@polkadot/keyring';
 
 export class ApiConfig {
   constructor(
@@ -19,6 +20,32 @@ export class ApiConfig {
     this.maxSendersPullSize = maxSendersPullSize;
     this.pullCallback = pullCallback;
     this.errorCallback = errorCallback;
+  }
+}
+
+export class SignerApi {
+
+  testKeyring = null;
+  testPair = null;
+
+  constructor() {
+    // just test sign logic
+    this.testKeyring = new Keyring();
+    this.testPair = this.testKeyring.addFromUri('elbow powder under garbage giant intact axis again amused describe swallow mistake');
+  }
+
+  /**
+   * Sign data with the account of the extension wallet
+   * @param {JSON} data 
+   * @param {string} sender 
+   * @returns String
+   */
+  async signData(data, sender) {
+    this._log('sign Data from wasm', sender);
+    // this logic will be replaced by an extension wallet
+    // need the user to confirm the operation, Of course, the user may also refuse
+    // if (sender === account)  The user who confirms the operation is the same as the user selected by the current extension wallet
+    return this.testPair.sign(stringToU8a(JSON.stringify(data)));
   }
 }
 
@@ -228,6 +255,7 @@ export default class Api {
    */
   async saveUtxosToLocal(key, data) {
     // in Extension, this api will be: chrome.storage.local.set
+    // will encrypt data with a user key
     try {
       localStorage.setItem(key, data);
       return {Ok: SUCCESS};
@@ -243,17 +271,8 @@ export default class Api {
    */
   async readUtxosFromLocal(key) {
     // in Extension, this api will be: chrome.storage.local.get
+    // will decrypt data with a user key
     return localStorage.getItem(key);
-  }
-
-  /**
-   * Sign data with the account of the extension wallet
-   * @param {JSON} data 
-   * @returns 
-   */
-  async signData(data) {
-    // sign data
-    return data;
   }
 }
 
