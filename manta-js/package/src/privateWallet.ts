@@ -1,11 +1,11 @@
-import { ApiPromise, WsProvider } from "@polkadot/api";
-import { base58Decode, base58Encode } from "@polkadot/util-crypto";
+import { ApiPromise, WsProvider } from '@polkadot/api';
+import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 // @ts-ignore
-import Api, { ApiConfig } from "./api/index";
-import BN from "bn.js";
-import config from "./manta-config.json";
-import wasm, { Transaction, Wallet } from "./wallet/crate/pkg/manta_wasm_wallet";
-import { Signer, SubmittableExtrinsic } from "@polkadot/api/types";
+import Api, { ApiConfig, SignerApi } from './api/index';
+import BN from 'bn.js';
+import config from './manta-config.json';
+import wasm, { Transaction, Wallet } from './wallet/crate/pkg/manta_wasm_wallet';
+import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import {
   Address,
   AssetId,
@@ -14,55 +14,54 @@ import {
   IMantaPrivateWallet,
   SignedTransaction,
   PrivateWalletConfig,
-} from "./sdk.interfaces";
-import { NATIVE_TOKEN_ASSET_ID } from "./utils";
+} from './sdk.interfaces';
+import { NATIVE_TOKEN_ASSET_ID } from './utils';
 
 const rpc = config.RPC;
 const types = config.TYPES;
 const DEFAULT_PULL_SIZE = config.DEFAULT_PULL_SIZE;
-const SIGNER_URL = config.SIGNER_URL;
-const PRIVATE_ASSET_PREFIX = "zk";
+const PRIVATE_ASSET_PREFIX = 'zk';
 
 /// The Envrionment that the sdk is configured to run for, if development
 /// is selected then it will attempt to connect to a local node instance.
 /// If production is selected it will attempt to connect to actual node.
 export enum Environment {
-  Development = "DEV",
-  Production = "PROD",
+  Development = 'DEV',
+  Production = 'PROD',
 }
 
 /// Supported networks.
 export enum Network {
-  Dolphin = "Dolphin",
-  Calamari = "Calamari",
-  Manta = "Manta",
+  Dolphin = 'Dolphin',
+  Calamari = 'Calamari',
+  Manta = 'Manta',
 }
 
 enum FileResponseType {
-  blob = "blob",
-  json = "json",
-  text = "text",
-  arrayBuffer = "arrayBuffer"
+  blob = 'blob',
+  json = 'json',
+  text = 'text',
+  arrayBuffer = 'arrayBuffer'
 }
 
 const PayParameterNames = [
-  "viewing-key-derivation-function.dat",
-  "utxo-commitment-scheme.dat",
-  "utxo-accumulator-model.dat",
-  "utxo-accumulator-item-hash.dat",
-  "outgoing-base-encryption-scheme.dat",
-  "schnorr-hash-function.dat",
-  "nullifier-commitment-scheme.dat",
-  "light-incoming-base-encryption-scheme.dat",
-  "incoming-base-encryption-scheme.dat",
-  "group-generator.dat",
-  "address-partition-function.dat",
+  'viewing-key-derivation-function.dat',
+  'utxo-commitment-scheme.dat',
+  'utxo-accumulator-model.dat',
+  'utxo-accumulator-item-hash.dat',
+  'outgoing-base-encryption-scheme.dat',
+  'schnorr-hash-function.dat',
+  'nullifier-commitment-scheme.dat',
+  'light-incoming-base-encryption-scheme.dat',
+  'incoming-base-encryption-scheme.dat',
+  'group-generator.dat',
+  'address-partition-function.dat',
 ];
 
 const PayProvingNames = [
-  "private-transfer.lfs",
-  "to-private.lfs",
-  "to-public.lfs"
+  'private-transfer.lfs',
+  'to-private.lfs',
+  'to-public.lfs'
 ];
 
 /// MantaPrivateWallet class
@@ -99,24 +98,13 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   ///
 
   /// Initializes the MantaPrivateWallet class, for a corresponding environment and network.
-  static async init(
-    config: PrivateWalletConfig,
-    mnemonic: string,
-    password: string,
-    utxo_accumulator: string
-  ): Promise<MantaPrivateWallet> {
+  static async init(config: PrivateWalletConfig): Promise<MantaPrivateWallet> {
     const { api } = await MantaPrivateWallet.initApi(
       config.environment,
       config.network,
       Boolean(config.loggingEnabled)
     );
-    const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(
-      api,
-      config,
-      mnemonic,
-      password,
-      utxo_accumulator
-    );
+    const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(api, config);
     return new MantaPrivateWallet(
       api,
       wasm,
@@ -139,7 +127,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   static assetIdToUInt8Array(asset_id: BN, len = 32): AssetId {
     let hex = asset_id.toString(16); // to heximal format
     if (hex.length % 2) {
-      hex = "0" + hex;
+      hex = '0' + hex;
     }
 
     const u8a = new Uint8Array(len);
@@ -172,7 +160,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return privateAddress;
     } catch (e) {
       this.walletIsBusy = false;
-      console.error("Failed to fetch ZkAddress.", e);
+      console.error('Failed to fetch ZkAddress.', e);
     }
   }
 
@@ -186,7 +174,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      this.log("Beginning initial sync");
+      this.log('Beginning initial sync');
       const networkType = this.wasm.Network.from_string(`"${this.network}"`);
       const startTime = performance.now();
       await this.wasmWallet.restart(networkType);
@@ -199,7 +187,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return true;
     } catch (e) {
       this.walletIsBusy = false;
-      console.error("Initial sync failed.", e);
+      console.error('Initial sync failed.', e);
       return false;
     }
   }
@@ -210,11 +198,11 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   async walletSync(): Promise<boolean> {
     try {
       if (!this.initialSyncIsFinished) {
-        throw new Error("Must call initalWalletSync before walletSync!");
+        throw new Error('Must call initalWalletSync before walletSync!');
       }
       await this.waitForWallet();
       this.walletIsBusy = true;
-      this.log("Beginning sync");
+      this.log('Beginning sync');
       const networkType = this.wasm.Network.from_string(`"${this.network}"`);
       const startTime = performance.now();
       await this.wasmWallet.sync(networkType);
@@ -226,7 +214,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return true;
     } catch (e) {
       this.walletIsBusy = false;
-      console.error("Sync failed.", e);
+      console.error('Sync failed.', e);
       return false;
     }
   }
@@ -243,7 +231,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return balance;
     } catch (e) {
       this.walletIsBusy = false;
-      console.error("Failed to fetch private balance.", e);
+      console.error('Failed to fetch private balance.', e);
       return null;
     }
   }
@@ -262,8 +250,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       this.network === Network.Dolphin &&
       assetId.toString() === NATIVE_TOKEN_ASSET_ID
     ) {
-      jsonObj.metadata.symbol = "DOL";
-      jsonObj.metadata.name = "Dolphin";
+      jsonObj.metadata.symbol = 'DOL';
+      jsonObj.metadata.name = 'Dolphin';
     }
     return jsonObj;
   }
@@ -286,7 +274,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return;
     }
     await this.sendTransaction(polkadotAddress, signed);
-    this.log("To Private transaction finished.");
+    this.log('To Private transaction finished.');
   }
 
   /// Builds and signs a "To Private" transaction for any fungible token.
@@ -311,7 +299,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return signResult;
     } catch (e) {
       this.walletIsBusy = false;
-      console.error("Failed to build transaction.", e);
+      console.error('Failed to build transaction.', e);
       return null;
     }
   }
@@ -336,7 +324,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return;
     }
     await this.sendTransaction(polkadotAddress, signed);
-    this.log("Private Transfer transaction finished.");
+    this.log('Private Transfer transaction finished.');
   }
 
   /// Builds a "Private Transfer" transaction for any fungible token.
@@ -366,7 +354,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return signResult;
     } catch (e) {
       this.walletIsBusy = false;
-      console.error("Failed to build transaction.", e);
+      console.error('Failed to build transaction.', e);
       return null;
     }
   }
@@ -389,7 +377,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return;
     }
     await this.sendTransaction(polkadotAddress, signed);
-    this.log("To Public transaction finished.");
+    this.log('To Public transaction finished.');
   }
 
   /// Builds and signs a "To Public" transaction for any fungible token.
@@ -414,7 +402,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return signResult;
     } catch (e) {
       this.walletIsBusy = false;
-      console.error("Failed to build transaction.", e);
+      console.error('Failed to build transaction.', e);
       return null;
     }
   }
@@ -427,7 +415,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// is set to `true`.
   private log(message: string): void {
     if (this.loggingEnabled) {
-      console.log("[INFO]: " + message);
+      console.log('[INFO]: ' + message);
     }
   }
 
@@ -465,28 +453,36 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
-  private static async initWasmSdk(
-    api: ApiPromise,
-    config: PrivateWalletConfig,
-    mnemonic: string,
-    password: string,
-    utxo_accumulator: string
-  ): Promise<InitWasmResult> {
+  private static async initWasmSdk(api: ApiPromise, config: PrivateWalletConfig): Promise<InitWasmResult> {
 
-    // will replaced with Browser.runtime.getURL(url)
-    const provingPrefix = "https://media.githubusercontent.com/media/Manta-Network/manta-rs/feat/good_stateless_signer/manta-parameters/data/pay";
-    const parameterPrefix = "https://raw.githubusercontent.com/Manta-Network/manta-rs/feat/good_stateless_signer/manta-parameters/data/pay";
+    // will be replaced by Browser.runtime.getURL(url)
+    const provingPrefix = 'https://media.githubusercontent.com/media/Manta-Network/manta-rs/feat/good_stateless_signer/manta-parameters/data/pay';
+    const parameterPrefix = 'https://raw.githubusercontent.com/Manta-Network/manta-rs/feat/good_stateless_signer/manta-parameters/data/pay';
 
+    /**
+     * provingResults will be:
+     * 
+     * {
+     *    "private-transfer.lfs": Blob,
+     *    "to-private.lfs": Blob,
+     *    "to-public.lfs": Blob,
+     * }
+     */
     const provingResults = await MantaPrivateWallet.fetchFiles(`${provingPrefix}/proving/`, PayProvingNames);
+
+    /**
+     * parameterResults will be:
+     * 
+     * {
+     *    "address-partition-function.dat": Blob,
+     *    "group-generator.dat": Blob,
+     *    "incoming-base-encryption-scheme.dat": Blob,
+     *    ...
+     * }
+     */
     const parameterResults = await MantaPrivateWallet.fetchFiles(`${parameterPrefix}/parameters/`, PayParameterNames);
 
-    const wasmSigner = new wasm.Signer(
-      wasm.Mnemonic(mnemonic),
-      password,
-      wasm.Parameters(parameterResults),
-      wasm.MultiProvingContext(provingResults),
-    );
-
+    const wasmSigner = new wasm.Signer(new SignerApi(), provingResults, parameterResults);
     const wasmApiConfig = new ApiConfig(
       config.maxReceiversPullSize ?? DEFAULT_PULL_SIZE,
       config.maxSendersPullSize ?? DEFAULT_PULL_SIZE,
@@ -494,6 +490,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       config.errorCallback,
       Boolean(config.loggingEnabled)
     );
+
     const wasmApi = new Api(api, wasmApiConfig);
     const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
     const wasmWallet = new wasm.Wallet();
@@ -552,8 +549,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const txJson = `{ "PrivateTransfer": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${addressJson} ]}`;
       const transaction = this.wasm.Transaction.from_string(txJson);
       const jsonObj = await this.getAssetMetadata(assetId);
-      const decimals = jsonObj["metadata"]["decimals"];
-      const symbol = jsonObj["metadata"]["symbol"];
+      const decimals = jsonObj['metadata']['decimals'];
+      const symbol = jsonObj['metadata']['symbol'];
       const assetMetadataJson = `{ "token_type": {"FT": ${decimals}}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
       return {
         transaction,
@@ -573,8 +570,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const txJson = `{ "ToPublic": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
       const transaction = this.wasm.Transaction.from_string(txJson);
       const jsonObj = await this.getAssetMetadata(assetId);
-      const decimals = jsonObj["metadata"]["decimals"];
-      const symbol = jsonObj["metadata"]["symbol"];
+      const decimals = jsonObj['metadata']['decimals'];
+      const symbol = jsonObj['metadata']['symbol'];
       const assetMetadataJson = `{ "token_type": {"FT": ${decimals}}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
       return {
         transaction,
@@ -619,7 +616,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         txs,
       };
     } catch (e) {
-      console.error("Unable to sign transaction.", e);
+      console.error('Unable to sign transaction.', e);
       return null;
     }
   }
@@ -637,7 +634,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
           (_status: any, _events: any) => {}
         );
       } catch (error) {
-        console.error("Transaction failed", error);
+        console.error('Transaction failed', error);
       }
     }
   }
@@ -646,7 +643,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private async mapPostToTransaction(
     post: any,
     api: ApiPromise
-  ): Promise<SubmittableExtrinsic<"promise", any>> {
+  ): Promise<SubmittableExtrinsic<'promise', any>> {
     const sources = post.sources.length;
     const senders = post.sender_posts.length;
     const receivers = post.receiver_posts.length;
@@ -663,7 +660,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return reclaimTx;
     } else {
       throw new Error(
-        "Invalid transaction shape; there is no extrinsic for a transaction" +
+        'Invalid transaction shape; there is no extrinsic for a transaction' +
           `with ${sources} sources, ${senders} senders, ` +
           ` ${receivers} receivers and ${sinks} sinks`
       );
@@ -674,7 +671,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private async transactionsToBatches(
     transactions: any,
     api: ApiPromise
-  ): Promise<SubmittableExtrinsic<"promise", any>[]> {
+  ): Promise<SubmittableExtrinsic<'promise', any>[]> {
     const MAX_BATCH = 2;
     const batches = [];
     for (let i = 0; i < transactions.length; i += MAX_BATCH) {
@@ -717,7 +714,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     // convert asset value to [u8; 16]
     x.utxo.public_asset.value = new BN(x.utxo.public_asset.value).toArray(
-      "le",
+      'le',
       16
     );
 
