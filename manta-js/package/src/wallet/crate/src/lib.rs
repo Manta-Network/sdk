@@ -21,6 +21,7 @@
 extern crate alloc;
 extern crate console_error_panic_hook;
 
+use crate::types::*;
 use alloc::{
     boxed::Box,
     format,
@@ -39,18 +40,23 @@ use manta_accounting::{
         signer::SyncData,
     },
 };
+use manta_crypto::signature::schnorr;
 use manta_pay::{
-    config::{self, Config, EncryptedNote},
-    signer::{self, Checkpoint},
+    config::{self, utxo},
+    signer,
 };
 use manta_util::{
+    codec::Decode,
     future::LocalBoxFutureResult,
-    ops,
+    http::reqwest,
+    into_array_unchecked, ops,
     serde::{de::DeserializeOwned, Deserialize, Serialize},
-    serde_with,
+    Array,
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
+
+mod types;
 
 #[wasm_bindgen]
 extern "C" {
@@ -83,13 +89,35 @@ where
 
 /// Converts `value` into a value of type `T`.
 #[inline]
-fn from_js<T>(value: JsValue) -> T
+pub fn from_js<T>(value: JsValue) -> T
 where
     T: DeserializeOwned,
 {
     value
         .into_serde()
         .expect("Deserialization is not allowed to fail.")
+}
+
+/// convert AssetId to String for js compatability (AssetID is 128 bit)
+#[inline]
+pub fn id_string_from_field(id: [u8; 32]) -> Option<String> {
+    if u128::from_le_bytes(Array::from_iter(id[16..32].iter().copied()).into()) == 0 {
+        String::from_utf8(id.to_vec()).ok()
+    } else {
+        None
+    }
+}
+
+/// convert String to AssetId (Field)
+#[inline]
+pub fn field_from_id_string(id: String) -> [u8; 32] {
+    into_array_unchecked(id.as_bytes())
+}
+
+/// convert u128 to AssetId (Field)
+#[inline]
+pub fn field_from_id_u128(id: u128) -> [u8; 32] {
+    into_array_unchecked([id.to_le_bytes(), [0; 16]].concat())
 }
 
 /// Implements a JS-compatible wrapper for the given `$type`.
@@ -155,93 +183,70 @@ macro_rules! impl_js_compatible {
     };
 }
 
-impl_js_compatible!(AssetId, asset::AssetId, "Asset Id");
-impl_js_compatible!(AssetValue, asset::AssetValue, "Asset Value");
-impl_js_compatible!(Asset, AssetType, "Asset");
+impl_js_compatible!(AssetId, utxo::AssetId, "AssetId");
+impl_js_compatible!(
+    Asset,
+    manta_accounting::transfer::Asset<config::Config>,
+    "Asset"
+);
 impl_js_compatible!(AssetMetadata, asset::AssetMetadata, "Asset Metadata");
-impl_js_compatible!(Transaction, TransactionType, "Transaction");
+impl_js_compatible!(
+    Transaction,
+    canonical::Transaction<config::Config>,
+    "Transaction"
+);
 impl_js_compatible!(
     TransactionKind,
-    canonical::TransactionKind,
+    canonical::TransactionKind<config::Config>,
     "Transaction Kind"
 );
 impl_js_compatible!(SenderPost, config::SenderPost, "Sender Post");
 impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
-impl_js_compatible!(ReceivingKey, config::ReceivingKey, "Receiving Key");
-impl_js_compatible!(ReceivingKeyList, Vec<ReceivingKey>, "Receiving Key List");
-impl_js_compatible!(
-    ReceivingKeyRequest,
-    signer::ReceivingKeyRequest,
-    "Receiving Key Request"
-);
+
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
+impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
 
-/// Asset Type
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
-struct AssetType {
-    /// Asset Id
-    id: asset::AssetId,
+pub struct RawAuthorizationSignature {
+    /// Authorization Key
+    pub authorization_key: [u8; 32],
 
-    /// Asset Value
-    ///
-    /// This is meant to represent a value of type [`asset::AssetValue`] which is too big to fit
-    /// into a Javascript integer. Because we don't have access to the Big Number APIs from Rust,
-    /// we just send a `String` back and forth and have Javascript convert it into a numeric
-    /// representation.
-    value: String,
+    /// Signature
+    pub signature: ([u8; 32], [u8; 32]),
 }
 
-impl From<Asset> for asset::Asset {
-    #[inline]
-    fn from(asset: Asset) -> Self {
-        Self {
-            id: asset.0.id,
-            value: asset::AssetValue(
-                asset
-                    .0
-                    .value
-                    .parse()
-                    .expect("Parsing an asset value is not allowed to fail."),
-            ),
-        }
-    }
-}
+impl TryFrom<RawAuthorizationSignature>
+    for manta_accounting::transfer::AuthorizationSignature<config::Config>
+{
+    type Error = scale_codec::Error;
 
-impl From<asset::Asset> for Asset {
     #[inline]
-    fn from(asset: asset::Asset) -> Asset {
-        Self(AssetType {
-            id: asset.id,
-            value: asset.value.0.to_string(),
+    fn try_from(signature: RawAuthorizationSignature) -> Result<Self, Self::Error> {
+        Ok(Self {
+            authorization_key: group_decode(signature.authorization_key.to_vec())?,
+            signature: schnorr::Signature {
+                scalar: fp_decode(signature.signature.0.to_vec())?,
+                nonce_point: group_decode(signature.signature.1.to_vec())?,
+            },
         })
     }
 }
 
-/// Transaction Types
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde", deny_unknown_fields)]
-enum TransactionType {
-    /// Mint
-    Mint(Asset),
+impl TryFrom<JsString> for RawAuthorizationSignature {
+    type Error = scale_codec::Error;
 
-    /// Private Transfer
-    PrivateTransfer(Asset, config::ReceivingKey),
-
-    /// Reclaim
-    Reclaim(Asset),
-}
-
-impl From<Transaction> for config::Transaction {
     #[inline]
-    fn from(transaction: Transaction) -> Self {
-        match transaction.0 {
-            TransactionType::Mint(asset) => Self::Mint(asset.into()),
-            TransactionType::PrivateTransfer(asset, receiver) => {
-                Self::PrivateTransfer(asset.into(), receiver)
-            }
-            TransactionType::Reclaim(asset) => Self::Reclaim(asset.into()),
-        }
+    fn try_from(signature: JsString) -> Result<Self, Self::Error> {
+        let sig_str = String::from(signature);
+        let ref_slice = &sig_str.as_bytes();
+        let arr: [u8; 32] = ref_slice[0..32].try_into().unwrap();
+        let scala: [u8; 32] = ref_slice[32..64].try_into().unwrap();
+        let group: [u8; 32] = ref_slice[64..96].try_into().unwrap();
+        Ok(Self {
+            authorization_key: decode(arr)?,
+            signature: (decode(scala)?, decode(group)?),
+        })
     }
 }
 
@@ -250,11 +255,15 @@ impl From<Transaction> for config::Transaction {
 #[serde(crate = "manta_util::serde", deny_unknown_fields)]
 #[wasm_bindgen]
 pub struct TransferPost {
+    /// Authorization Signature
+    authorization_signature:
+        Option<manta_accounting::transfer::AuthorizationSignature<config::Config>>,
+
     /// Asset Id
-    asset_id: Option<asset::AssetId>,
+    asset_id: Option<AssetId>,
 
     /// Sources
-    sources: Vec<String>,
+    sources: Vec<RawAssetValue>,
 
     /// Sender Posts
     sender_posts: Vec<config::SenderPost>,
@@ -263,10 +272,10 @@ pub struct TransferPost {
     receiver_posts: Vec<config::ReceiverPost>,
 
     /// Sinks
-    sinks: Vec<String>,
+    sinks: Vec<RawAssetValue>,
 
     /// Validity Proof
-    validity_proof: config::Proof,
+    proof: config::Proof,
 }
 
 #[wasm_bindgen]
@@ -275,20 +284,30 @@ impl TransferPost {
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
-        asset_id: Option<AssetId>,
-        sources: Vec<JsString>,
+        authorization_signature: Option<JsString>,
+        asset_id: Option<String>,
+        sources: Vec<JsValue>,
         sender_posts: Vec<JsValue>,
         receiver_posts: Vec<JsValue>,
-        sinks: Vec<JsString>,
-        validity_proof: JsValue,
+        sinks: Vec<JsValue>,
+        proof: JsValue,
     ) -> Self {
         Self {
-            asset_id: asset_id.map(Into::into),
-            sources: sources.into_iter().map(Into::into).collect(),
+            authorization_signature: authorization_signature.map(|x| {
+                let raw: RawAuthorizationSignature = x.try_into().unwrap();
+                raw.try_into().unwrap()
+            }),
+            asset_id: asset_id.map(|id| field_from_id_string(id)).map(|x| {
+                AssetId(
+                    Decode::decode(x)
+                        .expect("Decoding a field element from [u8; 32] is not allowed to fail"),
+                )
+            }), 
+            sources: sources.into_iter().map(from_js).collect(),
             sender_posts: sender_posts.into_iter().map(from_js).collect(),
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
-            sinks: sinks.into_iter().map(Into::into).collect(),
-            validity_proof: from_js(validity_proof),
+            sinks: sinks.into_iter().map(from_js).collect(),
+            proof: from_js(proof),
         }
     }
 }
@@ -297,12 +316,18 @@ impl From<config::TransferPost> for TransferPost {
     #[inline]
     fn from(post: config::TransferPost) -> Self {
         Self {
-            asset_id: post.asset_id.map(Into::into),
-            sources: post.sources.into_iter().map(|s| s.to_string()).collect(),
-            sender_posts: post.sender_posts,
-            receiver_posts: post.receiver_posts,
-            sinks: post.sinks.into_iter().map(|s| s.to_string()).collect(),
-            validity_proof: post.validity_proof,
+            authorization_signature: post.authorization_signature.map(Into::into),
+            asset_id: post.body.asset_id.map(Into::into),
+            sources: post
+                .body
+                .sources
+                .into_iter()
+                .map(|s| s.to_le_bytes())
+                .collect(),
+            sender_posts: post.body.sender_posts,
+            receiver_posts: post.body.receiver_posts,
+            sinks: post.body.sinks.into_iter().map(|s| s.to_le_bytes()).collect(),
+            proof: post.body.proof,
         }
     }
 }
@@ -328,99 +353,18 @@ impl PolkadotJsLedger {
 #[wasm_bindgen]
 pub struct LedgerError;
 
-/// Decodes the `bytes` array of the given length `N` into the SCALE decodable type `T` returning a
-/// blanket error if decoding fails.
-#[inline]
-pub(crate) fn decode<T, const N: usize>(bytes: [u8; N]) -> Result<T, scale_codec::Error>
-where
-    T: scale_codec::Decode,
-{
-    T::decode(&mut bytes.as_slice())
-}
-
-/// Raw UTXO Type
-pub type RawUtxo = [u8; 32];
-
-/// Raw Void Number Type
-pub type RawVoidNumber = [u8; 32];
-
-/// Raw Encrypted Note
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde")]
-pub struct RawEncryptedNote {
-    /// Ephemeral Public Key
-    pub ephemeral_public_key: [u8; 32],
-
-    /// Ciphertext
-    #[serde(with = "serde_with::As::<[serde_with::Same; 68]>")]
-    pub ciphertext: [u8; 68],
-}
-
-impl TryFrom<RawEncryptedNote> for EncryptedNote {
-    type Error = scale_codec::Error;
-
-    #[inline]
-    fn try_from(encrypted_note: RawEncryptedNote) -> Result<Self, Self::Error> {
-        Ok(Self {
-            ephemeral_public_key: decode(encrypted_note.ephemeral_public_key)?,
-            ciphertext: encrypted_note.ciphertext.into(),
-        })
-    }
-}
-
-/// Raw Pull Response
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(crate = "manta_util::serde")]
-pub struct RawPullResponse {
-    /// Should Continue Flag
-    pub should_continue: bool,
-
-    /// Receiver Data
-    pub receivers: Vec<(RawUtxo, RawEncryptedNote)>,
-
-    /// Sender Data
-    pub senders: Vec<RawVoidNumber>,
-}
-
-impl TryFrom<RawPullResponse> for ReadResponse<SyncData<Config>> {
-    type Error = ();
-
-    #[inline]
-    fn try_from(response: RawPullResponse) -> Result<Self, Self::Error> {
-        Ok(Self {
-            should_continue: response.should_continue,
-            data: SyncData {
-                receivers: response
-                    .receivers
-                    .into_iter()
-                    .map(|(utxo, encrypted_note)| {
-                        decode(utxo).and_then(|u| encrypted_note.try_into().map(|n| (u, n)))
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-                    .map_err(|_| ())?,
-                senders: response
-                    .senders
-                    .into_iter()
-                    .map(decode)
-                    .collect::<Result<Vec<_>, _>>()
-                    .map_err(|_| ())?,
-            },
-        })
-    }
-}
-
 impl ledger::Connection for PolkadotJsLedger {
     type Error = LedgerError;
 }
 
-impl ledger::Read<SyncData<Config>> for PolkadotJsLedger {
-    type Checkpoint = Checkpoint;
+impl ledger::Read<SyncData<config::Config>> for PolkadotJsLedger {
+    type Checkpoint = utxo::Checkpoint;
 
     #[inline]
     fn read<'s>(
         &'s mut self,
         checkpoint: &'s Self::Checkpoint,
-    ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<Config>>, Self::Error> {
+    ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<config::Config>>, Self::Error> {
         Box::pin(async {
             Ok(
                 from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
@@ -456,7 +400,7 @@ impl ledger::Write<Vec<config::TransferPost>> for PolkadotJsLedger {
 
 /// Signer Error
 #[wasm_bindgen]
-pub struct SignerError(signer::client::http::Error);
+pub struct SignerError(reqwest::Error);
 
 /// Signer Type
 type SignerType = signer::client::http::Client;
@@ -478,7 +422,7 @@ impl Signer {
 
 /// Wallet Error
 #[wasm_bindgen]
-pub struct WalletError(wallet::Error<Config, PolkadotJsLedger, SignerType>);
+pub struct WalletError(wallet::Error<manta_pay::config::Config, PolkadotJsLedger, SignerType>);
 
 /// Wallet Type
 type WalletType = signer::client::http::Wallet<PolkadotJsLedger>;
@@ -508,14 +452,22 @@ impl Wallet {
 
     /// Returns the current balance associated with this `id`.
     #[inline]
-    pub fn balance(&self, id: AssetId) -> String {
-        self.0.borrow().balance(id.into()).to_string()
+    pub fn balance(&self, id: String) -> String {
+        let asset_id = id.parse::<u128>().ok();
+        let asset_id_type = asset_id
+            .map(|id| field_from_id_u128(id))
+            .map(|x| {
+                Decode::decode(x)
+                    .expect("Decoding a field element from [u8; 32] is not allowed to fail")
+            })
+            .expect("asset should have value");
+        self.0.borrow().balance(&asset_id_type).to_string()
     }
 
     /// Returns true if `self` contains at least `asset.value` of the asset of kind `asset.id`.
     #[inline]
     pub fn contains(&self, asset: Asset) -> bool {
-        self.0.borrow().contains(asset.into())
+        self.0.borrow().contains(&asset.into())
     }
 
     /// Returns a shared reference to the balance state associated to `self`.
@@ -541,12 +493,14 @@ impl Wallet {
         F: 'static + for<'w> FnOnce(&'w mut WalletType) -> LocalBoxFutureResult<'w, T, E>,
     {
         let this = self.0.clone();
-        future_to_promise(async move {
+        let response = future_to_promise(async move {
             f(&mut this.borrow_mut())
                 .await
                 .map(into_js)
-                .map_err(|err| into_js(format!("Error during asynchronous call: {:?}", err)))
-        })
+                .map_err(|err| into_js(format!("Error during asynchronous call: {err:?}")))
+        });
+        self.0.clone().borrow_mut().signer_mut().set_network(None);
+        response
     }
 
     /// Performs full wallet recovery.
@@ -561,8 +515,15 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn restart(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.restart().await }))
+    pub fn restart(&self, network: Network) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this.restart().await;
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
@@ -579,8 +540,15 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn sync(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.sync().await }))
+    pub fn sync(&self, network: Network) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this.sync().await;
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
@@ -597,8 +565,15 @@ impl Wallet {
     /// [`Error`]: wallet::Error
     /// [`InconsistencyError`]: wallet::InconsistencyError
     #[inline]
-    pub fn sync_partial(&self) -> Promise {
-        self.with_async(|this| Box::pin(async { this.sync_partial().await }))
+    pub fn sync_partial(&self, network: Network) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this.sync_partial().await;
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
     }
 
     /// Checks if `transaction` can be executed on the balance state of `self`, returning the
@@ -612,21 +587,26 @@ impl Wallet {
     #[inline]
     pub fn check(&self, transaction: &Transaction) -> Result<TransactionKind, Asset> {
         // FIXME: Use a better API so we can remove the `clone`.
-        self.0
-            .borrow()
-            .check(&transaction.clone().into())
+        self.check(&transaction.clone().into())
             .map(Into::into)
             .map_err(Into::into)
     }
 
-    /// Signs the `transaction` using the signer connection, sending `metadata` for context. This
+    /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for context. This
     /// method _does not_ automatically sychronize with the ledger. To do this, call the
     /// [`sync`](Self::sync) method separately.
     #[inline]
-    pub fn sign(&self, transaction: Transaction, metadata: Option<AssetMetadata>) -> Promise {
+    pub fn sign(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: Network,
+    ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.sign(transaction.into(), metadata.map(Into::into))
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this
+                    .sign(transaction.into(), metadata.map(Into::into))
                     .await
                     .map(|response| {
                         response
@@ -634,7 +614,9 @@ impl Wallet {
                             .into_iter()
                             .map(TransferPost::from)
                             .collect::<Vec<_>>()
-                    })
+                    });
+                this.signer_mut().set_network(None);
+                response
             })
         })
     }
@@ -659,23 +641,46 @@ impl Wallet {
     /// [`post`]: Self::post
     /// [`sync`]: Self::sync
     #[inline]
-    pub fn post(&self, transaction: Transaction, metadata: Option<AssetMetadata>) -> Promise {
+    pub fn post(
+        &self,
+        transaction: Transaction,
+        metadata: Option<AssetMetadata>,
+        network: Network,
+    ) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.post(transaction.into(), metadata.map(Into::into))
-                    .await
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this
+                    .post(transaction.into(), metadata.map(Into::into))
+                    .await;
+                this.signer_mut().set_network(None);
+                response
             })
         })
     }
 
     /// Returns public receiving keys according to the `request`.
     #[inline]
-    pub fn receiving_keys(&self, request: ReceivingKeyRequest) -> Promise {
+    pub fn receiving_keys(&self, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
-                this.receiving_keys(request.into())
-                    .await
-                    .map(|keys| ReceivingKeyList(keys.into_iter().map(Into::into).collect()))
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this.address().await;
+                this.signer_mut().set_network(None);
+                response
+            })
+        })
+    }
+
+    /// Returns public receiving keys according to the `request`.
+    #[inline]
+    pub fn address(&self, network: Network) -> Promise {
+        self.with_async(|this| {
+            Box::pin(async {
+                this.signer_mut().set_network(Some(network.into()));
+                let response = this.address().await;
+                this.signer_mut().set_network(None);
+                response
             })
         })
     }

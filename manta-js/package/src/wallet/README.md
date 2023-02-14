@@ -2,17 +2,10 @@
 
 These packages implement a Javascript binding for the Manta Wallet API. See [`manta-rs`](https://github.com/manta-network/manta-rs) for more on this API.
 
-## Installation
-
-```sh
-yarn install manta-wasm-wallet
-yarn install manta-wasm-wallet-api
-```
-
 ## Usage
 
 ```javascript
-import Api from 'manta-wasm-wallet-api';
+import Api from '../api';
 
 const example = async () => {
     const {
@@ -23,7 +16,7 @@ const example = async () => {
         Asset,
         AssetId,
         ReceivingKeyRequest
-    } = await import('manta-wasm-wallet');
+    } = await import('./crate/pkg');
 
     const wasmApi = new Api(polkadotJsApi, polkadotJsSigner);
     const signer = new Signer(MANTA_SIGNER_URL);
