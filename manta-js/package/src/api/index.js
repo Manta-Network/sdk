@@ -4,8 +4,29 @@
 
 import { base64Decode } from '@polkadot/util-crypto';
 import * as $ from 'scale-codec';
-import { u8aToU8a, stringToU8a } from '@polkadot/util';
-import { Keyring } from '@polkadot/keyring';
+import { u8aToU8a } from '@polkadot/util';
+
+
+function dataURItoBlob(dataURI) {
+  // convert base64 to raw binary data held in a string
+  const byteString = atob(dataURI.split(',')[1]);
+
+  // separate out the mime component
+  const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+  // write the bytes of the string to an ArrayBuffer
+  const arrayBuffer = new ArrayBuffer(byteString.length);
+  const _ia = new Uint8Array(arrayBuffer);
+  for (let i = 0; i < byteString.length; i++) {
+    _ia[i] = byteString.charCodeAt(i);
+  }
+
+  const dataView = new DataView(arrayBuffer);
+  const blob = new Blob([dataView], { type: mimeString });
+  return blob;
+}
+
+const formatStorageKey = (key) => `storage_data_${key}`;
 
 export class ApiConfig {
   constructor(
@@ -20,32 +41,6 @@ export class ApiConfig {
     this.maxSendersPullSize = maxSendersPullSize;
     this.pullCallback = pullCallback;
     this.errorCallback = errorCallback;
-  }
-}
-
-export class SignerApi {
-
-  testKeyring = null;
-  testPair = null;
-
-  constructor() {
-    // just test sign logic
-    this.testKeyring = new Keyring();
-    this.testPair = this.testKeyring.addFromUri('elbow powder under garbage giant intact axis again amused describe swallow mistake');
-  }
-
-  /**
-   * Sign data with the account of the extension wallet
-   * @param {JSON} data 
-   * @param {string} sender 
-   * @returns String
-   */
-  async signData(data, sender) {
-    this._log('sign Data from wasm', sender);
-    // this logic will be replaced by an extension wallet
-    // need the user to confirm the operation, Of course, the user may also refuse
-    // if (sender === account)  The user who confirms the operation is the same as the user selected by the current extension wallet
-    return this.testPair.sign(stringToU8a(JSON.stringify(data)));
   }
 }
 
@@ -248,31 +243,42 @@ export default class Api {
   }
 
   /**
-   * storage utxos data to local
+   * storage data to local
    * @param {String} key `${network.toString()}`
-   * @param {Object} data { last_check_point: "xxxx", data: Blob }
-   * @returns {Objec}
+   * @param {Blob} data
+   * @returns {Promise<Object>}
    */
-  async saveUtxosToLocal(key, data) {
+  async saveStorageDataToLocal(key, data) {
     // in Extension, this api will be: chrome.storage.local.set
     // will encrypt data with a user key
-    try {
-      localStorage.setItem(key, data);
-      return {Ok: SUCCESS};
-    } catch (ex) {
-      return {Ok: FAILURE};
-    } 
+    const reader = new FileReader();
+    return new Promise((resolve) => {
+      try {
+        reader.addEventListener('load', () => {
+          localStorage.setItem(formatStorageKey(key), reader.result);
+          resolve({Ok: SUCCESS});
+        });
+        reader.addEventListener('error', () => {
+          resolve({Ok: FAILURE});
+        });
+        // Read the contents of the specified Blob or File
+        reader.readAsDataURL(data);
+      } catch (ex) {
+        resolve({Ok: FAILURE});
+      }
+    });
   }
 
   /**
-   * read utxos data from local
+   * read storage data from local
    * @param {String} key `${network.toString()}`
-   * @returns {Object} { last_check_point: "xxxx", data: Blob }
+   * @returns {Promise<Blob>}
    */
-  async readUtxosFromLocal(key) {
+  async loadStorageDataFromLocal(key) {
     // in Extension, this api will be: chrome.storage.local.get
     // will decrypt data with a user key
-    return localStorage.getItem(key);
+    const data = localStorage.getItem(formatStorageKey(key));
+    return data ? dataURItoBlob(data) : null;
   }
 }
 
