@@ -261,6 +261,11 @@ impl_js_compatible!(
     wallet::signer::StorageState<config::Config>,
     "Storage State"
 );
+impl_js_compatible!(
+    StorageStateOption,
+    signer::StorageStateOption,
+    "Storage Option"
+);
 
 /// Implements a JS-compatible wrapper for the given `$type` without the `From` implementations.
 macro_rules! impl_js_compatible_no_into {
@@ -318,6 +323,11 @@ impl_js_compatible_no_into!(
     UtxoAccumulatorModel,
     config::UtxoAccumulatorModel,
     "Utxo Accumulator Model"
+);
+impl_js_compatible_no_into!(
+    AuthorizationContext,
+    config::AuthorizationContext,
+    "Authorization Context"
 );
 
 /// Signer Rng
@@ -699,73 +709,53 @@ impl AsRef<SignerType> for Signer {
 
 #[wasm_bindgen]
 impl Signer {
-    /// Builds a new [`Signer`] from `mnemonic`, `password` `parameters`,
-    /// `proving_context` and `utxo_accumulator_model`.
-    ///
-    /// # Implementation Note
-    ///
-    /// The signer initialized in this way has an empty state and must be synchronized from scratch,
-    /// which is a time-consuming operation. One should favor the `new` and
-    /// `read_from_storage` methods when possible.
+    /// Builds a new [`Signer`] from `parameters`, `proving_context` and `utxo_accumulator_model`.
+    /// If `storage_state_option` is not `None`, it will load the state from them.
     #[inline]
     #[wasm_bindgen(constructor)]
-    pub fn new_from_model(
-        mnemonic: Mnemonic,
-        password: &str,
+    pub fn new(
         parameters: Parameters,
         proving_context: MultiProvingContext,
         utxo_accumulator_model: UtxoAccumulatorModel,
+        storage_state_option: StorageStateOption,
     ) -> Self {
-        Self(functions::new_signer_from_model(
-            mnemonic.into(),
-            password,
+        Self(functions::new_signer(
             parameters.0,
             proving_context.into(),
             &utxo_accumulator_model.0,
+            &storage_state_option.0,
         ))
     }
 
-    /// Builds a new [`Signer`] from `mnemonic`, `password` `parameters`,
-    /// `proving_context` and `utxo_accumulator`.
+    /// Loads `accounts` to `self`.
     #[inline]
-    pub fn new(
-        mnemonic: Mnemonic,
-        password: &str,
-        parameters: Parameters,
-        proving_context: MultiProvingContext,
-        utxo_accumulator: UtxoAccumulator,
-    ) -> Self {
-        Self(functions::new_signer(
-            mnemonic.into(),
-            password,
-            parameters.0,
-            proving_context.into(),
-            utxo_accumulator.into(),
-        ))
+    pub fn load_accounts(&mut self, accounts: AccountTable) {
+        self.as_mut().load_accounts(accounts.0)
+    }
+
+    /// Drops the [`AccountTable`] from `self`.
+    #[inline]
+    pub fn drop_accounts(&mut self) {
+        self.as_mut().drop_accounts()
+    }
+
+    /// Loads `authorization_context` to `self`.
+    #[inline]
+    pub fn load_authorization_context(&mut self, authorization_context: AuthorizationContext) {
+        self.as_mut()
+            .load_authorization_context(authorization_context.0)
+    }
+
+    /// Drops the [`AuthorizationContext`] from `self`.
+    #[inline]
+    pub fn drop_authorization_context(&mut self) {
+        self.as_mut().drop_authorization_context()
     }
 
     /// Updates `self` from `storage_state`.
     #[inline]
     pub fn read_from_storage(&mut self, storage_state: &StorageState) {
         storage_state.as_ref().update_signer(self.as_mut())
-    }
-
-    /// Builds a new [`Signer`] from `storage_state`, `mnemonic`, `password`, `parameters` and `proving_context`.
-    #[inline]
-    pub fn from_storage(
-        storage_state: &StorageState,
-        mnemonic: Mnemonic,
-        password: &str,
-        parameters: Parameters,
-        proving_context: MultiProvingContext,
-    ) -> Self {
-        Self(functions::initialize_signer_from_storage(
-            storage_state.as_ref(),
-            mnemonic.into(),
-            password,
-            parameters.0,
-            proving_context.into(),
-        ))
     }
 
     /// Writes `self` onto `storage_state`.
@@ -808,8 +798,8 @@ impl Signer {
 
     /// Returns the [`Address`] corresponding to `self`.
     #[inline]
-    pub fn address(&mut self) -> Address {
-        Address(self.as_mut().address())
+    pub fn address(&mut self) -> Option<Address> {
+        self.as_mut().address().map(Address)
     }
 
     /// Returns the associated [`TransactionData`] of `post`, namely the [`Asset`] and the
@@ -928,7 +918,7 @@ impl Wallet {
         )
     }
 
-    /// Returns the [`Checkpoint`](ledger::Connection::Checkpoint) representing the current state
+    /// Returns the [`Checkpoint`](utxo::Checkpoint) representing the current state
     /// of this wallet.
     #[inline]
     pub fn checkpoint(&self, network: Network) -> JsValue {
