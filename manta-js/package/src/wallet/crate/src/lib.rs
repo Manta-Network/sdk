@@ -266,6 +266,7 @@ impl_js_compatible!(
     signer::StorageStateOption,
     "Storage Option"
 );
+impl_js_compatible!(ViewingKey, config::EmbeddedScalar, "Viewing Key");
 
 /// Implements a JS-compatible wrapper for the given `$type` without the `From` implementations.
 macro_rules! impl_js_compatible_no_into {
@@ -707,6 +708,43 @@ impl AsRef<SignerType> for Signer {
     }
 }
 
+/// Creates an [`AccountTable`] from `mnemonic`.
+#[inline]
+#[wasm_bindgen]
+pub fn accounts_from_mnemonic(mnemonic: Mnemonic) -> AccountTable {
+    functions::accounts_from_mnemonic(mnemonic.0).into()
+}
+
+/// Creates an [`AuthorizationContext`] from `mnemonic`.
+#[inline]
+#[wasm_bindgen]
+pub fn authorization_context_from_mnemonic(
+    mnemonic: Mnemonic,
+    parameters: &Parameters,
+) -> AuthorizationContext {
+    AuthorizationContext(functions::authorization_context_from_mnemonic(
+        mnemonic.0,
+        parameters.as_ref(),
+    ))
+}
+
+/// Creates a viewing key from `mnemonic`.
+#[inline]
+#[wasm_bindgen]
+pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: &Parameters) -> ViewingKey {
+    functions::viewing_key_from_mnemonic(mnemonic.0, parameters.as_ref()).into()
+}
+
+/// Creates an [`Address`] from `mnemonic`.
+#[inline]
+#[wasm_bindgen]
+pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: &Parameters) -> Address {
+    Address(functions::address_from_mnemonic(
+        mnemonic.0,
+        parameters.as_ref(),
+    ))
+}
+
 #[wasm_bindgen]
 impl Signer {
     /// Builds a new [`Signer`] from `parameters`, `proving_context` and `utxo_accumulator_model`.
@@ -750,6 +788,12 @@ impl Signer {
     #[inline]
     pub fn drop_authorization_context(&mut self) {
         self.as_mut().drop_authorization_context()
+    }
+
+    /// Updates `self.state.authorization_context` from `self.state.accounts`, if possible.
+    #[inline]
+    pub fn update_authorization_context(&mut self) -> bool {
+        self.as_mut().update_authorization_context()
     }
 
     /// Updates `self` from `storage_state`.
@@ -878,6 +922,60 @@ impl Wallet {
     #[inline]
     pub fn set_network(&self, ledger: PolkadotJsLedger, signer: Signer, network: Network) {
         self.0.borrow_mut()[usize::from(network.0)] = Some(WalletType::new(ledger, signer.0));
+    }
+
+    /// Loads `accounts` to `self` in `network`
+    #[inline]
+    pub fn load_accounts(&self, accounts: AccountTable, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .load_accounts(accounts.into())
+    }
+
+    /// Drops the [`AccountTable`] from `self` in `network`.
+    #[inline]
+    pub fn drop_accounts(&self, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .drop_accounts()
+    }
+
+    /// Loads `authorization_context` to `self` in `network`.
+    #[inline]
+    pub fn load_authorization_context(
+        &self,
+        authorization_context: AuthorizationContext,
+        network: Network,
+    ) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .load_authorization_context(authorization_context.0)
+    }
+
+    /// Drops the [`AuthorizationContext`] from `self` in `network`.
+    #[inline]
+    pub fn drop_authorization_context(&self, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .drop_authorization_context()
+    }
+
+    /// Updates the [`AuthorizationContext`] from the [`AccountTable`] in `network`, if possible.
+    #[inline]
+    pub fn update_authorization_context(&self, network: Network) -> bool {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .update_authorization_context()
     }
 
     /// Returns the current balance associated with this `id`.
