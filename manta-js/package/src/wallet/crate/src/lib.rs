@@ -708,6 +708,14 @@ impl AsRef<SignerType> for Signer {
     }
 }
 
+/// Creates a new [`Mnemonic`] from `phrase`. Fails if `phrase` has the wrong format.
+/// See <https://docs.rs/bip0039/0.11.0/bip0039/enum.Error.html> for more info.
+#[inline]
+#[wasm_bindgen]
+pub fn mnemonic_from_phrase(phrase: String) -> Option<Mnemonic> {
+    key::Mnemonic::new(phrase.as_ref()).ok().map(Mnemonic)
+}
+
 /// Creates an [`AccountTable`] from `mnemonic`.
 #[inline]
 #[wasm_bindgen]
