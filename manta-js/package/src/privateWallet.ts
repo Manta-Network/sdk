@@ -76,7 +76,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   loggingEnabled: boolean;
   wasmNetworkType: any;
   isBindAuthorizationContext: boolean;
-  parametersData: any;
 
   constructor(
     api: ApiPromise,
@@ -85,7 +84,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     network: Network,
     wasmApi: any,
     loggingEnabled: boolean,
-    parametersData: any,
   ) {
     this.api = api;
     this.wasm = wasm;
@@ -97,7 +95,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.initialSyncIsFinished = false;
     this.loggingEnabled = loggingEnabled;
     this.isBindAuthorizationContext = false;
-    this.parametersData = parametersData;
   }
 
   ///
@@ -111,7 +108,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       config.network,
       Boolean(config.loggingEnabled)
     );
-    const { wasm, wasmWallet, wasmApi, parametersData } = await MantaPrivateWallet.initWasmSdk(api, config);
+    const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(api, config);
     return new MantaPrivateWallet(
       api,
       wasm,
@@ -119,7 +116,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       config.network,
       wasmApi,
       Boolean(config.loggingEnabled),
-      parametersData,
     );
   }
 
@@ -497,8 +493,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       Boolean(priConfig.loggingEnabled)
     );
 
-    // TODO how to init this value (Parameters);
-    const parametersData:any = null;
     const wasmApi = new Api(api, wasmApiConfig);
     const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
     const wasmWallet = new wasm.Wallet();
@@ -506,7 +500,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     await wasmWallet.set_network(
       wasmLedger,
       new wasm.Signer(
-        parametersData,
         provingResults,
         parameterResults,
         wasmApi.loadStorageDataFromLocal(networkType),
@@ -517,7 +510,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       wasm,
       wasmWallet,
       wasmApi,
-      parametersData,
     };
   }
 
@@ -609,6 +601,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.wasmWallet.drop_accounts(this.wasmNetworkType);
   }
 
+  private async getWasmParameters(): Promise<any> {
+    return await this.wasmWallet.parameters_data();
+  }
+
   private async requestUserMnemonic(): Promise<any> {
     // reqeust mnemonic from extension
     const mnemonic = await '';
@@ -637,8 +633,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private async wrapperViewingKeyOperation(func: () => any): Promise<any> {
     if (!this.isBindAuthorizationContext) {
       const mnemonic = await this.requestUserMnemonic();
-      const authorizationContext = await wasm.authorization_context_from_mnemonic(mnemonic, this.parametersData);
+      const parameters = await this.getWasmParameters();
+      const authorizationContext = await wasm.authorization_context_from_mnemonic(mnemonic, parameters);
       await this.wasmWallet.load_authorization_context(authorizationContext, this.wasmNetworkType);
+      this.isBindAuthorizationContext = true;
     }
     let result: any = undefined;
     try {

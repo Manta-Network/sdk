@@ -19,7 +19,6 @@ export type InitWasmResult = {
   wasm: any,
   wasmWallet: Wallet,
   wasmApi: any,
-  parametersData: any,
 }
 
 export type SignedTransaction = {
