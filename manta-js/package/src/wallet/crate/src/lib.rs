@@ -973,6 +973,30 @@ impl Wallet {
             .update_authorization_context()
     }
 
+    /// Saves `self` as a [`StorageStateOption`] in `network`.
+    #[inline]
+    pub fn set_storage(&self, network: Network) -> StorageStateOption {
+        functions::set_storage(
+            self.0.borrow_mut()[usize::from(network.0)]
+                .as_mut()
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+                .signer_mut(),
+        )
+        .into()
+    }
+
+    /// Tries to update `self` from `storage_state` in `network`.
+    #[inline]
+    pub fn get_storage(&self, storage_state: StorageStateOption, network: Network) -> bool {
+        functions::get_storage(
+            self.0.borrow_mut()[usize::from(network.0)]
+                .as_mut()
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+                .signer_mut(),
+            &storage_state.0,
+        )
+    }
+
     /// Returns the current balance associated with this `id`.
     #[inline]
     pub fn balance(&self, id: String, network: Network) -> String {
@@ -1056,8 +1080,8 @@ impl Wallet {
     /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
     /// how to resolve them.
     ///
-    /// [`Error`]: wallet::Error
-    /// [`InconsistencyError`]: wallet::InconsistencyError
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn restart(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async { this.restart().await }), network)
@@ -1074,8 +1098,8 @@ impl Wallet {
     /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
     /// how to resolve them.
     ///
-    /// [`Error`]: wallet::Error
-    /// [`InconsistencyError`]: wallet::InconsistencyError
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn sync(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async { this.sync().await }), network)
@@ -1092,8 +1116,8 @@ impl Wallet {
     /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
     /// how to resolve them.
     ///
-    /// [`Error`]: wallet::Error
-    /// [`InconsistencyError`]: wallet::InconsistencyError
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn sync_partial(&self, network: Network) -> Promise {
         self.with_async(
