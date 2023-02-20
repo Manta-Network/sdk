@@ -35,7 +35,6 @@ use js_sys::{JsString, Promise};
 use manta_accounting::{
     transfer::canonical,
     wallet::{
-        self,
         ledger::{self, ReadResponse},
         signer::SyncData,
     },
@@ -252,11 +251,6 @@ impl_js_compatible!(
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, network::Network, "Network Type");
 impl_js_compatible!(Mnemonic, key::Mnemonic, "Mnemonic");
-impl_js_compatible!(
-    StorageState,
-    wallet::signer::StorageState<config::Config>,
-    "Storage State"
-);
 impl_js_compatible!(
     StorageStateOption,
     signer::StorageStateOption,
@@ -797,16 +791,16 @@ impl Signer {
         self.as_mut().update_authorization_context()
     }
 
-    /// Updates `self` from `storage_state`.
+    /// Tries to update `self` from `storage_state`.
     #[inline]
-    pub fn read_from_storage(&mut self, storage_state: &StorageState) {
-        storage_state.as_ref().update_signer(self.as_mut())
+    pub fn get_storage(&mut self, storage_state: &StorageStateOption) -> bool {
+        functions::get_storage(self.as_mut(), &storage_state.0)
     }
 
-    /// Writes `self` onto `storage_state`.
+    /// Saves `self` as a [`StorageStateOption`].
     #[inline]
-    pub fn write_to_storage(&self, storage_state: &mut StorageState) {
-        storage_state.as_mut().update_from_signer(self.as_ref())
+    pub fn set_storage(&self) -> StorageStateOption {
+        functions::set_storage(self.as_ref()).into()
     }
 
     /// Updates the internal ledger state, returning the new asset distribution.
