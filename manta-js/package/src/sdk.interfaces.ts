@@ -19,6 +19,7 @@ export type InitWasmResult = {
   wasm: any,
   wasmWallet: Wallet,
   wasmApi: any,
+  parameters: any;
 }
 
 export type SignedTransaction = {
@@ -46,6 +47,7 @@ export interface IMantaPrivateWallet {
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
   loggingEnabled: boolean;
+  parameters: any;
 
   convertPrivateAddressToJson(address: string): any
   getNetworks(): any;

@@ -76,6 +76,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   loggingEnabled: boolean;
   wasmNetworkType: any;
   isBindAuthorizationContext: boolean;
+  parameters: any;
+  static param: { [key: string]: Blob; };
 
   constructor(
     api: ApiPromise,
@@ -84,6 +86,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     network: Network,
     wasmApi: any,
     loggingEnabled: boolean,
+    parameters: any,
   ) {
     this.api = api;
     this.wasm = wasm;
@@ -95,6 +98,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.initialSyncIsFinished = false;
     this.loggingEnabled = loggingEnabled;
     this.isBindAuthorizationContext = false;
+    this.parameters = parameters;
   }
 
   ///
@@ -108,7 +112,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       config.network,
       Boolean(config.loggingEnabled)
     );
-    const { wasm, wasmWallet, wasmApi } = await MantaPrivateWallet.initWasmSdk(api, config);
+    const { wasm, wasmWallet, wasmApi, parameters } = await MantaPrivateWallet.initWasmSdk(api, config);
     return new MantaPrivateWallet(
       api,
       wasm,
@@ -116,6 +120,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       config.network,
       wasmApi,
       Boolean(config.loggingEnabled),
+      parameters,
     );
   }
 
@@ -500,8 +505,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     await wasmWallet.set_network(
       wasmLedger,
       new wasm.Signer(
-        provingResults,
         parameterResults,
+        provingResults,
         wasmApi.loadStorageDataFromLocal(networkType),
       ),
       networkType
@@ -510,6 +515,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       wasm,
       wasmWallet,
       wasmApi,
+      parameters: parameterResults,
     };
   }
 
@@ -633,8 +639,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private async wrapperViewingKeyOperation(func: () => any): Promise<any> {
     if (!this.isBindAuthorizationContext) {
       const mnemonic = await this.requestUserMnemonic();
-      const parameters = await this.getWasmParameters();
-      const authorizationContext = await wasm.authorization_context_from_mnemonic(mnemonic, parameters);
+      const authorizationContext = await wasm.authorization_context_from_mnemonic(mnemonic, this.parameters);
       await this.wasmWallet.load_authorization_context(authorizationContext, this.wasmNetworkType);
       this.isBindAuthorizationContext = true;
     }
