@@ -226,11 +226,6 @@ impl_js_compatible!(
     "Identity Response"
 );
 impl_js_compatible!(UtxoAccumulator, base::UtxoAccumulator, "Utxo Accumulator");
-impl_js_compatible!(
-    SignerParameters,
-    base::SignerParameters,
-    "Signer Parameters"
-);
 impl_js_compatible!(SignRequest, signer::SignRequest, "Signing Request");
 impl_js_compatible!(SignResponse, signer::SignResponse, "Signing Response");
 impl_js_compatible!(SignError, signer::SignError, "Signing Error");
@@ -248,6 +243,7 @@ impl_js_compatible!(
     signer::SignWithTransactionDataResponse,
     "Sign With Transaction Data Response"
 );
+impl_js_compatible!(FullParameters, config::FullParameters, "Full Parameters");
 impl_js_compatible!(
     SignWithTransactionDataResult,
     signer::SignWithTransactionDataResult,
@@ -318,7 +314,6 @@ macro_rules! impl_js_compatible_no_into {
 }
 
 impl_js_compatible_no_into!(Address, config::Address, "Address");
-impl_js_compatible_no_into!(Parameters, config::Parameters, "Parameters");
 impl_js_compatible_no_into!(Identifier, config::Identifier, "Identifier");
 impl_js_compatible_no_into!(
     UtxoAccumulatorModel,
@@ -728,28 +723,28 @@ pub fn accounts_from_mnemonic(mnemonic: Mnemonic) -> AccountTable {
 #[wasm_bindgen]
 pub fn authorization_context_from_mnemonic(
     mnemonic: Mnemonic,
-    parameters: &Parameters,
+    parameters: &FullParameters,
 ) -> AuthorizationContext {
     AuthorizationContext(functions::authorization_context_from_mnemonic(
         mnemonic.0,
-        parameters.as_ref(),
+        &parameters.0.base,
     ))
 }
 
 /// Creates a viewing key from `mnemonic`.
 #[inline]
 #[wasm_bindgen]
-pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: &Parameters) -> ViewingKey {
-    functions::viewing_key_from_mnemonic(mnemonic.0, parameters.as_ref()).into()
+pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: &FullParameters) -> ViewingKey {
+    functions::viewing_key_from_mnemonic(mnemonic.0, &parameters.0.base).into()
 }
 
 /// Creates an [`Address`] from `mnemonic`.
 #[inline]
 #[wasm_bindgen]
-pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: &Parameters) -> Address {
+pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: &FullParameters) -> Address {
     Address(functions::address_from_mnemonic(
         mnemonic.0,
-        parameters.as_ref(),
+        &parameters.0.base,
     ))
 }
 
@@ -760,15 +755,13 @@ impl Signer {
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
-        parameters: Parameters,
+        parameters: FullParameters,
         proving_context: MultiProvingContext,
-        utxo_accumulator_model: UtxoAccumulatorModel,
         storage_state_option: StorageStateOption,
     ) -> Self {
         Self(functions::new_signer(
             parameters.0,
             proving_context.into(),
-            &utxo_accumulator_model.0,
             &storage_state_option.0,
         ))
     }
