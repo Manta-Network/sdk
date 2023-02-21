@@ -3,10 +3,27 @@ import { MantaPrivateWallet, SbtMantaPrivateWallet, Environment, Network, MantaU
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 import { u8aToBn } from '@polkadot/util'
+import axios from "axios";
+import { base58Decode, base58Encode } from '@polkadot/util-crypto';
+
+const privateWalletConfig = {
+    environment: Environment.Development,
+    network: Network.Calamari,
+    loggingEnabled: true
+}
+// const privateWalletConfig = {
+//     environment: Environment.Production,
+//     network: Network.Dolphin,
+//     loggingEnabled: true
+// }
 
 async function main() {
-    await toSBTPrivateTest();
-    await identityProofGen();
+    const id_proof = '{"identifier":{"is_transparent":false,"utxo_commitment_randomness":[218,12,198,205,243,45,111,55,97,232,107,40,237,202,174,102,12,100,161,170,141,2,173,101,117,161,177,116,146,37,81,31]},"asset":{"id":[82,77,144,171,218,215,31,37,190,239,170,153,12,42,235,151,22,238,79,66,34,183,22,37,117,55,167,12,74,225,51,45],"value":1}}';
+    const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
+    const proof_json = await identityProofGen(privateWallet, id_proof);
+    console.log("proof json:" + proof_json);
+
+    await toSBTPrivateTest(false);
     //await toPrivateOnlySignTest();
     //await toPrivateTest();
     //await privateTransferTest();
@@ -224,13 +241,7 @@ const toPublicTest = async () => {
 
 /// Test to execute a `ToPrivate` transaction.
 /// Convert 10 DOL to 10 pDOL.
-const toSBTPrivateTest = async () => {
-    const privateWalletConfig = {
-        environment: Environment.Development,
-        network: Network.Calamari,
-        loggingEnabled: true
-    }
-
+const toSBTPrivateTest = async (verify: boolean) => {
     const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
@@ -313,44 +324,114 @@ const toSBTPrivateTest = async () => {
     });
 
     console.log("transaction_datas:" + JSON.stringify(sbtMint.transactionDatas));
+    sbtMint.transactionDatas.map(async(tx: any) => {
+        const utxo_commitment_randomness = tx[0].ToPrivate[0]["utxo_commitment_randomness"];
+        const asset_id = tx[0].ToPrivate[1]["id"];
+        console.log("  assetId:" + new BN(asset_id, "le") + ", hex:" + toHexString(asset_id));
+        console.log("  randomness:" + toHexString(utxo_commitment_randomness));
+    })
 
-    while (true) {
+    if(verify == true) {
+        const addressBytes = privateWallet.getAddressBytes(privateAddress);
+        console.log("Private address in json form: " + JSON.stringify(addressBytes));
+    
+        const tx_datas = sbtMint.transactionDatas;
+        const requests = await Promise.all(tx_datas.map(async (tx: any, index: number) => {
+            var request: any = {"transaction_data": {"identifier": {},  "asset_info": {}, "zk_address": {"receiving_key": []}}};
+            const identifier = tx[0].ToPrivate[0];
+            const asset_info = tx[0].ToPrivate[1];
+            request.transaction_data.identifier = identifier;
+            request.transaction_data.asset_info = asset_info;
+            request.transaction_data.zk_address.receiving_key = addressBytes;
+            console.log("tx data request" + index);
+            console.log(JSON.stringify(request))
+            return request;
+        }));
+    
         await new Promise(r => setTimeout(r, 5000));
-        console.log("Syncing with ledger...");
-        await privateWallet.walletSync();
-        let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-        console.log("Private Balance after sync: ", newPrivateBalance.toString());
-        console.log("NFT AssetId: ", assetId.toString());
-
-        if (initalPrivateBalance.toString() !== newPrivateBalance.toString()) {
-            console.log("Detected balance change after sync!");
-            console.log(`Metadata: ${await privateWallet.getSBTMetadata(assetId)}`);
-            console.log("Old balance: ", initalPrivateBalance.toString());
-            console.log("New balance: ", newPrivateBalance.toString());
-            break;
-        }
+    
+        const request = requests[0];
+    
+        // Send data to manta-authentication verifier service to validate.
+        // TODO: failed if loop all request.
+        // requests.forEach(async (request: any) => {
+            console.log("insert new transaction id.....");
+            await axios.post("http://127.0.0.1:5000", request).then(function (response) {
+                console.log("tx id response:" + JSON.stringify(response.data));
+            });
+    
+            await new Promise(r => setTimeout(r, 5000));
+    
+            console.log("virtual asset.....");
+            await axios.post("http://127.0.0.1:5000/virtual_asset", request).then(async function (response) {
+                console.log("virtual asset response:" + JSON.stringify(response.data));
+                const json_str = JSON.stringify(response.data)
+                
+                const virtual_asset = `${json_str}`;
+                const identity_proof_response = await identityProofGen(privateWallet, virtual_asset);
+                // console.log("identity proof format response:");
+                // console.log(identity_proof_response);
+    
+                var validate_request: any = {"transaction_data": {}, "constructed_transfer_post": {"transfer_post": {}}};
+                validate_request.transaction_data = request.transaction_data;
+                const identity_response = JSON.parse(identity_proof_response)
+                validate_request.constructed_transfer_post.transfer_post = identity_response;
+                console.log("validate request:");
+                console.log(JSON.stringify(validate_request))
+    
+                console.log("validate proof id:");
+                await axios.post("http://127.0.0.1:5000/verify", validate_request).then(async function (response) {
+                    console.log("validate response:" + JSON.stringify(response.data));
+                });
+            });
+        // });
     }
+
+    // while (true) {
+    //     await new Promise(r => setTimeout(r, 5000));
+    //     console.log("Syncing with ledger...");
+    //     await privateWallet.walletSync();
+    //     let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    //     console.log("Private Balance after sync: ", newPrivateBalance.toString());
+    //     console.log("NFT AssetId: ", assetId.toString());
+    //     if (initalPrivateBalance.toString() !== newPrivateBalance.toString()) {
+    //         console.log("Detected balance change after sync!");
+    //         console.log(`Metadata: ${await privateWallet.getSBTMetadata(assetId)}`);
+    //         console.log("Old balance: ", initalPrivateBalance.toString());
+    //         console.log("New balance: ", newPrivateBalance.toString());
+    //         break;
+    //     }
+    // }
 }
 
-/// Test identity proof works
-const  identityProofGen = async () => {
-    const privateWalletConfig = {
-        environment: Environment.Development,
-        network: Network.Calamari,
-        loggingEnabled: true
-    }
-    const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
 
-    const privateAddress = await privateWallet.getZkAddress();
-    console.log("The private address is: ", privateAddress);
-    const addressBytes = privateWallet.convertPrivateAddressToJson(privateAddress);
-    console.log("Private address in json form: ", addressBytes);
-
-    const virtualAsset = '{"identifier":{"is_transparent":false,"utxo_commitment_randomness":[197,181,236,179,236,2,154,216,118,233,242,255,147,38,126,198,116,215,227,197,96,86,249,60,177,171,242,58,4,71,115,22]},"asset":{"id":[105,161,78,174,148,101,81,165,157,39,210,189,199,138,152,217,144,168,13,15,175,65,142,114,174,116,233,207,103,69,130,8],"value":248335983880879439675655614772184357380}}';
+const identityProofGen = async (privateWallet: any, virtualAsset: string) => {
     const identityProof = await privateWallet.getIdentityProof(virtualAsset);
-    console.log("Idnetity Proof: ", identityProof);
-    //console.log("type of sink: ", new BN(identityProof[0].transfer_post.body.sinks[0]).toString());
-    console.log("Identity Proof JSON: ", JSON.stringify(identityProof));
+    // console.log("Idnetity Proof: ", identityProof);
+    // console.log("Identity Proof JSON: ", JSON.stringify(identityProof));
+
+    // const identityProofJson = JSON.stringify(identityProof);
+    const authorization_signature = identityProof[0].authorization_signature;
+    delete identityProof[0].authorization_signature;
+    var identityProof2: any = {"authorization_signature": "", "body": {}};
+    identityProof2.body = identityProof[0];
+    identityProof2.authorization_signature = authorization_signature;
+    // console.log("add body:" + JSON.stringify(identityProof2));
+
+    const sink = identityProof2.body.sinks[0];
+    const bn = u8aToBn(sink);
+    identityProof2.body.sinks[0] = bn.toString();
+    // console.log(JSON.stringify(identityProof2));
+
+    const identityProofJson = JSON.stringify(identityProof2);
+    const format_json = identityProofJson.replace('"sinks":["', '"sinks":[').replace('"],"proof"', '],"proof"');
+    return format_json;
 }
 
 main();
+
+function toHexString(byteArray: Uint8Array) {
+    return byteArray.reduce((output, elem) =>
+      (output + ('0' + elem.toString(16)).slice(-2)),
+      '');
+  }

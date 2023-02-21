@@ -74,6 +74,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     });
   }
 
+  static getAddressBytes(privateAddress: string): any {
+    const bytes = base58Decode(privateAddress);
+    const addressBytes = Array.from(bytes);
+    return addressBytes;
+  }
+
   /// Convert asset_id string to UInt8Array, default UInt8 array size is 32.
   static assetIdToUInt8Array(asset_id: BN, len=32): AssetId {
     let hex = asset_id.toString(16); // to heximal format
@@ -105,6 +111,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const privateAddressRaw = await this.wasmWallet.address(
         networkType
       );
+      console.log("receiver key:" + JSON.stringify(privateAddressRaw.receiving_key));
+      console.log("receiver key raw:" + privateAddressRaw.receiving_key);
       const privateAddressBytes = [
         ...privateAddressRaw.receiving_key
       ];
