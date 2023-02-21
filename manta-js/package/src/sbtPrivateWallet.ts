@@ -90,17 +90,13 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
 
         const networkType = this.wasm.Network.from_string(`"${this.network}"`);
         const posts_txs = await this.wasmWallet.sign_with_transaction_data(transactionUnsigned, null, networkType);
-        const transaction_data = posts_txs[1];
-        console.log("transaction_data:" + JSON.stringify(transaction_data));
-        const to_private_tx_data = transaction_data[0]["ToPrivate"][0]["utxo_commitment_randomness"];
-        console.log("tx_data of private:" + JSON.stringify(to_private_tx_data));
-        transactionDatas.push(this.toHexString(to_private_tx_data));
         const posts = posts_txs[0];
         for (let j = 0; j < posts.length; j++) {
           const convertedPost = this.transferPost(posts[j]);
           const transaction = await this.sbtPostToTransaction(convertedPost, this.api, metadata[i]);
           transactions.push(transaction);
         }
+        transactionDatas.push(posts_txs[1]);
       }
       this.walletIsBusy = false;
 
