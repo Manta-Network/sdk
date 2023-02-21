@@ -670,6 +670,153 @@ impl ledger::Write<Vec<config::TransferPost>> for PolkadotJsLedger {
     }
 }
 
+/// Raw Full Parameters
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[wasm_bindgen]
+pub struct RawFullParameters {
+    /// Address Partition Function
+    address_partition_function: [u8; 0],
+
+    /// Group Generator
+    group_generator: [u8; 32],
+
+    /// Incoming Base Encryption Scheme
+    incoming_base_encryption_scheme: [u8; 8712],
+
+    /// Light Incoming Base Encryption Scheme
+    light_incoming_base_encryption_scheme: [u8; 0],
+
+    /// Nullifier Commitment Scheme
+    nullifier_commitment_scheme: [u8; 8608],
+
+    /// Outgoing Base Encryption Scheme
+    outgoing_base_encryption_scheme: [u8; 0],
+
+    /// Schnorr Hash Function
+    schnorr_hash_function: [u8; 0],
+
+    /// Utxo Accumulator Item Hash
+    utxo_accumulator_item_hash: [u8; 11072],
+
+    /// Utxo Accumulator Model
+    utxo_accumulator_model: [u8; 6368],
+
+    /// Utxo Commitment Scheme
+    utxo_commitment_scheme: [u8; 13472],
+
+    /// Viewing Key Derivation Function
+    viewing_key_derivation_function: [u8; 6368],
+}
+
+#[wasm_bindgen]
+impl RawFullParameters {
+    /// Builds a new [`RawFullParameters`] from its components.
+    #[allow(clippy::too_many_arguments)] // It has 11 fields, what else?
+    #[inline]
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        address_partition_function: &[u8],
+        group_generator: &[u8],
+        incoming_base_encryption_scheme: &[u8],
+        light_incoming_base_encryption_scheme: &[u8],
+        nullifier_commitment_scheme: &[u8],
+        outgoing_base_encryption_scheme: &[u8],
+        schnorr_hash_function: &[u8],
+        utxo_accumulator_item_hash: &[u8],
+        utxo_accumulator_model: &[u8],
+        utxo_commitment_scheme: &[u8],
+        viewing_key_derivation_function: &[u8],
+    ) -> Self {
+        Self {
+            address_partition_function: address_partition_function
+                .try_into()
+                .expect("Slice of wrong size"),
+            group_generator: group_generator.try_into().expect("Slice of wrong size"),
+            incoming_base_encryption_scheme: incoming_base_encryption_scheme
+                .try_into()
+                .expect("Slice of wrong size"),
+            light_incoming_base_encryption_scheme: light_incoming_base_encryption_scheme
+                .try_into()
+                .expect("Slice of wrong size"),
+            nullifier_commitment_scheme: nullifier_commitment_scheme
+                .try_into()
+                .expect("Slice of wrong size"),
+            outgoing_base_encryption_scheme: outgoing_base_encryption_scheme
+                .try_into()
+                .expect("Slice of wrong size"),
+            schnorr_hash_function: schnorr_hash_function
+                .try_into()
+                .expect("Slice of wrong size"),
+            utxo_accumulator_item_hash: utxo_accumulator_item_hash
+                .try_into()
+                .expect("Slice of wrong size"),
+            utxo_accumulator_model: utxo_accumulator_model
+                .try_into()
+                .expect("Slice of wrong size"),
+            utxo_commitment_scheme: utxo_commitment_scheme
+                .try_into()
+                .expect("Slice of wrong size"),
+            viewing_key_derivation_function: viewing_key_derivation_function
+                .try_into()
+                .expect("Slice of wrong size"),
+        }
+    }
+}
+
+impl From<RawFullParameters> for FullParameters {
+    #[inline]
+    fn from(value: RawFullParameters) -> FullParameters {
+        let RawFullParameters {
+            address_partition_function,
+            group_generator,
+            incoming_base_encryption_scheme,
+            light_incoming_base_encryption_scheme,
+            nullifier_commitment_scheme,
+            outgoing_base_encryption_scheme,
+            schnorr_hash_function,
+            utxo_accumulator_item_hash,
+            utxo_accumulator_model,
+            utxo_commitment_scheme,
+            viewing_key_derivation_function,
+        } = value;
+        config::FullParameters::new(
+            config::Parameters {
+                base: manta_accounting::transfer::utxo::protocol::BaseParameters {
+                    group_generator: Decode::decode(group_generator).expect("Decoding error"),
+                    incoming_base_encryption_scheme: Decode::decode(
+                        incoming_base_encryption_scheme,
+                    )
+                    .expect("Decoding error"),
+                    light_incoming_base_encryption_scheme: Decode::decode(
+                        light_incoming_base_encryption_scheme,
+                    )
+                    .expect("Decoding error"),
+                    nullifier_commitment_scheme: Decode::decode(nullifier_commitment_scheme)
+                        .expect("Decoding error"),
+                    outgoing_base_encryption_scheme: Decode::decode(
+                        outgoing_base_encryption_scheme,
+                    )
+                    .expect("Decoding error"),
+                    utxo_accumulator_item_hash: Decode::decode(utxo_accumulator_item_hash)
+                        .expect("Decoding error"),
+                    utxo_commitment_scheme: Decode::decode(utxo_commitment_scheme)
+                        .expect("Decoding error"),
+                    viewing_key_derivation_function: Decode::decode(
+                        viewing_key_derivation_function,
+                    )
+                    .expect("Decoding error"),
+                },
+                address_partition_function: Decode::decode(address_partition_function)
+                    .expect("Decoding error"),
+                schnorr_hash_function: Decode::decode(schnorr_hash_function)
+                    .expect("Decoding error"),
+            },
+            Decode::decode(utxo_accumulator_model).expect("Decoding error"),
+        )
+        .into()
+    }
+}
+
 /// Signer Error
 #[wasm_bindgen]
 pub struct SignerError(reqwest::Error);
@@ -717,28 +864,32 @@ pub fn accounts_from_mnemonic(mnemonic: Mnemonic) -> AccountTable {
 #[wasm_bindgen]
 pub fn authorization_context_from_mnemonic(
     mnemonic: Mnemonic,
-    parameters: &FullParameters,
+    parameters: &RawFullParameters,
 ) -> AuthorizationContext {
     AuthorizationContext(functions::authorization_context_from_mnemonic(
         mnemonic.0,
-        &parameters.0.base,
+        &FullParameters::from(parameters.clone()).0.base,
     ))
 }
 
 /// Creates a viewing key from `mnemonic`.
 #[inline]
 #[wasm_bindgen]
-pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: &FullParameters) -> ViewingKey {
-    functions::viewing_key_from_mnemonic(mnemonic.0, &parameters.0.base).into()
+pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: &RawFullParameters) -> ViewingKey {
+    functions::viewing_key_from_mnemonic(
+        mnemonic.0,
+        &FullParameters::from(parameters.clone()).0.base,
+    )
+    .into()
 }
 
 /// Creates an [`Address`] from `mnemonic`.
 #[inline]
 #[wasm_bindgen]
-pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: &FullParameters) -> Address {
+pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: &RawFullParameters) -> Address {
     Address(functions::address_from_mnemonic(
         mnemonic.0,
-        &parameters.0.base,
+        &FullParameters::from(parameters.clone()).0.base,
     ))
 }
 
@@ -749,12 +900,12 @@ impl Signer {
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
-        parameters: FullParameters,
+        parameters: RawFullParameters,
         proving_context: MultiProvingContext,
         storage_state_option: StorageStateOption,
     ) -> Self {
         Self(functions::new_signer(
-            parameters.0,
+            FullParameters::from(parameters).0,
             proving_context.into(),
             &storage_state_option.0,
         ))
