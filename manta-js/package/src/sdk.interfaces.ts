@@ -3,7 +3,6 @@ import { Wallet } from './wallet/crate/pkg';
 import { Environment, Network } from './privateWallet';
 import BN from 'bn.js';
 import { SubmittableExtrinsic, Signer } from '@polkadot/api/types';
-import api from './api';
 
 export type Version = string;
 export type Address = string;

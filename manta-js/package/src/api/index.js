@@ -277,7 +277,7 @@ export default class Api {
   async loadStorageDataFromLocal(key) {
     // in Extension, this api will be: chrome.storage.local.get
     // will decrypt data with a user key
-    return localStorage.getItem(formatStorageKey(key));
+    return localStorage.getItem(formatStorageKey(key)) || null;
   }
 }
 

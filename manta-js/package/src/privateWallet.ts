@@ -478,30 +478,11 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     const parameterPrefix =
       'https://raw.githubusercontent.com/Manta-Network/manta-rs/main/manta-parameters/data/pay';
 
-    /**
-     * provingResults will be:
-     *
-     * {
-     *    "private-transfer.lfs": string,
-     *    "to-private.lfs": string,
-     *    "to-public.lfs": string,
-     * }
-     */
     const provingResults = await MantaPrivateWallet.fetchFiles(
       `${provingPrefix}/proving/`,
       PayProvingNames
     );
 
-    /**
-     * parameterResults will be:
-     *
-     * {
-     *    "address-partition-function.dat": string,
-     *    "group-generator.dat": string,
-     *    "incoming-base-encryption-scheme.dat": string,
-     *    ...
-     * }
-     */
     const parameterResults = await MantaPrivateWallet.fetchFiles(
       `${parameterPrefix}/parameters/`,
       PayParameterNames
@@ -516,14 +497,38 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     const wasmApi = new Api(api, wasmApiConfig);
     const networkType = wasm.Network.from_string(`"${priConfig.network}"`);
-    const wasmSigner = new wasm.Signer(
-      new wasm.FullParameters(parameterResults),
-      new wasm.MultiProvingContext(provingResults),
-      wasm.StorageStateOption.from_string(
-        wasmApi.loadStorageDataFromLocal(`${networkType}`)
-      )
+
+    const parameters = {
+      base: {
+        base: {
+          'group_generator': parameterResults['group-generator.dat'],
+          'incoming_base_encryption_scheme': parameterResults['incoming-base-encryption-scheme.dat'],
+          'light_incoming_base_encryption_scheme': parameterResults['incoming-base-encryption-scheme.dat'],
+          'nullifier_commitment_scheme': parameterResults['nullifier-commitment-scheme.dat'],
+          'outgoing_base_encryption_scheme': parameterResults['outgoing-base-encryption-scheme.dat'],
+          'utxo_accumulator_item_hash': parameterResults['utxo-accumulator-item-hash.dat'],
+          'utxo_commitment_scheme': parameterResults['utxo-commitment-scheme.dat'],
+          'viewing_key_derivation_function': parameterResults['viewing-key-derivation-function.dat'],
+        },
+        'address_partition_function': parameterResults['address-partition-function.dat'],
+        'schnorr_hash_function': parameterResults['schnorr-hash-function.dat'],
+      },
+      'utxo_accumulator_model': parameterResults['utxo-accumulator-model.dat'],
+    };
+
+    const provingContext = {
+      'to_private': provingResults['to-private.lfs'],
+      'private_transfer': provingResults['private-transfer.lfs'],
+      'to_public': provingResults['to-public.lfs'],
+    };
+
+    const fullParameters = new wasm.FullParameters(parameters);
+    const multiProvingContext = new wasm.MultiProvingContext(provingContext);
+    const storageStateOption = wasm.StorageStateOption.from_string(
+      wasmApi.loadStorageDataFromLocal(`${networkType}`)
     );
 
+    const wasmSigner = new wasm.Signer(fullParameters, multiProvingContext, storageStateOption);
     const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
     const wasmWallet = new wasm.Wallet();
     wasmWallet.set_network(wasmLedger, wasmSigner, networkType);
@@ -875,22 +880,22 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     try {
       const responseData = await fetch(url);
       const result = await responseData[responseType]();
-      // const reader = new FileReader();
-      // return new Promise((resolve) => {
-      //   try {
-      //     reader.addEventListener('load', () => {
-      //       resolve(reader.result);
-      //     });
-      //     reader.addEventListener('error', () => {
-      //       resolve(null);
-      //     });
-      //     // Read the contents of the specified Blob or File
-      //     reader.readAsDataURL(result);
-      //   } catch (ex) {
-      //     resolve(null);
-      //   }
-      // });
-      return result;
+      const reader = new FileReader();
+      return new Promise((resolve) => {
+        try {
+          reader.addEventListener('load', () => {
+            resolve(new Uint8Array(reader.result as ArrayBuffer));
+          });
+          reader.addEventListener('error', () => {
+            resolve(null);
+          });
+          // Read the contents of the specified Blob or File
+          reader.readAsArrayBuffer(result);
+        } catch (ex) {
+          resolve(null);
+        }
+      });
+      // return result;
     } catch (ex) {
       console.error(`fetch ${url}, failed`, ex);
     }
