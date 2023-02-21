@@ -8,6 +8,8 @@ import BN from 'bn.js';
 
 /// SbtMantaPrivateWallet class
 export class SbtMantaPrivateWallet extends MantaPrivateWallet {
+  wasmWallet: SBTWallet;
+
   constructor(api: ApiPromise, wasm: any, wasmWallet: SBTWallet, network: Network, wasmApi: any, loggingEnabled: boolean) {
     super(api, wasm, wasmWallet, network, wasmApi, loggingEnabled, true);
   }
@@ -15,7 +17,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
   /// Initializes the SbtMantaPrivateWallet class, for a corresponding environment and network.
   static async initSBT(config: PrivateWalletConfig): Promise<SbtMantaPrivateWallet> {
     const { api } = await SbtMantaPrivateWallet.initApi(config.environment, config.network, Boolean(config.loggingEnabled));
-    const { wasm, wasmWallet, wasmApi } = await SbtMantaPrivateWallet.initWasmSdk(api,config);
+    const { wasm, wasmWallet, wasmApi } = await SbtMantaPrivateWallet.initSBTWasmSdk(api,config);
     return new SbtMantaPrivateWallet(api,wasm,wasmWallet,config.network,wasmApi,Boolean(config.loggingEnabled));
   }
 
