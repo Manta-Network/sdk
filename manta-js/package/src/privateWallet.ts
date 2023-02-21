@@ -1,10 +1,9 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
-// @ts-ignore
 import Api, { ApiConfig } from './api/index';
 import BN from 'bn.js';
 import config from './manta-config.json';
-import wasm, { Transaction, Wallet } from './wallet/crate/pkg/manta_wasm_wallet';
+import { Transaction as WasmTransaction, Wallet as WasmWallet } from './wallet/crate/pkg/manta_wasm_wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import {
   Address,
@@ -41,7 +40,7 @@ enum FileResponseType {
   blob = 'blob',
   json = 'json',
   text = 'text',
-  arrayBuffer = 'arrayBuffer'
+  arrayBuffer = 'arrayBuffer',
 }
 
 const PayParameterNames = [
@@ -61,14 +60,14 @@ const PayParameterNames = [
 const PayProvingNames = [
   'private-transfer.lfs',
   'to-private.lfs',
-  'to-public.lfs'
+  'to-public.lfs',
 ];
 
 /// MantaPrivateWallet class
 export class MantaPrivateWallet implements IMantaPrivateWallet {
   api: ApiPromise;
   wasm: any;
-  wasmWallet: Wallet;
+  wasmWallet: WasmWallet;
   network: Network;
   wasmApi: any;
   walletIsBusy: boolean;
@@ -77,16 +76,16 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   wasmNetworkType: any;
   isBindAuthorizationContext: boolean;
   parameters: any;
-  static param: { [key: string]: Blob; };
+  static param: { [key: string]: Blob };
 
   constructor(
     api: ApiPromise,
     wasm: any,
-    wasmWallet: Wallet,
+    wasmWallet: WasmWallet,
     network: Network,
     wasmApi: any,
     loggingEnabled: boolean,
-    parameters: any,
+    parameters: any
   ) {
     this.api = api;
     this.wasm = wasm;
@@ -112,7 +111,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       config.network,
       Boolean(config.loggingEnabled)
     );
-    const { wasm, wasmWallet, wasmApi, parameters } = await MantaPrivateWallet.initWasmSdk(api, config);
+    const { wasm, wasmWallet, wasmApi, parameters } =
+      await MantaPrivateWallet.initWasmSdk(api, config);
     return new MantaPrivateWallet(
       api,
       wasm,
@@ -120,7 +120,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       config.network,
       wasmApi,
       Boolean(config.loggingEnabled),
-      parameters,
+      parameters
     );
   }
 
@@ -161,7 +161,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      const privateAddressRaw = await this.wasmWallet.address(this.wasmNetworkType);
+      const privateAddressRaw = await this.wasmWallet.address(
+        this.wasmNetworkType
+      );
       const privateAddressBytes = [...privateAddressRaw.receiving_key];
       const privateAddress = base58Encode(privateAddressBytes);
       this.walletIsBusy = false;
@@ -234,7 +236,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      const balanceString = await this.wasmWallet.balance(assetId.toString());
+      const balanceString = await this.wasmWallet.balance(
+        assetId.toString(),
+        this.wasmNetworkType
+      );
       const balance = new BN(balanceString);
       this.walletIsBusy = false;
       return balance;
@@ -462,34 +467,45 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
-  private static async initWasmSdk(api: ApiPromise, priConfig: PrivateWalletConfig): Promise<InitWasmResult> {
-
+  private static async initWasmSdk(
+    api: ApiPromise,
+    priConfig: PrivateWalletConfig
+  ): Promise<InitWasmResult> {
     // will be replaced by Browser.runtime.getURL(url)
-    const provingPrefix = 'https://media.githubusercontent.com/media/Manta-Network/manta-rs/feat/good_stateless_signer/manta-parameters/data/pay';
-    const parameterPrefix = 'https://raw.githubusercontent.com/Manta-Network/manta-rs/feat/good_stateless_signer/manta-parameters/data/pay';
+    const wasm = await import('./wallet/crate/pkg/manta_wasm_wallet');
+    const provingPrefix =
+      'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay';
+    const parameterPrefix =
+      'https://raw.githubusercontent.com/Manta-Network/manta-rs/main/manta-parameters/data/pay';
 
     /**
      * provingResults will be:
-     * 
+     *
      * {
-     *    "private-transfer.lfs": Blob,
-     *    "to-private.lfs": Blob,
-     *    "to-public.lfs": Blob,
+     *    "private-transfer.lfs": string,
+     *    "to-private.lfs": string,
+     *    "to-public.lfs": string,
      * }
      */
-    const provingResults = await MantaPrivateWallet.fetchFiles(`${provingPrefix}/proving/`, PayProvingNames);
+    const provingResults = await MantaPrivateWallet.fetchFiles(
+      `${provingPrefix}/proving/`,
+      PayProvingNames
+    );
 
     /**
      * parameterResults will be:
-     * 
+     *
      * {
-     *    "address-partition-function.dat": Blob,
-     *    "group-generator.dat": Blob,
-     *    "incoming-base-encryption-scheme.dat": Blob,
+     *    "address-partition-function.dat": string,
+     *    "group-generator.dat": string,
+     *    "incoming-base-encryption-scheme.dat": string,
      *    ...
      * }
      */
-    const parameterResults = await MantaPrivateWallet.fetchFiles(`${parameterPrefix}/parameters/`, PayParameterNames);
+    const parameterResults = await MantaPrivateWallet.fetchFiles(
+      `${parameterPrefix}/parameters/`,
+      PayParameterNames
+    );
     const wasmApiConfig = new ApiConfig(
       priConfig.maxReceiversPullSize ?? DEFAULT_PULL_SIZE,
       priConfig.maxSendersPullSize ?? DEFAULT_PULL_SIZE,
@@ -499,18 +515,18 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     );
 
     const wasmApi = new Api(api, wasmApiConfig);
+    const networkType = wasm.Network.from_string(`"${priConfig.network}"`);
+    const wasmSigner = new wasm.Signer(
+      new wasm.FullParameters(parameterResults),
+      new wasm.MultiProvingContext(provingResults),
+      wasm.StorageStateOption.from_string(
+        wasmApi.loadStorageDataFromLocal(`${networkType}`)
+      )
+    );
+
     const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
     const wasmWallet = new wasm.Wallet();
-    const networkType = wasm.Network.from_string(`"${priConfig.network}"`);
-    await wasmWallet.set_network(
-      wasmLedger,
-      new wasm.Signer(
-        parameterResults,
-        provingResults,
-        wasmApi.loadStorageDataFromLocal(networkType),
-      ),
-      networkType
-    );
+    wasmWallet.set_network(wasmLedger, wasmSigner, networkType);
     return {
       wasm,
       wasmWallet,
@@ -607,22 +623,18 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.wasmWallet.drop_accounts(this.wasmNetworkType);
   }
 
-  private async getWasmParameters(): Promise<any> {
-    return await this.wasmWallet.parameters_data();
-  }
-
   private async requestUserMnemonic(): Promise<any> {
     // reqeust mnemonic from extension
-    const mnemonic = await '';
+    const mnemonic = await 'elbow powder under garbage giant intact axis again amused describe swallow mistake';
     if (!mnemonic) {
       // throw error when user reject
     }
-    return wasm.mnemonic_from_phrase(mnemonic);
+    return this.wasm.mnemonic_from_phrase(mnemonic);
   }
 
   private async wrapperSpendingKeyOperation(func: () => any): Promise<any> {
     const mnemonic = await this.requestUserMnemonic();
-    const accountTable = await wasm.accounts_from_mnemonic(mnemonic);
+    const accountTable = await this.wasm.accounts_from_mnemonic(mnemonic);
     await this.wasmWallet.load_accounts(accountTable, this.wasmNetworkType);
     await this.wasmWallet.update_authorization_context(this.wasmNetworkType);
 
@@ -639,8 +651,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private async wrapperViewingKeyOperation(func: () => any): Promise<any> {
     if (!this.isBindAuthorizationContext) {
       const mnemonic = await this.requestUserMnemonic();
-      const authorizationContext = await wasm.authorization_context_from_mnemonic(mnemonic, this.parameters);
-      await this.wasmWallet.load_authorization_context(authorizationContext, this.wasmNetworkType);
+      const authorizationContext = await this.wasm.authorization_context_from_mnemonic(
+        mnemonic,
+        this.parameters
+      );
+      await this.wasmWallet.load_authorization_context(
+        authorizationContext,
+        this.wasmNetworkType
+      );
       this.isBindAuthorizationContext = true;
     }
     let result: any = undefined;
@@ -656,7 +674,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// assetMetaDataJson is optional, pass in null if transaction should not contain any.
   private async signTransaction(
     assetMetadataJson: any,
-    transaction: Transaction,
+    transaction: WasmTransaction,
     network: Network
   ): Promise<SignedTransaction | null> {
     try {
@@ -666,7 +684,11 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       }
       const networkType = this.wasm.Network.from_string(`"${network}"`);
       const posts = await this.wrapperSpendingKeyOperation(async () => {
-        return await this.wasmWallet.sign(transaction, assetMetadata, networkType);
+        return await this.wasmWallet.sign(
+          transaction,
+          assetMetadata,
+          networkType
+        );
       });
       const transactions = [];
       for (let i = 0; i < posts.length; i++) {
@@ -830,23 +852,48 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     return json;
   }
 
-  private static async fetchFiles(filePrefix: string, fileNames: string[]): Promise<{ [key: string]: Blob } | null> {
-    const fetchFiles = await Promise.all(fileNames.map(name => MantaPrivateWallet.fetchFile(`${filePrefix}/${name}`)));
-    const result: { [key: string]: Blob } = {};
-    fetchFiles.map((file: Blob, index: number) => {
+  private static async fetchFiles(
+    filePrefix: string,
+    fileNames: string[]
+  ): Promise<{ [key: string]: string | ArrayBuffer | Blob } | null> {
+    const fetchFiles = await Promise.all(
+      fileNames.map((name) =>
+        MantaPrivateWallet.fetchFile(`${filePrefix}/${name}`)
+      )
+    );
+    const result: { [key: string]: string | ArrayBuffer | Blob } = {};
+    fetchFiles.map((file: string | ArrayBuffer | Blob, index: number) => {
       result[fileNames[index]] = file;
     });
     return result;
   }
 
-  private static async fetchFile(url: string, responseType = FileResponseType.blob): Promise<Blob | JSON | null> {
-    let result = null;
+  private static async fetchFile(
+    url: string,
+    responseType = FileResponseType.blob
+  ): Promise<Blob | JSON | string | ArrayBuffer | null> {
     try {
       const responseData = await fetch(url);
-      result = await responseData[responseType]();
+      const result = await responseData[responseType]();
+      // const reader = new FileReader();
+      // return new Promise((resolve) => {
+      //   try {
+      //     reader.addEventListener('load', () => {
+      //       resolve(reader.result);
+      //     });
+      //     reader.addEventListener('error', () => {
+      //       resolve(null);
+      //     });
+      //     // Read the contents of the specified Blob or File
+      //     reader.readAsDataURL(result);
+      //   } catch (ex) {
+      //     resolve(null);
+      //   }
+      // });
+      return result;
     } catch (ex) {
       console.error(`fetch ${url}, failed`, ex);
     }
-    return result;
+    return null;
   }
 }
