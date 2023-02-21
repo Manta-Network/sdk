@@ -3,7 +3,6 @@ import { Wallet } from './wallet/crate/pkg';
 import { Environment, Network } from './privateWallet';
 import BN from 'bn.js';
 import { SubmittableExtrinsic, Signer } from '@polkadot/api/types';
-import api from './api';
 
 export type Version = string;
 export type Address = string;
@@ -18,7 +17,8 @@ export type InitApiResult = {
 export type InitWasmResult = {
   wasm: any,
   wasmWallet: Wallet,
-  wasmApi: any
+  wasmApi: any,
+  parameters: any;
 }
 
 export type SignedTransaction = {
@@ -46,6 +46,7 @@ export interface IMantaPrivateWallet {
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
   loggingEnabled: boolean;
+  parameters: any;
 
   convertPrivateAddressToJson(address: string): any
   getNetworks(): any;

@@ -35,7 +35,6 @@ use js_sys::{JsString, Promise};
 use manta_accounting::{
     transfer::canonical,
     wallet::{
-        self,
         ledger::{self, ReadResponse},
         signer::SyncData,
     },
@@ -226,11 +225,6 @@ impl_js_compatible!(
     "Identity Response"
 );
 impl_js_compatible!(UtxoAccumulator, base::UtxoAccumulator, "Utxo Accumulator");
-impl_js_compatible!(
-    SignerParameters,
-    base::SignerParameters,
-    "Signer Parameters"
-);
 impl_js_compatible!(SignRequest, signer::SignRequest, "Signing Request");
 impl_js_compatible!(SignResponse, signer::SignResponse, "Signing Response");
 impl_js_compatible!(SignError, signer::SignError, "Signing Error");
@@ -248,6 +242,7 @@ impl_js_compatible!(
     signer::SignWithTransactionDataResponse,
     "Sign With Transaction Data Response"
 );
+impl_js_compatible!(FullParameters, config::FullParameters, "Full Parameters");
 impl_js_compatible!(
     SignWithTransactionDataResult,
     signer::SignWithTransactionDataResult,
@@ -257,10 +252,11 @@ impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, network::Network, "Network Type");
 impl_js_compatible!(Mnemonic, key::Mnemonic, "Mnemonic");
 impl_js_compatible!(
-    StorageState,
-    wallet::signer::StorageState<config::Config>,
-    "Storage State"
+    StorageStateOption,
+    signer::StorageStateOption,
+    "Storage Option"
 );
+impl_js_compatible!(ViewingKey, config::EmbeddedScalar, "Viewing Key");
 
 /// Implements a JS-compatible wrapper for the given `$type` without the `From` implementations.
 macro_rules! impl_js_compatible_no_into {
@@ -312,12 +308,16 @@ macro_rules! impl_js_compatible_no_into {
 }
 
 impl_js_compatible_no_into!(Address, config::Address, "Address");
-impl_js_compatible_no_into!(Parameters, config::Parameters, "Parameters");
 impl_js_compatible_no_into!(Identifier, config::Identifier, "Identifier");
 impl_js_compatible_no_into!(
     UtxoAccumulatorModel,
     config::UtxoAccumulatorModel,
     "Utxo Accumulator Model"
+);
+impl_js_compatible_no_into!(
+    AuthorizationContext,
+    config::AuthorizationContext,
+    "Authorization Context"
 );
 
 /// Signer Rng
@@ -697,81 +697,110 @@ impl AsRef<SignerType> for Signer {
     }
 }
 
+/// Creates a new [`Mnemonic`] from `phrase`. Fails if `phrase` has the wrong format.
+/// See <https://docs.rs/bip0039/0.11.0/bip0039/enum.Error.html> for more info.
+#[inline]
+#[wasm_bindgen]
+pub fn mnemonic_from_phrase(phrase: String) -> Option<Mnemonic> {
+    key::Mnemonic::new(phrase.as_ref()).ok().map(Mnemonic)
+}
+
+/// Creates an [`AccountTable`] from `mnemonic`.
+#[inline]
+#[wasm_bindgen]
+pub fn accounts_from_mnemonic(mnemonic: Mnemonic) -> AccountTable {
+    functions::accounts_from_mnemonic(mnemonic.0).into()
+}
+
+/// Creates an [`AuthorizationContext`] from `mnemonic`.
+#[inline]
+#[wasm_bindgen]
+pub fn authorization_context_from_mnemonic(
+    mnemonic: Mnemonic,
+    parameters: &FullParameters,
+) -> AuthorizationContext {
+    AuthorizationContext(functions::authorization_context_from_mnemonic(
+        mnemonic.0,
+        &parameters.0.base,
+    ))
+}
+
+/// Creates a viewing key from `mnemonic`.
+#[inline]
+#[wasm_bindgen]
+pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: &FullParameters) -> ViewingKey {
+    functions::viewing_key_from_mnemonic(mnemonic.0, &parameters.0.base).into()
+}
+
+/// Creates an [`Address`] from `mnemonic`.
+#[inline]
+#[wasm_bindgen]
+pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: &FullParameters) -> Address {
+    Address(functions::address_from_mnemonic(
+        mnemonic.0,
+        &parameters.0.base,
+    ))
+}
+
 #[wasm_bindgen]
 impl Signer {
-    /// Builds a new [`Signer`] from `mnemonic`, `password` `parameters`,
-    /// `proving_context` and `utxo_accumulator_model`.
-    ///
-    /// # Implementation Note
-    ///
-    /// The signer initialized in this way has an empty state and must be synchronized from scratch,
-    /// which is a time-consuming operation. One should favor the `new` and
-    /// `read_from_storage` methods when possible.
+    /// Builds a new [`Signer`] from `parameters`, `proving_context` and `utxo_accumulator_model`.
+    /// If `storage_state_option` is not `None`, it will load the state from them.
     #[inline]
     #[wasm_bindgen(constructor)]
-    pub fn new_from_model(
-        mnemonic: Mnemonic,
-        password: &str,
-        parameters: Parameters,
-        proving_context: MultiProvingContext,
-        utxo_accumulator_model: UtxoAccumulatorModel,
-    ) -> Self {
-        Self(functions::new_signer_from_model(
-            mnemonic.into(),
-            password,
-            parameters.0,
-            proving_context.into(),
-            &utxo_accumulator_model.0,
-        ))
-    }
-
-    /// Builds a new [`Signer`] from `mnemonic`, `password` `parameters`,
-    /// `proving_context` and `utxo_accumulator`.
-    #[inline]
     pub fn new(
-        mnemonic: Mnemonic,
-        password: &str,
-        parameters: Parameters,
+        parameters: FullParameters,
         proving_context: MultiProvingContext,
-        utxo_accumulator: UtxoAccumulator,
+        storage_state_option: StorageStateOption,
     ) -> Self {
         Self(functions::new_signer(
-            mnemonic.into(),
-            password,
             parameters.0,
             proving_context.into(),
-            utxo_accumulator.into(),
+            &storage_state_option.0,
         ))
     }
 
-    /// Updates `self` from `storage_state`.
+    /// Loads `accounts` to `self`.
     #[inline]
-    pub fn read_from_storage(&mut self, storage_state: &StorageState) {
-        storage_state.as_ref().update_signer(self.as_mut())
+    pub fn load_accounts(&mut self, accounts: AccountTable) {
+        self.as_mut().load_accounts(accounts.0)
     }
 
-    /// Builds a new [`Signer`] from `storage_state`, `mnemonic`, `password`, `parameters` and `proving_context`.
+    /// Drops the [`AccountTable`] from `self`.
     #[inline]
-    pub fn from_storage(
-        storage_state: &StorageState,
-        mnemonic: Mnemonic,
-        password: &str,
-        parameters: Parameters,
-        proving_context: MultiProvingContext,
-    ) -> Self {
-        Self(functions::initialize_signer_from_storage(
-            storage_state.as_ref(),
-            mnemonic.into(),
-            password,
-            parameters.0,
-            proving_context.into(),
-        ))
+    pub fn drop_accounts(&mut self) {
+        self.as_mut().drop_accounts()
     }
 
-    /// Writes `self` onto `storage_state`.
+    /// Loads `authorization_context` to `self`.
     #[inline]
-    pub fn write_to_storage(&self, storage_state: &mut StorageState) {
-        storage_state.as_mut().update_from_signer(self.as_ref())
+    pub fn load_authorization_context(&mut self, authorization_context: AuthorizationContext) {
+        self.as_mut()
+            .load_authorization_context(authorization_context.0)
+    }
+
+    /// Drops the [`AuthorizationContext`] from `self`.
+    #[inline]
+    pub fn drop_authorization_context(&mut self) {
+        self.as_mut().drop_authorization_context()
+    }
+
+    /// Updates `self.state.authorization_context` from `self.state.accounts`, if possible.
+    #[inline]
+    pub fn update_authorization_context(&mut self) -> bool {
+        self.as_mut().update_authorization_context()
+    }
+
+    /// Tries to update `self` from `storage_state`.
+    #[inline]
+    pub fn get_storage(&mut self, storage_state: &StorageStateOption) -> bool {
+        functions::get_storage(self.as_mut(), &storage_state.0)
+    }
+
+    /// Saves `self` as a [`StorageStateOption`].
+    #[inline]
+    pub fn set_storage(&self) -> StorageStateOption {
+        functions::set_storage(self.as_ref()).into()
     }
 
     /// Updates the internal ledger state, returning the new asset distribution.
@@ -808,8 +837,8 @@ impl Signer {
 
     /// Returns the [`Address`] corresponding to `self`.
     #[inline]
-    pub fn address(&mut self) -> Address {
-        Address(self.as_mut().address())
+    pub fn address(&mut self) -> Option<Address> {
+        self.as_mut().address().map(Address)
     }
 
     /// Returns the associated [`TransactionData`] of `post`, namely the [`Asset`] and the
@@ -890,6 +919,84 @@ impl Wallet {
         self.0.borrow_mut()[usize::from(network.0)] = Some(WalletType::new(ledger, signer.0));
     }
 
+    /// Loads `accounts` to `self` in `network`
+    #[inline]
+    pub fn load_accounts(&self, accounts: AccountTable, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .load_accounts(accounts.into())
+    }
+
+    /// Drops the [`AccountTable`] from `self` in `network`.
+    #[inline]
+    pub fn drop_accounts(&self, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .drop_accounts()
+    }
+
+    /// Loads `authorization_context` to `self` in `network`.
+    #[inline]
+    pub fn load_authorization_context(
+        &self,
+        authorization_context: AuthorizationContext,
+        network: Network,
+    ) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .load_authorization_context(authorization_context.0)
+    }
+
+    /// Drops the [`AuthorizationContext`] from `self` in `network`.
+    #[inline]
+    pub fn drop_authorization_context(&self, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .drop_authorization_context()
+    }
+
+    /// Updates the [`AuthorizationContext`] from the [`AccountTable`] in `network`, if possible.
+    #[inline]
+    pub fn update_authorization_context(&self, network: Network) -> bool {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .update_authorization_context()
+    }
+
+    /// Saves `self` as a [`StorageStateOption`] in `network`.
+    #[inline]
+    pub fn set_storage(&self, network: Network) -> StorageStateOption {
+        functions::set_storage(
+            self.0.borrow_mut()[usize::from(network.0)]
+                .as_mut()
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+                .signer_mut(),
+        )
+        .into()
+    }
+
+    /// Tries to update `self` from `storage_state` in `network`.
+    #[inline]
+    pub fn get_storage(&self, storage_state: StorageStateOption, network: Network) -> bool {
+        functions::get_storage(
+            self.0.borrow_mut()[usize::from(network.0)]
+                .as_mut()
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+                .signer_mut(),
+            &storage_state.0,
+        )
+    }
+
     /// Returns the current balance associated with this `id`.
     #[inline]
     pub fn balance(&self, id: String, network: Network) -> String {
@@ -928,7 +1035,7 @@ impl Wallet {
         )
     }
 
-    /// Returns the [`Checkpoint`](ledger::Connection::Checkpoint) representing the current state
+    /// Returns the [`Checkpoint`](utxo::Checkpoint) representing the current state
     /// of this wallet.
     #[inline]
     pub fn checkpoint(&self, network: Network) -> JsValue {
@@ -973,8 +1080,8 @@ impl Wallet {
     /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
     /// how to resolve them.
     ///
-    /// [`Error`]: wallet::Error
-    /// [`InconsistencyError`]: wallet::InconsistencyError
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn restart(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async { this.restart().await }), network)
@@ -991,8 +1098,8 @@ impl Wallet {
     /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
     /// how to resolve them.
     ///
-    /// [`Error`]: wallet::Error
-    /// [`InconsistencyError`]: wallet::InconsistencyError
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn sync(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(async { this.sync().await }), network)
@@ -1009,8 +1116,8 @@ impl Wallet {
     /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
     /// how to resolve them.
     ///
-    /// [`Error`]: wallet::Error
-    /// [`InconsistencyError`]: wallet::InconsistencyError
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn sync_partial(&self, network: Network) -> Promise {
         self.with_async(
