@@ -204,6 +204,80 @@ export default class Api {
       return { Ok: FAILURE };
     }
   }
+
+  // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
+  async sbt_pull(checkpoint) {
+    try {
+      await this.api.isReady;
+
+      this._log('sbt checkpoint ' + JSON.stringify(checkpoint));
+      let result = await this.api.rpc.mantaSBT.pull_ledger_diff(
+        checkpoint,
+        this.maxReceiversPullSize,
+        this.maxSendersPullSize
+      );
+
+      this._log('sbt pull result ' + JSON.stringify(result));
+
+      const receivers = result.receivers.map((receiver_raw) => {
+        return [
+          this._utxo_to_json(receiver_raw[0]),
+          this._full_incoming_note_to_json(receiver_raw[1])
+        ];
+      });
+      const senders = result.senders.map((sender_raw) => {
+        return [
+          Array.from(sender_raw[0].toU8a()),
+          this._outgoing_note_to_json(sender_raw[1]),
+        ];
+      });
+      if (this.pullCallback) {
+        this.pullCallback(
+          receivers,
+          senders,
+          checkpoint.sender_index,
+          result.sender_recievers_total.toNumber()
+        );
+      }
+      const pull_result = {
+        should_continue: result.should_continue,
+        receivers: receivers,
+        senders: senders,
+      };
+      this._log('sbt pull response: ' + JSON.stringify(pull_result));
+      return pull_result;
+    } catch (err) {
+      if (this.errorCallback) {
+        this.errorCallback();
+      }
+    }
+  }
+
+  // Maps a transfer post object to its corresponding mantaSBT extrinsic.
+  async _map_post_to_sbt_transaction(post) {
+    const mint_tx = await this.api.tx.mantaSBT.toPrivate(post);
+    return mint_tx;
+  }
+
+  // Sends a set of transfer posts (i.e. "transactions") to the ledger.
+  async sbt_push(posts) {
+    await this.api.isReady;
+    const transactions = [];
+    for (let post of posts) {
+      const transaction = await this._map_post_to_sbt_transaction(post);
+      transactions.push(transaction);
+    }
+    try {
+      const batchTx = await this.api.tx.utility.batch(transactions);
+      this._log('sbt Batch Transaction: '+ batchTx);
+      const signResult = await batchTx.signAndSend(this.externalAccountSigner, this.txResHandler);
+      this._log('sbt Result: ' + signResult);
+      return { Ok: SUCCESS };
+    } catch (err) {
+      console.error(err);
+      return { Ok: FAILURE };
+    }
+  }
 }
 
 export const SUCCESS = 'success';
