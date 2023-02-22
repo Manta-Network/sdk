@@ -40,6 +40,7 @@ use manta_accounting::{
     },
 };
 use manta_crypto::signature::schnorr;
+use manta_parameters::Get;
 use manta_pay::{
     config::{self, utxo},
     key,
@@ -973,6 +974,16 @@ impl Signer {
         ))
     }
 
+    /// Builds a default [`Signer`] from `proving_context`.
+    #[inline]
+    pub fn new_default(proving_context: RawMultiProvingContext) -> Self {
+        Self::new(
+            get_transfer_parameters(),
+            proving_context,
+            StorageStateOption(None),
+        )
+    }
+
     /// Loads `accounts` to `self`.
     #[inline]
     pub fn load_accounts(&mut self, accounts: AccountTable) {
@@ -1462,4 +1473,52 @@ impl Wallet {
             network,
         )
     }
+}
+
+/// Gets the transfer [`RawFullParameters`] from manta-parameters.
+#[inline]
+#[wasm_bindgen]
+pub fn get_transfer_parameters() -> RawFullParameters {
+    let utxo_accumulator_model = manta_parameters::pay::parameters::UtxoAccumulatorModel::get()
+        .expect("Checksum did not match.");
+    let group_generator =
+        manta_parameters::pay::parameters::GroupGenerator::get().expect("Checksum did not match.");
+    let address_partition_function =
+        manta_parameters::pay::parameters::AddressPartitionFunction::get()
+            .expect("Checksum did not match.");
+    let incoming_base_encryption_scheme =
+        manta_parameters::pay::parameters::IncomingBaseEncryptionScheme::get()
+            .expect("Checksum did not match.");
+    let light_incoming_base_encryption_scheme =
+        manta_parameters::pay::parameters::LightIncomingBaseEncryptionScheme::get()
+            .expect("Checksum did not match.");
+    let nullifier_commitment_scheme =
+        manta_parameters::pay::parameters::NullifierCommitmentScheme::get()
+            .expect("Checksum did not match.");
+    let outgoing_base_encryption_scheme =
+        manta_parameters::pay::parameters::OutgoingBaseEncryptionScheme::get()
+            .expect("Checksum did not match.");
+    let schnorr_hash_function = manta_parameters::pay::parameters::SchnorrHashFunction::get()
+        .expect("Checksum did not match.");
+    let utxo_accumulator_item_hash =
+        manta_parameters::pay::parameters::UtxoAccumulatorItemHash::get()
+            .expect("Checksum did not match.");
+    let utxo_commitment_scheme = manta_parameters::pay::parameters::UtxoCommitmentScheme::get()
+        .expect("Checksum did not match.");
+    let viewing_key_derivation_function =
+        manta_parameters::pay::parameters::ViewingKeyDerivationFunction::get()
+            .expect("Checksum did not match.");
+    RawFullParameters::new(
+        address_partition_function,
+        group_generator,
+        incoming_base_encryption_scheme,
+        light_incoming_base_encryption_scheme,
+        nullifier_commitment_scheme,
+        outgoing_base_encryption_scheme,
+        schnorr_hash_function,
+        utxo_accumulator_item_hash,
+        utxo_accumulator_model,
+        utxo_commitment_scheme,
+        viewing_key_derivation_function,
+    )
 }
