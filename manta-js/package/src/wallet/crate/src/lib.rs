@@ -817,6 +817,71 @@ impl From<RawFullParameters> for FullParameters {
     }
 }
 
+/// Raw Multi-Proving Context
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde", deny_unknown_fields)]
+#[wasm_bindgen]
+pub struct RawMultiProvingContext {
+    /// To Private Proving Context
+    to_private: Vec<u8>,
+
+    /// Private Transfer Proving Context
+    private_transfer: Vec<u8>,
+
+    /// To Public Proving Context
+    to_public: Vec<u8>,
+}
+
+#[wasm_bindgen]
+impl RawMultiProvingContext {
+    /// Builds a new [`RawMultiProvingContext`] without checking the slice sizes.
+    #[inline]
+    pub fn new_unchecked(to_private: &[u8], private_transfer: &[u8], to_public: &[u8]) -> Self {
+        Self {
+            to_private: to_private.to_vec(),
+            private_transfer: private_transfer.to_vec(),
+            to_public: to_public.to_vec(),
+        }
+    }
+
+    /// Builds a new [`RawMultiProvingContext`] from `to_private`, `private_transfer` and `to_public`.
+    #[inline]
+    #[wasm_bindgen(constructor)]
+    pub fn new(to_private: &[u8], private_transfer: &[u8], to_public: &[u8]) -> Self {
+        const TO_PRIVATE_SIZE: usize = 3690160;
+        const PRIVATE_TRANSFER_SIZE: usize = 15450928;
+        const TO_PUBLIC_SIZE: usize = 11040176;
+        assert_eq!(
+            to_private.len(),
+            TO_PRIVATE_SIZE,
+            "ToPrivate slice of wrong size"
+        );
+        assert_eq!(
+            private_transfer.len(),
+            PRIVATE_TRANSFER_SIZE,
+            "PrivateTransfer slice of wrong size"
+        );
+        assert_eq!(
+            to_public.len(),
+            TO_PUBLIC_SIZE,
+            "ToPublic slice of wrong size"
+        );
+        Self::new_unchecked(to_private, private_transfer, to_public)
+    }
+}
+
+impl From<RawMultiProvingContext> for MultiProvingContext {
+    #[inline]
+    fn from(value: RawMultiProvingContext) -> Self {
+        config::MultiProvingContext {
+            to_private: Decode::from_vec(value.to_private).expect("Decoding Error"),
+            private_transfer: Decode::from_vec(value.private_transfer).expect("Decoding Error"),
+            to_public: Decode::from_vec(value.to_public).expect("Decoding Error"),
+        }
+        .into()
+    }
+}
+
 /// Signer Error
 #[wasm_bindgen]
 pub struct SignerError(reqwest::Error);
@@ -864,32 +929,29 @@ pub fn accounts_from_mnemonic(mnemonic: Mnemonic) -> AccountTable {
 #[wasm_bindgen]
 pub fn authorization_context_from_mnemonic(
     mnemonic: Mnemonic,
-    parameters: &RawFullParameters,
+    parameters: RawFullParameters,
 ) -> AuthorizationContext {
     AuthorizationContext(functions::authorization_context_from_mnemonic(
         mnemonic.0,
-        &FullParameters::from(parameters.clone()).0.base,
+        &FullParameters::from(parameters).0.base,
     ))
 }
 
 /// Creates a viewing key from `mnemonic`.
 #[inline]
 #[wasm_bindgen]
-pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: &RawFullParameters) -> ViewingKey {
-    functions::viewing_key_from_mnemonic(
-        mnemonic.0,
-        &FullParameters::from(parameters.clone()).0.base,
-    )
-    .into()
+pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: RawFullParameters) -> ViewingKey {
+    functions::viewing_key_from_mnemonic(mnemonic.0, &FullParameters::from(parameters).0.base)
+        .into()
 }
 
 /// Creates an [`Address`] from `mnemonic`.
 #[inline]
 #[wasm_bindgen]
-pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: &RawFullParameters) -> Address {
+pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: RawFullParameters) -> Address {
     Address(functions::address_from_mnemonic(
         mnemonic.0,
-        &FullParameters::from(parameters.clone()).0.base,
+        &FullParameters::from(parameters).0.base,
     ))
 }
 
@@ -901,12 +963,12 @@ impl Signer {
     #[wasm_bindgen(constructor)]
     pub fn new(
         parameters: RawFullParameters,
-        proving_context: MultiProvingContext,
+        proving_context: RawMultiProvingContext,
         storage_state_option: StorageStateOption,
     ) -> Self {
         Self(functions::new_signer(
             FullParameters::from(parameters).0,
-            proving_context.into(),
+            MultiProvingContext::from(proving_context).into(),
             &storage_state_option.0,
         ))
     }
