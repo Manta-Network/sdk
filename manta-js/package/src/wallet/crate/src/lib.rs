@@ -47,7 +47,7 @@ use manta_pay::{
     signer::{self, base, client::network, functions},
 };
 use manta_util::{
-    codec::Decode,
+    codec::{Decode, Encode},
     future::LocalBoxFutureResult,
     http::reqwest,
     into_array_unchecked, ops,
@@ -883,6 +883,17 @@ impl From<RawMultiProvingContext> for MultiProvingContext {
     }
 }
 
+impl From<MultiProvingContext> for RawMultiProvingContext {
+    #[inline]
+    fn from(value: MultiProvingContext) -> Self {
+        Self {
+            to_private: value.0.to_private.to_vec(),
+            private_transfer: value.0.private_transfer.to_vec(),
+            to_public: value.0.to_public.to_vec(),
+        }
+    }
+}
+
 /// Signer Error
 #[wasm_bindgen]
 pub struct SignerError(reqwest::Error);
@@ -974,14 +985,33 @@ impl Signer {
         ))
     }
 
-    /// Builds a default [`Signer`] from `proving_context`.
+    /// Builds a default [`Signer`] from `parameters`.
+    /// 
+    /// # Warning 
+    /// 
+    /// This doesn't use the keys from manta-parameters. Only for testing.
     #[inline]
-    pub fn new_default(proving_context: RawMultiProvingContext) -> Self {
-        Self::new(
-            get_transfer_parameters(),
-            proving_context,
-            StorageStateOption(None),
-        )
+    pub fn new_with_random_context(parameters: RawFullParameters) -> Self {
+        let mut rng = manta_crypto::rand::OsRng;
+        let full_parameters = FullParameters::from(parameters).0;
+        let full_parameters_ref = config::FullParametersRef::new(
+            &full_parameters.base,
+            &full_parameters.utxo_accumulator_model,
+        );
+        let (to_private, _) =
+            config::ToPrivate::generate_context(&(), full_parameters_ref, &mut rng)
+                .expect("Unable to create proving and verifying contexts.");
+        let (private_transfer, _) =
+            config::PrivateTransfer::generate_context(&(), full_parameters_ref, &mut rng)
+                .expect("Unable to create proving and verifying contexts.");
+        let (to_public, _) = config::ToPublic::generate_context(&(), full_parameters_ref, &mut rng)
+            .expect("Unable to create proving and verifying contexts.");
+        let proving_context = MultiProvingContext(config::MultiProvingContext {
+            to_private,
+            private_transfer,
+            to_public,
+        });
+        Self::new(parameters, proving_context.into(), StorageStateOption(None))
     }
 
     /// Loads `accounts` to `self`.
