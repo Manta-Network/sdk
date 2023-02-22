@@ -83,7 +83,7 @@ const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
 
 ## Transacting
 
-After initialization of the `MantaPrivateWallet` class, `initalWalletSync()` must be called before any transactions are made.
+After initialization of the `MantaPrivateWallet` class, `initialWalletSync()` must be called before any transactions are made.
 
 After every single transaction, to get the latest data from the ledger, `walletSync()` must be called.
 
@@ -133,10 +133,10 @@ const amount = new BN("10000000000000000000");
 // Sync with most recent ledger state.
 await privateWallet.initialWalletSync();
 
-// Get private address
-const privateAddress = await privateWallet.getPrivateAddress();
+// Get zk address
+const zkAddress = await privateWallet.getZkAddress();
 
-// Get private balance of DOL for given private address
+// Get private balance of DOL for given zk address
 const privateBalance = await privateWallet.getPrivateBalance(assetId);
 
 // Privatize 10 DOL to 10 pDOL
@@ -161,12 +161,12 @@ const amount = new BN("10000000000000000000");
 // Sync with most recent ledger state.
 await privateWallet.initialWalletSync();
 
-// Get private address
-const privateAddress = await privateWallet.getPrivateAddress();
+// Get zk address
+const zkAddress = await privateWallet.getZkAddress();
 
-// Private Transfer of 10 pDOL to another private address
-const examplePrivateAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
-await privateWallet.privateTransferSend(assetId, amount, examplePrivateAddress, polkadotSigner, polkadotAddress);
+// Private Transfer of 10 pDOL to another zk address
+const exampleZkAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
+await privateWallet.privateTransferSend(assetId, amount, exampleZkAddress, polkadotSigner, polkadotAddress);
 
 // Sync to get latest data after transaction and check that it was successful.
 await privateWallet.walletSync();
@@ -187,10 +187,10 @@ const amount = new BN("5000000000000000000");
 // Sync with most recent ledger state.
 await privateWallet.initialWalletSync();
 
-// Get private address
-const privateAddress = await privateWallet.getPrivateAddress();
+// Get zk address
+const zkAddress = await privateWallet.getZkAddress();
 
-// Get private balance of DOL for given private address
+// Get private balance of DOL for given zk address
 const privateBalance = await privateWallet.getPrivateBalance(assetId);
 
 // Convert 5 pDOL back to DOL
@@ -242,13 +242,13 @@ const env = sdk.Environment.Development;
 const net = sdk.Network.Dolphin;
 const privateWallet = await sdk.init(env,net);
 
-const privateAddress = await privateWallet.privateAddress();
-console.log("The private address is: ", privateAddress);
+const zkAddress = await privateWallet.getZkAddress();
+console.log("The zk address is: ", zkAddress);
 
-await privateWallet.initalWalletSync();
+await privateWallet.initialWalletSync();
 
-const initalPrivateBalance = await privateWallet.privateBalance(assetId);
-console.log("The inital private balance is: ", initalPrivateBalance.toString());
+const initialPrivateBalance = await privateWallet.privateBalance(assetId);
+console.log("The initial private balance is: ", initialPrivateBalance.toString());
 
 const signResult = await privateWallet.toPrivateBuild(assetId, amount, polkadotSigner, polkadotAddress);
 
@@ -260,7 +260,7 @@ This can also be done for all other transaction types:
 ```javascript
 const toPrivateSignResult = await privateWallet.toPrivateBuild(assetId, amount, polkadotSigner, polkadotAddress);
 const toPublicSignResult = await privateWallet.toPublicBuild(assetId, amount, polkadotSigner, polkadotAddress);
-const privateTransferSignResult = await privateWallet.privateTransferBuild(assetId, amount, privateAddress, polkadotSigner, polkadotAddress);
+const privateTransferSignResult = await privateWallet.privateTransferBuild(assetId, amount, zkAddress, polkadotSigner, polkadotAddress);
 ```
 
 Then you can use the signResult to submit transaction by your self. Here is an example on how to verify the `toPrivateBuild` sign result is valid:
