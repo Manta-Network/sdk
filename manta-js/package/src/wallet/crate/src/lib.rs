@@ -991,7 +991,8 @@ impl Signer {
     /// 
     /// This doesn't use the keys from manta-parameters. Only for testing.
     #[inline]
-    pub fn new_with_random_context(parameters: RawFullParameters) -> Self {
+    pub fn new_default_with_random_context() -> Self {
+        let parameters = get_transfer_parameters();
         let mut rng = manta_crypto::rand::OsRng;
         let full_parameters = FullParameters::from(parameters).0;
         let full_parameters_ref = config::FullParametersRef::new(
