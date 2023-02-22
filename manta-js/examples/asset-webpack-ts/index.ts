@@ -110,9 +110,11 @@ const toPrivateOnlySignTest = async () => {
         network: Network.Dolphin
     }
 
+    debugger;
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    debugger;
     const polkadotConfig = await getPolkadotSignerAndAddress();
-
+    debugger;
     const privateAddress = await privateWallet.getZkAddress();
     console.log("The private address is: ", privateAddress);
 

@@ -498,45 +498,47 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     const wasmApi = new Api(api, wasmApiConfig);
     const networkType = wasm.Network.from_string(`"${priConfig.network}"`);
 
-    const parameters = {
-      base: {
-        base: {
-          'group_generator': parameterResults['group-generator.dat'],
-          'incoming_base_encryption_scheme': parameterResults['incoming-base-encryption-scheme.dat'],
-          'light_incoming_base_encryption_scheme': parameterResults['incoming-base-encryption-scheme.dat'],
-          'nullifier_commitment_scheme': parameterResults['nullifier-commitment-scheme.dat'],
-          'outgoing_base_encryption_scheme': parameterResults['outgoing-base-encryption-scheme.dat'],
-          'utxo_accumulator_item_hash': parameterResults['utxo-accumulator-item-hash.dat'],
-          'utxo_commitment_scheme': parameterResults['utxo-commitment-scheme.dat'],
-          'viewing_key_derivation_function': parameterResults['viewing-key-derivation-function.dat'],
-        },
-        'address_partition_function': parameterResults['address-partition-function.dat'],
-        'schnorr_hash_function': parameterResults['schnorr-hash-function.dat'],
-      },
-      'utxo_accumulator_model': parameterResults['utxo-accumulator-model.dat'],
-    };
-
-    const provingContext = {
-      'to_private': provingResults['to-private.lfs'],
-      'private_transfer': provingResults['private-transfer.lfs'],
-      'to_public': provingResults['to-public.lfs'],
-    };
-
-    const fullParameters = new wasm.FullParameters(parameters);
-    const multiProvingContext = new wasm.MultiProvingContext(provingContext);
-    const storageStateOption = wasm.StorageStateOption.from_string(
-      wasmApi.loadStorageDataFromLocal(`${networkType}`)
+    debugger;
+    const fullParameters = new wasm.RawFullParameters(
+      parameterResults['address-partition-function.dat'],
+      parameterResults['group-generator.dat'],
+      parameterResults['incoming-base-encryption-scheme.dat'],
+      parameterResults['light-incoming-base-encryption-scheme.dat'],
+      parameterResults['nullifier-commitment-scheme.dat'],
+      parameterResults['outgoing-base-encryption-scheme.dat'],
+      parameterResults['schnorr-hash-function.dat'],
+      parameterResults['utxo-accumulator-item-hash.dat'],
+      parameterResults['utxo-accumulator-model.dat'],
+      parameterResults['utxo-commitment-scheme.dat'],
+      parameterResults['viewing-key-derivation-function.dat'],
     );
 
+    debugger;
+    const multiProvingContext = new wasm.RawMultiProvingContext(
+      provingResults['to-private.lfs'],
+      provingResults['private-transfer.lfs'],
+      provingResults['to-public.lfs'],
+    );
+    debugger;
+    // const storageStateOption = wasm.StorageStateOption.from_string(
+    //   wasmApi.loadStorageDataFromLocal(`${networkType}`)
+    // );
+    const storageStateOption = wasm.StorageStateOption.from_string('null');
+    debugger;
     const wasmSigner = new wasm.Signer(fullParameters, multiProvingContext, storageStateOption);
+    // const wasmSigner = wasm.Signer.new_default_with_random_context();
+    debugger;
     const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
+    debugger;
     const wasmWallet = new wasm.Wallet();
+    debugger;
     wasmWallet.set_network(wasmLedger, wasmSigner, networkType);
+    debugger;
     return {
       wasm,
       wasmWallet,
       wasmApi,
-      parameters: parameterResults,
+      parameters: null,
     };
   }
 
@@ -860,14 +862,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private static async fetchFiles(
     filePrefix: string,
     fileNames: string[]
-  ): Promise<{ [key: string]: string | ArrayBuffer | Blob } | null> {
+  ): Promise<{ [key: string]: Uint8Array } | null> {
     const fetchFiles = await Promise.all(
       fileNames.map((name) =>
         MantaPrivateWallet.fetchFile(`${filePrefix}/${name}`)
       )
     );
-    const result: { [key: string]: string | ArrayBuffer | Blob } = {};
-    fetchFiles.map((file: string | ArrayBuffer | Blob, index: number) => {
+    const result: { [key: string]: Uint8Array } = {};
+    fetchFiles.map((file: Uint8Array, index: number) => {
       result[fileNames[index]] = file;
     });
     return result;
@@ -876,7 +878,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private static async fetchFile(
     url: string,
     responseType = FileResponseType.blob
-  ): Promise<Blob | JSON | string | ArrayBuffer | null> {
+  ): Promise<Uint8Array | null> {
     try {
       const responseData = await fetch(url);
       const result = await responseData[responseType]();
