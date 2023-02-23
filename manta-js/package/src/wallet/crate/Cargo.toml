@@ -35,11 +35,11 @@ disable-restart = []
 console_error_panic_hook = { version = "0.1.7", default-features = false }
 getrandom = { version = "0.2.8", default-features = false, features = ["js"] }
 js-sys = { version = "0.3.60", default-features = false }
-manta-accounting = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/key_signer", default-features = false, features = ["serde"] }
-manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/key_signer", default-features = false, features = ["serde"] }
-manta-parameters = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/key_signer", default-features = false }
-manta-pay = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/key_signer", default-features = true, features = ["arkworks", "groth16", "http", "scale", "serde", "wallet"] }
-manta-util = { git = "https://github.com/manta-network/manta-rs.git", branch = "feat/key_signer", default-features = false, features = ["serde", "reqwest"] }
+manta-accounting = { git = "https://github.com/manta-network/manta-rs.git", tag = "v0.5.11", default-features = false, features = ["serde"] }
+manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", tag = "v0.5.11", default-features = false, features = ["serde"] }
+manta-parameters = { git = "https://github.com/manta-network/manta-rs.git", tag = "v0.5.11", default-features = false }
+manta-pay = { git = "https://github.com/manta-network/manta-rs.git", tag = "v0.5.11", default-features = true, features = ["arkworks", "groth16", "http", "scale", "serde", "wallet"] }
+manta-util = { git = "https://github.com/manta-network/manta-rs.git", tag = "v0.5.11", default-features = false, features = ["serde", "reqwest"] }
 scale-codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive", "max-encoded-len"] }
 serde-wasm-bindgen = { version = "0.4.5", default-features = false }
 serde_json = { version = "1.0.89", default-features = false, features = ["alloc", "arbitrary_precision"] }
