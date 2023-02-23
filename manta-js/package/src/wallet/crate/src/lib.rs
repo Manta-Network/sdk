@@ -70,6 +70,12 @@ extern "C" {
     async fn push(this: &Api, posts: Vec<JsValue>) -> JsValue;
 }
 
+#[wasm_bindgen]
+/// Debugging utility to get panic messages when running the ts code.
+pub fn init_panic_hook() {
+    console_error_panic_hook::set_once();
+}
+
 /// Serialize the borrowed `value` as a Javascript object.
 #[inline]
 fn borrow_js<T>(value: &T) -> JsValue
@@ -672,45 +678,76 @@ impl ledger::Write<Vec<config::TransferPost>> for PolkadotJsLedger {
 }
 
 /// Raw Full Parameters
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 #[wasm_bindgen]
 pub struct RawFullParameters {
     /// Address Partition Function
-    address_partition_function: [u8; 0],
+    address_partition_function: Vec<u8>,
 
     /// Group Generator
-    group_generator: [u8; 32],
+    group_generator: Vec<u8>,
 
     /// Incoming Base Encryption Scheme
-    incoming_base_encryption_scheme: [u8; 8712],
+    incoming_base_encryption_scheme: Vec<u8>,
 
     /// Light Incoming Base Encryption Scheme
-    light_incoming_base_encryption_scheme: [u8; 0],
+    light_incoming_base_encryption_scheme: Vec<u8>,
 
     /// Nullifier Commitment Scheme
-    nullifier_commitment_scheme: [u8; 8608],
+    nullifier_commitment_scheme: Vec<u8>,
 
     /// Outgoing Base Encryption Scheme
-    outgoing_base_encryption_scheme: [u8; 0],
+    outgoing_base_encryption_scheme: Vec<u8>,
 
     /// Schnorr Hash Function
-    schnorr_hash_function: [u8; 0],
+    schnorr_hash_function: Vec<u8>,
 
     /// Utxo Accumulator Item Hash
-    utxo_accumulator_item_hash: [u8; 11072],
+    utxo_accumulator_item_hash: Vec<u8>,
 
     /// Utxo Accumulator Model
-    utxo_accumulator_model: [u8; 6368],
+    utxo_accumulator_model: Vec<u8>,
 
     /// Utxo Commitment Scheme
-    utxo_commitment_scheme: [u8; 13472],
+    utxo_commitment_scheme: Vec<u8>,
 
     /// Viewing Key Derivation Function
-    viewing_key_derivation_function: [u8; 6368],
+    viewing_key_derivation_function: Vec<u8>,
 }
 
 #[wasm_bindgen]
 impl RawFullParameters {
+    /// Builds a new [`RawFullParameters`] without checking vector sizes.
+    #[allow(clippy::too_many_arguments)] // It has 11 fields, what else?
+    #[inline]
+    fn new_unchecked(
+        address_partition_function: &[u8],
+        group_generator: &[u8],
+        incoming_base_encryption_scheme: &[u8],
+        light_incoming_base_encryption_scheme: &[u8],
+        nullifier_commitment_scheme: &[u8],
+        outgoing_base_encryption_scheme: &[u8],
+        schnorr_hash_function: &[u8],
+        utxo_accumulator_item_hash: &[u8],
+        utxo_accumulator_model: &[u8],
+        utxo_commitment_scheme: &[u8],
+        viewing_key_derivation_function: &[u8],
+    ) -> Self {
+        Self {
+            address_partition_function: address_partition_function.to_vec(),
+            group_generator: group_generator.to_vec(),
+            incoming_base_encryption_scheme: incoming_base_encryption_scheme.to_vec(),
+            light_incoming_base_encryption_scheme: light_incoming_base_encryption_scheme.to_vec(),
+            nullifier_commitment_scheme: nullifier_commitment_scheme.to_vec(),
+            outgoing_base_encryption_scheme: outgoing_base_encryption_scheme.to_vec(),
+            schnorr_hash_function: schnorr_hash_function.to_vec(),
+            utxo_accumulator_item_hash: utxo_accumulator_item_hash.to_vec(),
+            utxo_accumulator_model: utxo_accumulator_model.to_vec(),
+            utxo_commitment_scheme: utxo_commitment_scheme.to_vec(),
+            viewing_key_derivation_function: viewing_key_derivation_function.to_vec(),
+        }
+    }
+
     /// Builds a new [`RawFullParameters`] from its components.
     #[allow(clippy::too_many_arguments)] // It has 11 fields, what else?
     #[inline]
@@ -728,39 +765,85 @@ impl RawFullParameters {
         utxo_commitment_scheme: &[u8],
         viewing_key_derivation_function: &[u8],
     ) -> Self {
-        Self {
-            address_partition_function: address_partition_function
-                .try_into()
-                .expect("Slice of wrong size"),
-            group_generator: group_generator.try_into().expect("Slice of wrong size"),
-            incoming_base_encryption_scheme: incoming_base_encryption_scheme
-                .try_into()
-                .expect("Slice of wrong size"),
-            light_incoming_base_encryption_scheme: light_incoming_base_encryption_scheme
-                .try_into()
-                .expect("Slice of wrong size"),
-            nullifier_commitment_scheme: nullifier_commitment_scheme
-                .try_into()
-                .expect("Slice of wrong size"),
-            outgoing_base_encryption_scheme: outgoing_base_encryption_scheme
-                .try_into()
-                .expect("Slice of wrong size"),
-            schnorr_hash_function: schnorr_hash_function
-                .try_into()
-                .expect("Slice of wrong size"),
-            utxo_accumulator_item_hash: utxo_accumulator_item_hash
-                .try_into()
-                .expect("Slice of wrong size"),
-            utxo_accumulator_model: utxo_accumulator_model
-                .try_into()
-                .expect("Slice of wrong size"),
-            utxo_commitment_scheme: utxo_commitment_scheme
-                .try_into()
-                .expect("Slice of wrong size"),
-            viewing_key_derivation_function: viewing_key_derivation_function
-                .try_into()
-                .expect("Slice of wrong size"),
-        }
+        const ADDRESS_PARTITION_FUNCTION_SIZE: usize = 0;
+        const GROUP_GENERATOR_SIZE: usize = 32;
+        const INCOMING_BASE_ENCRYPTION_SCHEME_SIZE: usize = 8712;
+        const LIGHT_INCOMING_BASE_ENCRYPTION_SCHEME_SIZE: usize = 0;
+        const NULLIFIER_COMMITMENT_SCHEME_SIZE: usize = 8608;
+        const OUTGOING_BASE_ENCRYPTION_SCHEME_SIZE: usize = 0;
+        const SCHNORR_HASH_FUNCTION_SIZE: usize = 0;
+        const UTXO_ACCUMULATOR_ITEM_HASH_SIZE: usize = 11072;
+        const UTXO_ACCUMULATOR_MODEL_SIZE: usize = 6368;
+        const UTXO_COMMITMENT_SCHEME_SIZE: usize = 13472;
+        const VIEWING_KEY_DERIVATION_FUNCTION_SIZE: usize = 6368;
+        assert_eq!(
+            ADDRESS_PARTITION_FUNCTION_SIZE,
+            address_partition_function.len(),
+            "Address partition function of wrong size",
+        );
+        assert_eq!(
+            GROUP_GENERATOR_SIZE,
+            group_generator.len(),
+            "Group generator of wrong size",
+        );
+        assert_eq!(
+            INCOMING_BASE_ENCRYPTION_SCHEME_SIZE,
+            incoming_base_encryption_scheme.len(),
+            "Incoming base encryption scheme of wrong size",
+        );
+        assert_eq!(
+            LIGHT_INCOMING_BASE_ENCRYPTION_SCHEME_SIZE,
+            light_incoming_base_encryption_scheme.len(),
+            "Light incoming base encryption scheme of wrong size",
+        );
+        assert_eq!(
+            NULLIFIER_COMMITMENT_SCHEME_SIZE,
+            nullifier_commitment_scheme.len(),
+            "Nullifier commitment scheme of wrong size",
+        );
+        assert_eq!(
+            OUTGOING_BASE_ENCRYPTION_SCHEME_SIZE,
+            outgoing_base_encryption_scheme.len(),
+            "Outgoing base encryption scheme of wrong size",
+        );
+        assert_eq!(
+            SCHNORR_HASH_FUNCTION_SIZE,
+            schnorr_hash_function.len(),
+            "Schnorr hash function of wrong size",
+        );
+        assert_eq!(
+            UTXO_ACCUMULATOR_ITEM_HASH_SIZE,
+            utxo_accumulator_item_hash.len(),
+            "Utxo accumulator item hash of wrong size",
+        );
+        assert_eq!(
+            UTXO_ACCUMULATOR_MODEL_SIZE,
+            utxo_accumulator_model.len(),
+            "Utxo accumulator model of wrong size",
+        );
+        assert_eq!(
+            UTXO_COMMITMENT_SCHEME_SIZE,
+            utxo_commitment_scheme.len(),
+            "Utxo commitment scheme of wrong size",
+        );
+        assert_eq!(
+            VIEWING_KEY_DERIVATION_FUNCTION_SIZE,
+            viewing_key_derivation_function.len(),
+            "Viewing key derivation function of wrong size",
+        );
+        Self::new_unchecked(
+            address_partition_function,
+            group_generator,
+            incoming_base_encryption_scheme,
+            light_incoming_base_encryption_scheme,
+            nullifier_commitment_scheme,
+            outgoing_base_encryption_scheme,
+            schnorr_hash_function,
+            utxo_accumulator_item_hash,
+            utxo_accumulator_model,
+            utxo_commitment_scheme,
+            viewing_key_derivation_function,
+        )
     }
 }
 
@@ -783,36 +866,36 @@ impl From<RawFullParameters> for FullParameters {
         config::FullParameters::new(
             config::Parameters {
                 base: manta_accounting::transfer::utxo::protocol::BaseParameters {
-                    group_generator: Decode::decode(group_generator).expect("Decoding error"),
+                    group_generator: Decode::from_vec(group_generator).expect("Decoding error"),
                     incoming_base_encryption_scheme: Decode::decode(
                         incoming_base_encryption_scheme,
                     )
                     .expect("Decoding error"),
-                    light_incoming_base_encryption_scheme: Decode::decode(
+                    light_incoming_base_encryption_scheme: Decode::from_vec(
                         light_incoming_base_encryption_scheme,
                     )
                     .expect("Decoding error"),
-                    nullifier_commitment_scheme: Decode::decode(nullifier_commitment_scheme)
+                    nullifier_commitment_scheme: Decode::from_vec(nullifier_commitment_scheme)
                         .expect("Decoding error"),
-                    outgoing_base_encryption_scheme: Decode::decode(
+                    outgoing_base_encryption_scheme: Decode::from_vec(
                         outgoing_base_encryption_scheme,
                     )
                     .expect("Decoding error"),
-                    utxo_accumulator_item_hash: Decode::decode(utxo_accumulator_item_hash)
+                    utxo_accumulator_item_hash: Decode::from_vec(utxo_accumulator_item_hash)
                         .expect("Decoding error"),
-                    utxo_commitment_scheme: Decode::decode(utxo_commitment_scheme)
+                    utxo_commitment_scheme: Decode::from_vec(utxo_commitment_scheme)
                         .expect("Decoding error"),
-                    viewing_key_derivation_function: Decode::decode(
+                    viewing_key_derivation_function: Decode::from_vec(
                         viewing_key_derivation_function,
                     )
                     .expect("Decoding error"),
                 },
-                address_partition_function: Decode::decode(address_partition_function)
+                address_partition_function: Decode::from_vec(address_partition_function)
                     .expect("Decoding error"),
-                schnorr_hash_function: Decode::decode(schnorr_hash_function)
+                schnorr_hash_function: Decode::from_vec(schnorr_hash_function)
                     .expect("Decoding error"),
             },
-            Decode::decode(utxo_accumulator_model).expect("Decoding error"),
+            Decode::from_vec(utxo_accumulator_model).expect("Decoding error"),
         )
         .into()
     }
@@ -837,7 +920,7 @@ pub struct RawMultiProvingContext {
 impl RawMultiProvingContext {
     /// Builds a new [`RawMultiProvingContext`] without checking the slice sizes.
     #[inline]
-    pub fn new_unchecked(to_private: &[u8], private_transfer: &[u8], to_public: &[u8]) -> Self {
+    fn new_unchecked(to_private: &[u8], private_transfer: &[u8], to_public: &[u8]) -> Self {
         Self {
             to_private: to_private.to_vec(),
             private_transfer: private_transfer.to_vec(),
@@ -969,8 +1052,7 @@ pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: RawFullParameters) 
 
 #[wasm_bindgen]
 impl Signer {
-    /// Builds a new [`Signer`] from `parameters`, `proving_context` and `utxo_accumulator_model`.
-    /// If `storage_state_option` is not `None`, it will load the state from them.
+    /// Builds a new [`Signer`] from `parameters`, `proving_context` and `storage_state_option`.
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
@@ -985,16 +1067,18 @@ impl Signer {
         ))
     }
 
-    /// Builds a default [`Signer`] from `parameters`.
-    /// 
-    /// # Warning 
-    /// 
-    /// This doesn't use the keys from manta-parameters. Only for testing.
+    /// Builds a default [`Signer`].
+    ///
+    /// # Crypto Safety
+    ///
+    /// This function randomly samples a proving context instead of using the set of
+    /// proving keys in manta-parameters, computed in the trusted setup ceremony. A signer initialized in
+    /// this way should only be used for testing purposes.
     #[inline]
     pub fn new_default_with_random_context() -> Self {
         let parameters = get_transfer_parameters();
         let mut rng = manta_crypto::rand::OsRng;
-        let full_parameters = FullParameters::from(parameters).0;
+        let full_parameters = FullParameters::from(parameters.clone()).0;
         let full_parameters_ref = config::FullParametersRef::new(
             &full_parameters.base,
             &full_parameters.utxo_accumulator_model,
