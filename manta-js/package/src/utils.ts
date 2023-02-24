@@ -46,20 +46,26 @@ export class MantaUtilities {
     }
   }
 
-  /// Executes a public transfer.
-  static async publicTransfer(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void> {
+  /// Builds, signs and sends a public transfer transaction.
+  static async publicTransferSend(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void> {
     api.setSigner(polkadotSigner);
     try {
-      const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
-      const amountBN = amount.toArray('le', 16);
-      const tx = await api.tx.mantaPay.publicTransfer(
-        { id: assetIdArray, value: amountBN },
-        destinationAddress
-      );
+      const tx = this.publicTransferBuild(api, assetId, amount, destinationAddress);
       await tx.signAndSend(senderAddress);
     } catch (e) {
       console.log('Failed to execute public transfer.');
       console.error(e);
     }
+  }
+
+  /// Creates a public transfer payload.
+  static publicTransferBuild(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address): any {
+    const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
+      const amountBN = amount.toArray('le', 16);
+      const tx = api.tx.mantaPay.publicTransfer(
+        { id: assetIdArray, value: amountBN },
+        destinationAddress
+      );
+      return tx;
   }
 }
