@@ -866,36 +866,36 @@ impl From<RawFullParameters> for FullParameters {
         config::FullParameters::new(
             config::Parameters {
                 base: manta_accounting::transfer::utxo::protocol::BaseParameters {
-                    group_generator: Decode::from_vec(group_generator).expect("Decoding error"),
+                    group_generator: Decode::decode(&group_generator[..]).expect("Decoding error"),
                     incoming_base_encryption_scheme: Decode::decode(
-                        incoming_base_encryption_scheme,
+                        &incoming_base_encryption_scheme[..],
                     )
                     .expect("Decoding error"),
-                    light_incoming_base_encryption_scheme: Decode::from_vec(
-                        light_incoming_base_encryption_scheme,
+                    light_incoming_base_encryption_scheme: Decode::decode(
+                        &light_incoming_base_encryption_scheme[..],
                     )
                     .expect("Decoding error"),
-                    nullifier_commitment_scheme: Decode::from_vec(nullifier_commitment_scheme)
+                    nullifier_commitment_scheme: Decode::decode(&nullifier_commitment_scheme[..])
                         .expect("Decoding error"),
-                    outgoing_base_encryption_scheme: Decode::from_vec(
-                        outgoing_base_encryption_scheme,
+                    outgoing_base_encryption_scheme: Decode::decode(
+                        &outgoing_base_encryption_scheme[..],
                     )
                     .expect("Decoding error"),
-                    utxo_accumulator_item_hash: Decode::from_vec(utxo_accumulator_item_hash)
+                    utxo_accumulator_item_hash: Decode::decode(&utxo_accumulator_item_hash[..])
                         .expect("Decoding error"),
-                    utxo_commitment_scheme: Decode::from_vec(utxo_commitment_scheme)
+                    utxo_commitment_scheme: Decode::decode(&utxo_commitment_scheme[..])
                         .expect("Decoding error"),
-                    viewing_key_derivation_function: Decode::from_vec(
-                        viewing_key_derivation_function,
+                    viewing_key_derivation_function: Decode::decode(
+                        &viewing_key_derivation_function[..],
                     )
                     .expect("Decoding error"),
                 },
-                address_partition_function: Decode::from_vec(address_partition_function)
+                address_partition_function: Decode::decode(&address_partition_function[..])
                     .expect("Decoding error"),
-                schnorr_hash_function: Decode::from_vec(schnorr_hash_function)
+                schnorr_hash_function: Decode::decode(&schnorr_hash_function[..])
                     .expect("Decoding error"),
             },
-            Decode::from_vec(utxo_accumulator_model).expect("Decoding error"),
+            Decode::decode(&utxo_accumulator_model[..]).expect("Decoding error"),
         )
         .into()
     }
@@ -958,9 +958,9 @@ impl From<RawMultiProvingContext> for MultiProvingContext {
     #[inline]
     fn from(value: RawMultiProvingContext) -> Self {
         config::MultiProvingContext {
-            to_private: Decode::from_vec(value.to_private).expect("Decoding Error"),
-            private_transfer: Decode::from_vec(value.private_transfer).expect("Decoding Error"),
-            to_public: Decode::from_vec(value.to_public).expect("Decoding Error"),
+            to_private: Decode::decode(&value.to_private[..]).expect("Decoding Error"),
+            private_transfer: Decode::decode(&value.private_transfer[..]).expect("Decoding Error"),
+            to_public: Decode::decode(&value.to_public[..]).expect("Decoding Error"),
         }
         .into()
     }
