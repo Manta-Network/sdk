@@ -1,16 +1,16 @@
 // @ts-ignore
-import { MantaPrivateWallet, Environment, Network, MantaUtilities, getXCMRemoteTransactPayload } from 'manta.js';
+import { MantaPrivateWallet, Environment, Network, MantaUtilities } from 'manta.js';
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
 async function main() {
     await toPrivateOnlySignTest();
-    await toPrivateTest();
-    await privateTransferOnlySignTest();
-    await privateTransferTest();
-    await toPublicOnlySignTest();
-    await toPublicTest();
-    await publicTransferTest();
+    // await toPrivateTest();
+    // await privateTransferOnlySignTest();
+    // await privateTransferTest();
+    // await toPublicOnlySignTest();
+    // await toPublicTest();
+    // await publicTransferTest();
     console.log("END");
 }
 
@@ -35,7 +35,7 @@ const getPolkadotSignerAndAddress = async () => {
 /// Test to publicly transfer 10 DOL.
 const publicTransferTest = async () => {
     const privateWalletConfig = {
-        environment: Environment.Development,
+        environment: Environment.Production,
         network: Network.Dolphin
     }
 
@@ -43,7 +43,7 @@ const publicTransferTest = async () => {
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const assetId = new BN("1"); // DOL
-    const amount = new BN("10000000000000000000"); // 10 units
+    const amount = new BN("10000000000000"); // 10 units
 
     const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
 
@@ -67,7 +67,7 @@ const publicTransferTest = async () => {
 /// Test to privately transfer 5 pDOL.
 const privateTransferTest = async () => {
     const privateWalletConfig = {
-        environment: Environment.Development,
+        environment: Environment.Production,
         network: Network.Dolphin
     }
 
@@ -75,7 +75,7 @@ const privateTransferTest = async () => {
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const assetId = new BN("1"); // DOL
-    const amount = new BN("5000000000000000000"); // 5 units
+    const amount = new BN("5000000000000"); // 5 units
 
     const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
 
@@ -105,7 +105,7 @@ const privateTransferTest = async () => {
 
 const privateTransferOnlySignTest = async () => {
     const privateWalletConfig = {
-        environment: Environment.Development,
+        environment: Environment.Production,
         network: Network.Dolphin
     }
 
@@ -113,7 +113,7 @@ const privateTransferOnlySignTest = async () => {
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const assetId = new BN("1"); // DOL
-    const amount = new BN("5000000000000000000"); // 5 units
+    const amount = new BN("5000000000000"); // 5 units
 
     const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
 
@@ -126,9 +126,9 @@ const privateTransferOnlySignTest = async () => {
 
     console.log("The result of the signing: ", signResult);
 
-    console.log("Full: ", JSON.stringify(signResult.txs));
+    console.log("Full payload for use directly on the Manta Network parachains: ", JSON.stringify(signResult.txs[0]));
 
-    console.log("For xcm remote transact payload use: " + getXCMRemoteTransactPayload(signResult));
+    console.log("For xcm remote transact payload use: " + MantaUtilities.removeLeadingBytesFromHexString(JSON.stringify(signResult.txs[0]), 3, false));
 }
 
 
@@ -148,7 +148,7 @@ const toPrivateOnlySignTest = async () => {
     console.log("The private address is: ", privateAddress);
 
     const assetId = new BN("1"); // DOL
-    const amount = new BN("10000000000000000000"); // 10 units
+    const amount = new BN("10000000000000"); // 10 units
 
     await privateWallet.initalWalletSync();
 
@@ -159,9 +159,9 @@ const toPrivateOnlySignTest = async () => {
 
     console.log("The result of the signing: ", signResult);
 
-    console.log("Full: ", JSON.stringify(signResult.txs));
+    console.log("Full payload for use directly on the Manta Network parachains: ", JSON.stringify(signResult.txs[0]));
 
-    console.log("For xcm remote transact payload use: " + getXCMRemoteTransactPayload(signResult));
+    console.log("For xcm remote transact payload use: " + MantaUtilities.removeLeadingBytesFromHexString(JSON.stringify(signResult.txs[0]), 3, false));
 }
 
 /// Test to execute a `ToPrivate` transaction.
@@ -169,7 +169,7 @@ const toPrivateOnlySignTest = async () => {
 const toPrivateTest = async () => {
 
     const privateWalletConfig = {
-        environment: Environment.Development,
+        environment: Environment.Production,
         network: Network.Dolphin,
         loggingEnabled: true
     }
@@ -181,7 +181,7 @@ const toPrivateTest = async () => {
     console.log("The private address is: ", privateAddress);
 
     const assetId = new BN("1"); // DOL
-    const amount = new BN("10000000000000000000"); // 10 units
+    const amount = new BN("10000000000000"); // 10 units
 
     await privateWallet.initalWalletSync();
 
@@ -211,7 +211,7 @@ const toPrivateTest = async () => {
 const toPublicOnlySignTest = async () => {
 
     const privateWalletConfig = {
-        environment: Environment.Development,
+        environment: Environment.Production,
         network: Network.Dolphin
     }
 
@@ -222,7 +222,7 @@ const toPublicOnlySignTest = async () => {
     console.log("The private address is: ", privateAddress);
 
     const assetId = new BN("1"); // DOL
-    const amount = new BN("5000000000000000000"); // 5 units
+    const amount = new BN("5000000000000"); // 5 units
 
     await privateWallet.initalWalletSync();
 
@@ -233,9 +233,9 @@ const toPublicOnlySignTest = async () => {
 
     console.log("The result of the signing: ", signResult);
 
-    console.log("Full: ", JSON.stringify(signResult.txs));
+    console.log("Full payload for use directly on the Manta Network parachains: ", JSON.stringify(signResult.txs[0]));
 
-    console.log("For xcm remote transact payload use: " + getXCMRemoteTransactPayload(signResult));
+    console.log("For xcm remote transact payload use: " + MantaUtilities.removeLeadingBytesFromHexString(JSON.stringify(signResult.txs[0]), 3, false));
 }
 
 /// Test to execute a `ToPublic` transaction.
@@ -243,7 +243,7 @@ const toPublicOnlySignTest = async () => {
 const toPublicTest = async () => {
 
     const privateWalletConfig = {
-        environment: Environment.Development,
+        environment: Environment.Production,
         network: Network.Dolphin
     }
 
@@ -254,7 +254,7 @@ const toPublicTest = async () => {
     console.log("The private address is: ", privateAddress);
 
     const assetId = new BN("1"); // DOL
-    const amount = new BN("5000000000000000000"); // 5 units
+    const amount = new BN("5000000000000"); // 5 units
 
     await privateWallet.initalWalletSync();
 

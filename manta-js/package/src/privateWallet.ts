@@ -558,10 +558,3 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     return json;
   }
 }
-
-// removes first 3 bytes and json bits of sign-result
-function getXCMRemoteTransactPayload(signResult: any): string {
-  let res = JSON.stringify(signResult.txs).slice(10);
-  let raw = res.replace("[", "").replace("\"", "").replace("]", "");
-  return raw;
-}
