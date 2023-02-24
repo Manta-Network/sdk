@@ -94,7 +94,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     return config.NETWORKS;
   }
 
-  /// Returns the ZkAddress (ZK Address) of the currently connected manta-signer instance.
+  /// Returns the ZkAddress of the currently connected manta-signer instance.
   async getZkAddress(): Promise<Address> {
     try {
       await this.waitForWallet();
