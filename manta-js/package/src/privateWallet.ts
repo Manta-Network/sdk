@@ -131,9 +131,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// Requirements: Must be called once after creating an instance of MantaPrivateWallet
   /// and must be called before walletSync().
   async initalWalletSync(): Promise<boolean> {
-    if (!this.api.isReady) {
-      throw new Error('Polkadot.js API is not ready.');
-    }
+    this.checkApiIsReady();
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
@@ -157,9 +155,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// balance state. This method runs until all the ledger data has arrived at and
   /// has been synchronized with the wallet.
   async walletSync(): Promise<boolean> {
-    if (!this.api.isReady) {
-      throw new Error('Polkadot.js API is not ready.');
-    }
+    this.checkApiIsReady();
     try {
       if (!this.initialSyncIsFinished) {
         throw new Error('Must call initalWalletSync before walletSync!');
@@ -184,9 +180,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// Returns the private balance of the currently connected zkAddress for the currently
   /// connected network.
   async getPrivateBalance(assetId: BN): Promise<BN | null> {
-    if (!this.api.isReady) {
-      throw new Error('Polkadot.js API is not ready.');
-    }
+    this.checkApiIsReady();
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
@@ -204,9 +198,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// Returns the metadata for an asset with a given `assetId` for the currently
   /// connected network.
   async getAssetMetadata(assetId: BN): Promise<any> {
-    if (!this.api.isReady) {
-      throw new Error('Polkadot.js API is not ready.');
-    }
+    this.checkApiIsReady();
     const data: any = await this.api.query.assetManager.assetIdMetadata(assetId);
     const json = JSON.stringify(data.toHuman());
     const jsonObj = JSON.parse(json);
@@ -221,9 +213,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   /// Executes a "To Private" transaction for any fungible token.
   async toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
-    if (!this.api.isReady) {
-      throw new Error('Polkadot.js API is not ready.');
-    }
+    this.checkApiIsReady();
     const signed = await this.toPrivateBuild(assetId,amount,polkadotSigner, polkadotAddress);
     // transaction rejected by signer
     if (signed === null) {
@@ -236,9 +226,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// Builds and signs a "To Private" transaction for any fungible token.
   /// Note: This transaction is not published to the ledger.
   async toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null> {
-    if (!this.api.isReady) {
-      throw new Error('Polkadot.js API is not ready.');
-    }
+    this.checkApiIsReady();
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
@@ -256,9 +244,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   /// Executes a "Private Transfer" transaction for any fungible token.
   async privateTransferSend(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
-    if (!this.api.isReady) {
-      throw new Error('Polkadot.js API is not ready.');
-    }
+    this.checkApiIsReady();
     const signed = await this.privateTransferBuild(assetId,amount,toPrivateAddress,polkadotSigner,polkadotAddress);
     // transaction rejected by signer
     if (signed === null) {
@@ -271,9 +257,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// Builds a "Private Transfer" transaction for any fungible token.
   /// Note: This transaction is not published to the ledger.
   async privateTransferBuild(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null> {
-    if (!this.api.isReady) {
-      throw new Error('Polkadot.js API is not ready.');
-    }
+    this.checkApiIsReady();
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
@@ -291,9 +275,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   /// Executes a "To Public" transaction for any fungible token.
   async toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void> {
-    if (!this.api.isReady) {
-      throw new Error('Polkadot.js API is not ready.');
-    }
+    this.checkApiIsReady();
     const signed = await this.toPublicBuild(assetId,amount,polkadotSigner, polkadotAddress);
     // transaction rejected by signer
     if (signed === null) {
@@ -306,9 +288,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// Builds and signs a "To Public" transaction for any fungible token.
   /// Note: This transaction is not published to the ledger.
   async toPublicBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null> {
-    if (!this.api.isReady) {
-      throw new Error('Polkadot.js API is not ready.');
-    }
+    this.checkApiIsReady();
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
@@ -363,6 +343,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
 
     return { api };
+  }
+
+  private checkApiIsReady(): void {
+    if (!this.api.isReady) {
+      throw new Error('Polkadot.js API is not ready.');
+    }
   }
 
   /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
