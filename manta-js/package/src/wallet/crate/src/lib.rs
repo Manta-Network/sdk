@@ -850,52 +850,51 @@ impl RawFullParameters {
 impl From<RawFullParameters> for FullParameters {
     #[inline]
     fn from(value: RawFullParameters) -> FullParameters {
-        let RawFullParameters {
-            address_partition_function,
-            group_generator,
-            incoming_base_encryption_scheme,
-            light_incoming_base_encryption_scheme,
-            nullifier_commitment_scheme,
-            outgoing_base_encryption_scheme,
-            schnorr_hash_function,
-            utxo_accumulator_item_hash,
-            utxo_accumulator_model,
-            utxo_commitment_scheme,
-            viewing_key_derivation_function,
-        } = value;
+        From::from(&value)
+    }
+}
+
+impl From<&RawFullParameters> for FullParameters {
+    #[inline]
+    fn from(value: &RawFullParameters) -> FullParameters {
         config::FullParameters::new(
             config::Parameters {
                 base: manta_accounting::transfer::utxo::protocol::BaseParameters {
-                    group_generator: Decode::decode(&group_generator[..]).expect("Decoding error"),
+                    group_generator: Decode::decode(&value.group_generator[..])
+                        .expect("Decoding error"),
                     incoming_base_encryption_scheme: Decode::decode(
-                        &incoming_base_encryption_scheme[..],
+                        &value.incoming_base_encryption_scheme[..],
                     )
                     .expect("Decoding error"),
                     light_incoming_base_encryption_scheme: Decode::decode(
-                        &light_incoming_base_encryption_scheme[..],
+                        &value.light_incoming_base_encryption_scheme[..],
                     )
                     .expect("Decoding error"),
-                    nullifier_commitment_scheme: Decode::decode(&nullifier_commitment_scheme[..])
-                        .expect("Decoding error"),
+                    nullifier_commitment_scheme: Decode::decode(
+                        &value.nullifier_commitment_scheme[..],
+                    )
+                    .expect("Decoding error"),
                     outgoing_base_encryption_scheme: Decode::decode(
-                        &outgoing_base_encryption_scheme[..],
+                        &value.outgoing_base_encryption_scheme[..],
                     )
                     .expect("Decoding error"),
-                    utxo_accumulator_item_hash: Decode::decode(&utxo_accumulator_item_hash[..])
-                        .expect("Decoding error"),
-                    utxo_commitment_scheme: Decode::decode(&utxo_commitment_scheme[..])
+                    utxo_accumulator_item_hash: Decode::decode(
+                        &value.utxo_accumulator_item_hash[..],
+                    )
+                    .expect("Decoding error"),
+                    utxo_commitment_scheme: Decode::decode(&value.utxo_commitment_scheme[..])
                         .expect("Decoding error"),
                     viewing_key_derivation_function: Decode::decode(
-                        &viewing_key_derivation_function[..],
+                        &value.viewing_key_derivation_function[..],
                     )
                     .expect("Decoding error"),
                 },
-                address_partition_function: Decode::decode(&address_partition_function[..])
+                address_partition_function: Decode::decode(&value.address_partition_function[..])
                     .expect("Decoding error"),
-                schnorr_hash_function: Decode::decode(&schnorr_hash_function[..])
+                schnorr_hash_function: Decode::decode(&value.schnorr_hash_function[..])
                     .expect("Decoding error"),
             },
-            Decode::decode(&utxo_accumulator_model[..]).expect("Decoding error"),
+            Decode::decode(&value.utxo_accumulator_model[..]).expect("Decoding error"),
         )
         .into()
     }
@@ -954,15 +953,22 @@ impl RawMultiProvingContext {
     }
 }
 
-impl From<RawMultiProvingContext> for MultiProvingContext {
+impl From<&RawMultiProvingContext> for MultiProvingContext {
     #[inline]
-    fn from(value: RawMultiProvingContext) -> Self {
+    fn from(value: &RawMultiProvingContext) -> Self {
         config::MultiProvingContext {
             to_private: Decode::decode(&value.to_private[..]).expect("Decoding Error"),
             private_transfer: Decode::decode(&value.private_transfer[..]).expect("Decoding Error"),
             to_public: Decode::decode(&value.to_public[..]).expect("Decoding Error"),
         }
         .into()
+    }
+}
+
+impl From<RawMultiProvingContext> for MultiProvingContext {
+    #[inline]
+    fn from(value: RawMultiProvingContext) -> Self {
+        From::from(&value)
     }
 }
 
@@ -1024,7 +1030,7 @@ pub fn accounts_from_mnemonic(mnemonic: Mnemonic) -> AccountTable {
 #[wasm_bindgen]
 pub fn authorization_context_from_mnemonic(
     mnemonic: Mnemonic,
-    parameters: RawFullParameters,
+    parameters: &RawFullParameters,
 ) -> AuthorizationContext {
     AuthorizationContext(functions::authorization_context_from_mnemonic(
         mnemonic.0,
@@ -1035,7 +1041,7 @@ pub fn authorization_context_from_mnemonic(
 /// Creates a viewing key from `mnemonic`.
 #[inline]
 #[wasm_bindgen]
-pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: RawFullParameters) -> ViewingKey {
+pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: &RawFullParameters) -> ViewingKey {
     functions::viewing_key_from_mnemonic(mnemonic.0, &FullParameters::from(parameters).0.base)
         .into()
 }
@@ -1043,7 +1049,7 @@ pub fn viewing_key_from_mnemonic(mnemonic: Mnemonic, parameters: RawFullParamete
 /// Creates an [`Address`] from `mnemonic`.
 #[inline]
 #[wasm_bindgen]
-pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: RawFullParameters) -> Address {
+pub fn address_from_mnemonic(mnemonic: Mnemonic, parameters: &RawFullParameters) -> Address {
     Address(functions::address_from_mnemonic(
         mnemonic.0,
         &FullParameters::from(parameters).0.base,
@@ -1056,8 +1062,8 @@ impl Signer {
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
-        parameters: RawFullParameters,
-        proving_context: RawMultiProvingContext,
+        parameters: &RawFullParameters,
+        proving_context: &RawMultiProvingContext,
         storage_state_option: StorageStateOption,
     ) -> Self {
         Self(functions::new_signer(
@@ -1078,7 +1084,7 @@ impl Signer {
     pub fn new_default_with_random_context() -> Self {
         let parameters = get_transfer_parameters();
         let mut rng = manta_crypto::rand::OsRng;
-        let full_parameters = FullParameters::from(parameters.clone()).0;
+        let full_parameters = FullParameters::from(&parameters).0;
         let full_parameters_ref = config::FullParametersRef::new(
             &full_parameters.base,
             &full_parameters.utxo_accumulator_model,
@@ -1096,7 +1102,11 @@ impl Signer {
             private_transfer,
             to_public,
         });
-        Self::new(parameters, proving_context.into(), StorageStateOption(None))
+        Self::new(
+            &parameters,
+            &proving_context.into(),
+            StorageStateOption(None),
+        )
     }
 
     /// Loads `accounts` to `self`.
