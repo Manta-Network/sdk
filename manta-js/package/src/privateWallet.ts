@@ -499,6 +499,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   ): Promise<InitWasmResult> {
     // will be replaced by Browser.runtime.getURL(url)
     const wasm = await import('./wallet/crate/pkg/manta_wasm_wallet');
+    wasm.init_panic_hook();
     const provingPrefix =
       'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay';
     const parameterPrefix =
