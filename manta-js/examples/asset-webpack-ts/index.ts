@@ -74,7 +74,7 @@ const publicTransferOnlySignTest = async () => {
 
     const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
     const assetId = new BN("1"); // DOL
-    const amount = new BN("10000000000000000000"); // 10 units
+    const amount = new BN("10000000000000"); // 10 units
 
     let tx = MantaUtilities.publicTransferBuild(privateWallet.api, assetId, amount, destinationAddress);
 
