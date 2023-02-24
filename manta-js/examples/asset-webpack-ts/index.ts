@@ -4,12 +4,29 @@ import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
 async function main() {
-    await toPrivateOnlySignTest();
+    await testStorage();
     // await toPrivateTest();
     // await privateTransferTest();
     // await toPublicTest();
     // await publicTransferTest();
     console.log("END");
+}
+
+/// Test to privately transfer 5 pDOL.
+const testStorage = async () => {
+    const privateWalletConfig = {
+        environment: Environment.Development,
+        network: Network.Dolphin
+    }
+
+    const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.updateStorage();
+    const res = await privateWallet.updateFromStorage();
+    //await privateWallet.initalWalletSync();
+    const storage = await privateWallet.getStorage();
+    
+    console.log(res);
+    console.log(storage);
 }
 
 // Get Polkadot JS Signer and Polkadot JS account address.
@@ -111,9 +128,9 @@ const toPrivateOnlySignTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
-    debugger;
+    //debugger;
     const polkadotConfig = await getPolkadotSignerAndAddress();
-    debugger;
+    //debugger;
     const privateAddress = await privateWallet.getZkAddress();
     console.log("The private address is: ", privateAddress);
 

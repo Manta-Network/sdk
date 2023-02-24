@@ -1334,6 +1334,12 @@ impl Wallet {
         .into()
     }
 
+    /// Saves `self` as a [`StorageStateOption`] in `network`.
+    #[inline]
+    pub fn get_storage_string(&self, network: Network) -> String {
+        serde_json::to_string(&self.set_storage(network)).unwrap()
+    }
+
     /// Tries to update `self` from `storage_state` in `network`.
     #[inline]
     pub fn get_storage(&self, storage_state: StorageStateOption, network: Network) -> bool {
