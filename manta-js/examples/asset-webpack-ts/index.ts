@@ -4,8 +4,8 @@ import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
 async function main() {
-    await toPrivateOnlySignTest();
-    // await toPrivateTest();
+    // await toPrivateOnlySignTest();
+    await toPrivateTest();
     // await privateTransferTest();
     // await toPublicTest();
     // await publicTransferTest();
@@ -111,9 +111,7 @@ const toPrivateOnlySignTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
-    debugger;
     const polkadotConfig = await getPolkadotSignerAndAddress();
-    debugger;
     const privateAddress = await privateWallet.getZkAddress();
     console.log("The private address is: ", privateAddress);
 
@@ -139,13 +137,17 @@ const toPrivateOnlySignTest = async () => {
 const toPrivateTest = async () => {
 
     const privateWalletConfig = {
-        environment: Environment.Development,
+        environment: Environment.Production,
         network: Network.Dolphin,
         loggingEnabled: true
     }
-
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    // @ts-ignore
+    window.privateWallet = privateWallet;
     const polkadotConfig = await getPolkadotSignerAndAddress();
+
+    await privateWallet.loadUserMnemonic();
+    await privateWallet.loadAuthorizationContext();
 
     const privateAddress = await privateWallet.getZkAddress();
     console.log("The private address is: ", privateAddress);
@@ -153,11 +155,13 @@ const toPrivateTest = async () => {
     const assetId = new BN("1"); // DOL
     const amount = new BN("10000000000000000000"); // 10 units
 
+    debugger;
     await privateWallet.initalWalletSync();
 
+    debugger;
     const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("The initial private balance is: ", initialPrivateBalance.toString());
-
+    debugger;
     await privateWallet.toPrivateSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
     while (true) {
