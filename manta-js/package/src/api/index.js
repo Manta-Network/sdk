@@ -183,7 +183,7 @@ export default class Api {
         );
       }
       const pull_result = {
-        should_continue: result.should_continue,
+        should_continue: Boolean(result.should_continue),
         receivers: receivers,
         senders: senders,
       };
