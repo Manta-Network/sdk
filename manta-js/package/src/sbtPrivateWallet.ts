@@ -40,19 +40,15 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
 
   /// Gets metadata of SBT, corresponds to image
   async getSBTMetadata(assetId: BN): Promise<string | null> {
-    const metadata: any = await this.api.query.assetManager.assetIdMetadata(assetId);
+    const metadata: any = await this.api.query.mantaSbt.sbtMetadata(assetId);
     if (metadata.isNone) {
       return null
     } else {
       // will not fail due to check above
       const data = metadata.unwrap();
 
-      if (data.isSbt) {
-        const asciiHex = data.asSbt.toString()
-        return hex2a(asciiHex)
-      } else {
-        return null;
-      }
+      const asciiHex = data.toString()
+      return hex2a(asciiHex)
     }
   }
 
