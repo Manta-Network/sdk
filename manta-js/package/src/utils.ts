@@ -50,7 +50,7 @@ export class MantaUtilities {
   static async publicTransferSend(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void> {
     api.setSigner(polkadotSigner);
     try {
-      const tx = this.publicTransferBuild(api, assetId, amount, destinationAddress);
+      const tx = await this.publicTransferBuild(api, assetId, amount, destinationAddress);
       await tx.signAndSend(senderAddress);
     } catch (e) {
       console.log('Failed to execute public transfer.');
@@ -59,10 +59,10 @@ export class MantaUtilities {
   }
 
   /// Creates a public transfer payload.
-  static publicTransferBuild(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address): any {
+  static async publicTransferBuild(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address): Promise<any> {
     const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
       const amountBN = amount.toArray('le', 16);
-      const tx = api.tx.mantaPay.publicTransfer(
+      const tx = await api.tx.mantaPay.publicTransfer(
         { id: assetIdArray, value: amountBN },
         destinationAddress
       );
