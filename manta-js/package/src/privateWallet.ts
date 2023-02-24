@@ -2,8 +2,9 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import Api, { ApiConfig } from './api/index';
 import BN from 'bn.js';
+import { get as getStorage, set as setStorage } from 'idb-keyval';
 import config from './manta-config.json';
-import { Transaction as WasmTransaction, Wallet as WasmWallet } from './wallet/crate/pkg/manta_wasm_wallet';
+import { Transaction as WasmTransaction, Wallet as WasmWallet, StorageStateOption } from './wallet/crate/pkg/manta_wasm_wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import {
   Address,
@@ -72,6 +73,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   wasmApi: any;
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
+  storageUpdated: boolean;
   loggingEnabled: boolean;
   wasmNetworkType: any;
   isBindAuthorizationContext: boolean;
@@ -95,6 +97,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.wasmApi = wasmApi;
     this.walletIsBusy = false;
     this.initialSyncIsFinished = false;
+    this.storageUpdated = false;
     this.loggingEnabled = loggingEnabled;
     this.isBindAuthorizationContext = false;
     this.parameters = parameters;
@@ -417,6 +420,29 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     } catch (e) {
       this.walletIsBusy = false;
       console.error('Failed to build transaction.', e);
+      return null;
+    }
+  }
+
+  async getWalletStorage(): Promise<StorageStateOption> {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      this.log('Beginning storage write');
+      
+      const networkType = this.wasm.Network.from_string(`"${this.network}"`);
+      const storageOption = await this.wasmWallet.set_storage(networkType);
+      if (storageOption) {
+        return storageOption;
+      } //else {
+      //   return false;
+      // }
+      // this.storageUpdated = true;
+      // this.walletIsBusy = false;
+      // return true;
+    } catch (e) {
+      this.walletIsBusy = false;
+      console.error('Storage failed.', e);
       return null;
     }
   }
