@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "outDir": "dist",
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": true,
     "skipLibCheck": true,
@@ -10,7 +9,8 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "noEmit": false
+    "noEmit": false,
+    "declaration": true,
   },
   "exclude": ["node_modules", "src/wallet", "dist"]
 }
