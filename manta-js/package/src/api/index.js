@@ -60,7 +60,8 @@ export default class Api {
 
   _log(message) {
     if (this.loggingEnabled) {
-      console.log('[INFO]: '+message);
+      console.log('[INFO]: '+ message);
+      console.log(performance.now());
     }
   }
 
@@ -183,7 +184,7 @@ export default class Api {
         );
       }
       const pull_result = {
-        should_continue: result.should_continue,
+        should_continue: result.should_continue.isTrue,
         receivers: receivers,
         senders: senders,
       };

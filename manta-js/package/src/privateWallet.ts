@@ -184,9 +184,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       this.walletIsBusy = true;
       this.log('Beginning initial sync');
       const startTime = performance.now();
-      debugger;
       await this.wasmWallet.restart(this.getWasmNetWork());
-      debugger;
       const endTime = performance.now();
       this.log(
         `Initial sync finished in ${(endTime - startTime) / 1000} seconds`
@@ -430,6 +428,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private log(message: string): void {
     if (this.loggingEnabled) {
       console.log('[INFO]: ' + message);
+      console.log(performance.now());
     }
   }
 
@@ -655,7 +654,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   private async requestUserMnemonic(): Promise<any> {
     // reqeust mnemonic from extension
-    const mnemonic = await 'elbow powder under garbage giant intact axis again amused describe swallow mistake';
+    const mnemonic = await 'helmet say exclude blind crumble blur rival wonder exclude regret meadow tent';
     if (!mnemonic) {
       // throw error when user reject
     }
@@ -666,7 +665,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     await this.loadUserMnemonic();
     let result: any = undefined;
     try {
+      this.log('Sign start');
       result = await func();
+      this.log('Sign end');
     } catch (error) {
       console.error('Unable to execute SpendingKey(sign) operation.', error);
     }
@@ -846,9 +847,30 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     delete x.nullifier;
   }
 
+  // replace all Uint8Array type to Array
+  // replace all bigint type to string
+  private formatPostData(post: any): any {
+    const walk = function(data: any, keys: string[]) {
+      for (const key of keys) {
+        if (data[key] instanceof Uint8Array) {
+          data[key] = Array.from(data[key]);
+        } else if (typeof data[key] === 'bigint') {
+          data[key] = (data[key]).toString();
+        } else if (data[key]) {
+          const tKeys = Object.keys(data[key]);
+          if (tKeys.length > 0) {
+            walk(data[key], tKeys);
+          }
+        }
+      }
+    };
+    walk(post, Object.keys(post));
+    return post;
+  }
+
   /// NOTE: `post` from manta-rs sign result should match runtime side data structure type.
   private transferPost(post: any): any {
-    const json = JSON.parse(JSON.stringify(post));
+    const json = JSON.parse(JSON.stringify(this.formatPostData(post)));
 
     // transfer authorization_signature format
     if (json.authorization_signature != null) {
