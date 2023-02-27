@@ -526,10 +526,11 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       priConfig.errorCallback,
       Boolean(priConfig.loggingEnabled),
       async () => {
-        const stateString = await wasmWallet.get_storage_string(
-          wasm.Network.from_string(`"${priConfig.network}"`),
-        );
-        await MantaPrivateWallet.saveStorageStateToLocal(`${priConfig.network}`, stateString);
+        console.log('save data');
+        // const stateString = await wasmWallet.get_storage_string(
+        //   wasm.Network.from_string(`"${priConfig.network}"`),
+        // );
+        // await MantaPrivateWallet.saveStorageStateToLocal(`${priConfig.network}`, stateString);
       }
     );
 
@@ -665,10 +666,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     const mnemonic = await this.requestUserMnemonic();
     const accountTable = await this.wasm.accounts_from_mnemonic(mnemonic);
     await this.wasmWallet.load_accounts(accountTable, this.getWasmNetWork());
-    // await this.wasmWallet.update_authorization_context(this.getWasmNetWork());
+    await this.wasmWallet.update_authorization_context(this.getWasmNetWork());
   }
 
   public async loadAuthorizationContext() {
+    const autoUpdateAuthContext = await this.wasmWallet.update_authorization_context(this.getWasmNetWork());
+    if (autoUpdateAuthContext) {
+      return;
+    }
     const mnemonic = await this.requestUserMnemonic();
     const authorizationContext = await this.wasm.authorization_context_from_mnemonic(
       mnemonic,
@@ -699,15 +704,15 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     } catch (error) {
       console.error('Unable to execute SpendingKey(sign) operation.', error);
     }
-    this.dropUserMnemonic();
+    // this.dropUserMnemonic();
     return result;
   }
 
   private async wrapperViewingKeyOperation(func: () => any): Promise<any> {
-    if (!this.isBindAuthorizationContext) {
-      await this.loadAuthorizationContext();
-      this.isBindAuthorizationContext = true;
-    }
+    // if (!this.isBindAuthorizationContext) {
+    //   await this.loadAuthorizationContext();
+    //   this.isBindAuthorizationContext = true;
+    // }
     let result: any = undefined;
     try {
       result = await func();

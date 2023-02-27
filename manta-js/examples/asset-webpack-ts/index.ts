@@ -51,8 +51,8 @@ const initWallet = async () => {
 
     _log('Load User Mnemonic');
     await globalPrivateWallet.loadUserMnemonic();
-    _log('Load Authorization Context');
-    await globalPrivateWallet.loadAuthorizationContext();
+    // _log('Load Authorization Context');
+    // await globalPrivateWallet.loadAuthorizationContext();
     _log('Start get zkAddress');
     const privateAddress = await globalPrivateWallet.getZkAddress();
     _log("The zkAddress is: ", privateAddress);
