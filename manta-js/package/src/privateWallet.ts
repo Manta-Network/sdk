@@ -524,7 +524,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       priConfig.pullCallback,
       priConfig.errorCallback,
       Boolean(priConfig.loggingEnabled),
-      async () => {
+      async ({ utxoDataChanged }: { utxoDataChanged: boolean }) => {
+        if (!utxoDataChanged) {
+          return;
+        }
         console.log('save data');
         const stateString = await wasmWallet.set_storage(
           wasm.Network.from_string(`"${priConfig.network}"`),
