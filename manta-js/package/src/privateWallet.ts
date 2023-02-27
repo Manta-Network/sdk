@@ -15,6 +15,7 @@ import {
   PrivateWalletConfig,
 } from './sdk.interfaces';
 import { NATIVE_TOKEN_ASSET_ID } from './utils';
+import { get as getIdbData, set as setIdbData } from 'idb-keyval';
 
 const rpc = config.RPC;
 const types = config.TYPES;
@@ -492,17 +493,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     console.log(`file download successful: ${performance.now()}`);
 
-    const wasmApiConfig = new ApiConfig(
-      priConfig.maxReceiversPullSize ?? DEFAULT_PULL_SIZE,
-      priConfig.maxSendersPullSize ?? DEFAULT_PULL_SIZE,
-      priConfig.pullCallback,
-      priConfig.errorCallback,
-      Boolean(priConfig.loggingEnabled)
-    );
-
-    const wasmApi = new Api(api, wasmApiConfig);
-    const networkType = wasm.Network.from_string(`"${priConfig.network}"`);
-
     const fullParameters = new wasm.RawFullParameters(
       parameterResults['address-partition-function.dat'],
       parameterResults['group-generator.dat'],
@@ -522,23 +512,61 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       provingResults['private-transfer.lfs'],
       provingResults['to-public.lfs'],
     );
-    // const storageStateOption = wasm.StorageStateOption.from_string(
-    //   wasmApi.loadStorageDataFromLocal(`${networkType}`)
-    // );
-    const storageStateOption = wasm.StorageStateOption.from_string('null');
+    const storageData = await MantaPrivateWallet.getStorageStateFromLocal(`${priConfig.network}`);
+    const storageStateOption = wasm.StorageStateOption.from_string(storageData);
     console.log(`Signer initial time: ${performance.now()}`);
     const wasmSigner = new wasm.Signer(fullParameters, multiProvingContext, storageStateOption);
     console.log(`Signer initial end time: ${performance.now()}`);
     // const wasmSigner = wasm.Signer.new_default_with_random_context();
-    const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
     const wasmWallet = new wasm.Wallet();
-    wasmWallet.set_network(wasmLedger, wasmSigner, networkType);
+    const wasmApiConfig = new ApiConfig(
+      priConfig.maxReceiversPullSize ?? DEFAULT_PULL_SIZE,
+      priConfig.maxSendersPullSize ?? DEFAULT_PULL_SIZE,
+      priConfig.pullCallback,
+      priConfig.errorCallback,
+      Boolean(priConfig.loggingEnabled),
+      async () => {
+        const stateString = await wasmWallet.get_storage_string(
+          wasm.Network.from_string(`"${priConfig.network}"`),
+        );
+        await MantaPrivateWallet.saveStorageStateToLocal(`${priConfig.network}`, stateString);
+      }
+    );
+
+    const wasmApi = new Api(api, wasmApiConfig);
+    const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
+    wasmWallet.set_network(
+      wasmLedger,
+      wasmSigner,
+      wasm.Network.from_string(`"${priConfig.network}"`)
+    );
     return {
       wasm,
       wasmWallet,
       wasmApi,
       parameters: fullParameters,
     };
+  }
+
+  private static async saveStorageStateToLocal (network: string, data: string): Promise<boolean> {
+    try {
+      await setIdbData(`storage_state_${network}`, data);
+    } catch (ex) {
+      console.error(ex);
+      return false;
+    }
+    return true;
+  }
+
+  private static async getStorageStateFromLocal (network: string): Promise<string> {
+    let result: string;
+    try {
+      result = await getIdbData(`storage_state_${network}`);
+      debugger;
+    } catch (ex) {
+      console.error(ex);
+    }
+    return result || 'null';
   }
 
   private getWasmNetWork(): any {

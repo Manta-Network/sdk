@@ -6,41 +6,21 @@ import { base64Decode } from '@polkadot/util-crypto';
 import * as $ from 'scale-codec';
 import { u8aToU8a } from '@polkadot/util';
 
-
-// function dataURItoBlob(dataURI) {
-//   // convert base64 to raw binary data held in a string
-//   const byteString = atob(dataURI.split(',')[1]);
-
-//   // separate out the mime component
-//   const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-
-//   // write the bytes of the string to an ArrayBuffer
-//   const arrayBuffer = new ArrayBuffer(byteString.length);
-//   const _ia = new Uint8Array(arrayBuffer);
-//   for (let i = 0; i < byteString.length; i++) {
-//     _ia[i] = byteString.charCodeAt(i);
-//   }
-
-//   const dataView = new DataView(arrayBuffer);
-//   const blob = new Blob([dataView], { type: mimeString });
-//   return blob;
-// }
-
-const formatStorageKey = (key) => `storage_data_${key}`;
-
 export class ApiConfig {
   constructor(
     maxReceiversPullSize,
     maxSendersPullSize,
     pullCallback = null,
     errorCallback = null,
-    loggingEnabled = false
+    loggingEnabled = false,
+    prePullCallback = null,
   ) {
     this.loggingEnabled = loggingEnabled;
     this.maxReceiversPullSize = maxReceiversPullSize;
     this.maxSendersPullSize = maxSendersPullSize;
     this.pullCallback = pullCallback;
     this.errorCallback = errorCallback;
+    this.prePullCallback = prePullCallback;
   }
 }
 
@@ -56,6 +36,7 @@ export default class Api {
     this.txResHandler = null;
     this.pullCallback = this.config.pullCallback;
     this.errorCallback = this.config.errorCallback;
+    this.prePullCallback = this.config.prePullCallback;
   }
 
   _log(message) {
@@ -142,6 +123,13 @@ export default class Api {
   // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
   async pull(checkpoint) {
     try {
+      // when rust side called pull, we need to save the state to local
+      // so, no need to save state periodically
+      // FIXME will lose the last new state
+      if (typeof this.prePullCallback === 'function') {
+        this.prePullCallback();
+      }
+
       await this.api.isReady;
 
       this._log('checkpoint ' + JSON.stringify(checkpoint));
@@ -241,44 +229,6 @@ export default class Api {
       console.error(err);
       return { Ok: FAILURE };
     }
-  }
-
-  /**
-   * storage data to local
-   * @param {String} key `${network.toString()}`
-   * @param {Blob} data
-   * @returns {Promise<Object>}
-   */
-  async saveStorageDataToLocal(key, data) {
-    // in Extension, this api will be: chrome.storage.local.set
-    // will encrypt data with a user key
-    const reader = new FileReader();
-    return new Promise((resolve) => {
-      try {
-        reader.addEventListener('load', () => {
-          localStorage.setItem(formatStorageKey(key), reader.result);
-          resolve({Ok: SUCCESS});
-        });
-        reader.addEventListener('error', () => {
-          resolve({Ok: FAILURE});
-        });
-        // Read the contents of the specified Blob or File
-        reader.readAsDataURL(data);
-      } catch (ex) {
-        resolve({Ok: FAILURE});
-      }
-    });
-  }
-
-  /**
-   * read storage data from local
-   * @param {String} key `${network.toString()}`
-   * @returns {String}
-   */
-  async loadStorageDataFromLocal(key) {
-    // in Extension, this api will be: chrome.storage.local.get
-    // will decrypt data with a user key
-    return localStorage.getItem(formatStorageKey(key)) || null;
   }
 }
 
