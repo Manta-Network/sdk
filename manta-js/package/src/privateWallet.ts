@@ -2,8 +2,9 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import Api, { ApiConfig } from './api/index';
 import BN from 'bn.js';
+import { get as getStorage, set as setStorage } from 'idb-keyval';
 import config from './manta-config.json';
-import { Transaction as WasmTransaction, Wallet as WasmWallet } from './wallet/crate/pkg/manta_wasm_wallet';
+import { Transaction as WasmTransaction, Wallet as WasmWallet, StorageStateOption } from './wallet/crate/pkg/manta_wasm_wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import {
   Address,
@@ -72,6 +73,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   wasmApi: any;
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
+  storageUpdated: boolean;
   loggingEnabled: boolean;
   isBindAuthorizationContext: boolean;
   parameters: any;
@@ -93,6 +95,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.wasmApi = wasmApi;
     this.walletIsBusy = false;
     this.initialSyncIsFinished = false;
+    this.storageUpdated = false;
     this.loggingEnabled = loggingEnabled;
     this.isBindAuthorizationContext = false;
     this.parameters = parameters;
@@ -421,6 +424,60 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
   }
 
+  /// Gets the storage for the specific Network Signer and updates the IndexDB storage
+  /// Returns true if successful, false if not
+  /// TODO: do not rewrite whole storage on updates (after prototype)
+  async updateStorage(): Promise<boolean> {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      this.log('Beginning storage write');
+      
+      const networkType = this.wasm.Network.from_string(`"${this.network}"`);
+      const storageOption = await this.wasmWallet.get_storage_string(networkType);
+
+      this.walletIsBusy = false;
+      if (!storageOption) {
+        return false;
+      } else {
+        // TODO: encrypt before save
+        setStorage(this.network, storageOption);
+      }
+
+      this.storageUpdated = true;
+      return true;
+    } catch (e) {
+      this.walletIsBusy = false;
+      console.error('Storage failed with error: ', e);
+      return false;
+    }
+  }
+
+  // Gets the storage from browser IndexDB and send to update the current Network Signer
+  async updateFromStorage(): Promise<boolean> {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      this.log('Beginning storage reading');
+      
+      const networkType = this.wasm.Network.from_string(`"${this.network}"`);
+      // TODO: dont forget decryption after encryption is implemented
+      const storage = this.wasm.StorageStateOption.from_string(await getStorage(this.network));
+      const res = this.wasmWallet.get_storage(storage, networkType);
+
+      this.walletIsBusy = false;
+      return res;
+    } catch (e) {
+      this.walletIsBusy = false;
+      console.error('Storage reading with error: ', e);
+      return false;
+    }
+  }
+
+  // ONLY FOR TESTING
+  async getStorage(): Promise<String> {
+    return await getStorage(this.network)
+  }
   ///
   /// Private Methods
   ///
@@ -473,7 +530,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   ): Promise<InitWasmResult> {
     // will be replaced by Browser.runtime.getURL(url)
     const wasm = await import('./wallet/crate/pkg/manta_wasm_wallet');
-    wasm.init_panic_hook();
     const provingPrefix =
       'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay';
     const parameterPrefix =
@@ -528,12 +584,15 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     // );
     const storageStateOption = wasm.StorageStateOption.from_string('null');
     console.log(`Signer initial time: ${performance.now()}`);
+
     const wasmSigner = new wasm.Signer(fullParameters, multiProvingContext, storageStateOption);
     console.log(`Signer initial end time: ${performance.now()}`);
+    
     // const wasmSigner = wasm.Signer.new_default_with_random_context();
     const wasmLedger = new wasm.PolkadotJsLedger(wasmApi);
     const wasmWallet = new wasm.Wallet();
     wasmWallet.set_network(wasmLedger, wasmSigner, networkType);
+
     return {
       wasm,
       wasmWallet,

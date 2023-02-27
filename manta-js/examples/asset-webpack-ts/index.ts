@@ -6,10 +6,27 @@ import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-da
 async function main() {
     // await toPrivateOnlySignTest();
     await toPrivateTest();
+    // await testStorage();
     // await privateTransferTest();
     // await toPublicTest();
     // await publicTransferTest();
     console.log("END");
+}
+
+/// Test to storage forward and back
+const testStorage = async () => {
+    const privateWalletConfig = {
+        environment: Environment.Development,
+        network: Network.Dolphin
+    }
+
+    const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.updateStorage();
+    const res = await privateWallet.updateFromStorage();
+    const storage = await privateWallet.getStorage();
+    
+    console.log(res);
+    console.log(storage);
 }
 
 // Get Polkadot JS Signer and Polkadot JS account address.
