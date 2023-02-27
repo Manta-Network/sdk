@@ -37,6 +37,7 @@ export default class Api {
     this.pullCallback = this.config.pullCallback;
     this.errorCallback = this.config.errorCallback;
     this.prePullCallback = this.config.prePullCallback;
+    this.flagUtxoDataChanged = true;
   }
 
   _log(message) {
@@ -127,7 +128,9 @@ export default class Api {
       // so, no need to save state periodically
       // FIXME will lose the last new state
       if (typeof this.prePullCallback === 'function') {
-        this.prePullCallback();
+        this.prePullCallback({
+          utxoDataChanged: this.flagUtxoDataChanged,
+        });
       }
 
       await this.api.isReady;
@@ -176,6 +179,7 @@ export default class Api {
         receivers: receivers,
         senders: senders,
       };
+      this.flagUtxoDataChanged = receivers.length > 0 || senders.length > 0;
       this._log('pull response: ' + JSON.stringify(pull_result));
       return pull_result;
     } catch (err) {

@@ -513,9 +513,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       provingResults['to-public.lfs'],
     );
     const storageData = await MantaPrivateWallet.getStorageStateFromLocal(`${priConfig.network}`);
-    const storageStateOption = wasm.StorageStateOption.from_string(storageData);
     console.log(`Signer initial time: ${performance.now()}`);
-    const wasmSigner = new wasm.Signer(fullParameters, multiProvingContext, storageStateOption);
+    const wasmSigner = new wasm.Signer(fullParameters, multiProvingContext, storageData);
     console.log(`Signer initial end time: ${performance.now()}`);
     // const wasmSigner = wasm.Signer.new_default_with_random_context();
     const wasmWallet = new wasm.Wallet();
@@ -525,12 +524,15 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       priConfig.pullCallback,
       priConfig.errorCallback,
       Boolean(priConfig.loggingEnabled),
-      async () => {
+      async ({ utxoDataChanged }: { utxoDataChanged: boolean }) => {
+        if (!utxoDataChanged) {
+          return;
+        }
         console.log('save data');
-        // const stateString = await wasmWallet.get_storage_string(
-        //   wasm.Network.from_string(`"${priConfig.network}"`),
-        // );
-        // await MantaPrivateWallet.saveStorageStateToLocal(`${priConfig.network}`, stateString);
+        const stateString = await wasmWallet.set_storage(
+          wasm.Network.from_string(`"${priConfig.network}"`),
+        );
+        await MantaPrivateWallet.saveStorageStateToLocal(`${priConfig.network}`, stateString);
       }
     );
 
