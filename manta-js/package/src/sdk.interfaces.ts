@@ -48,6 +48,10 @@ export interface IMantaPrivateWallet {
   loggingEnabled: boolean;
   parameters: any;
 
+  loadUserMnemonic():any;
+  loadAuthorizationContext():any;
+  dropAuthorizationContext():any;
+  dropUserMnemonic():any;
   convertPrivateAddressToJson(address: string): any
   getNetworks(): any;
   getZkAddress(): Promise<Address>;
