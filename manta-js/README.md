@@ -71,6 +71,7 @@ const privateWalletConfig: PrivateWalletConfig = {
 };
 
 const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+await privateWallet.api.isReady;
 ```
 
 `PrivateWalletConfig` has several optional arguments:
