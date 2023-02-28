@@ -13,14 +13,12 @@ export class ApiConfig {
     pullCallback = null,
     errorCallback = null,
     loggingEnabled = false,
-    prePullCallback = null,
   ) {
     this.loggingEnabled = loggingEnabled;
     this.maxReceiversPullSize = maxReceiversPullSize;
     this.maxSendersPullSize = maxSendersPullSize;
     this.pullCallback = pullCallback;
     this.errorCallback = errorCallback;
-    this.prePullCallback = prePullCallback;
   }
 }
 
@@ -36,7 +34,6 @@ export default class Api {
     this.txResHandler = null;
     this.pullCallback = this.config.pullCallback;
     this.errorCallback = this.config.errorCallback;
-    this.prePullCallback = this.config.prePullCallback;
     this.flagUtxoDataChanged = true;
   }
 
@@ -124,15 +121,6 @@ export default class Api {
   // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
   async pull(checkpoint) {
     try {
-      // when rust side called pull, we need to save the state to local
-      // so, no need to save state periodically
-      // FIXME will lose the last new state
-      if (typeof this.prePullCallback === 'function') {
-        this.prePullCallback({
-          utxoDataChanged: this.flagUtxoDataChanged,
-        });
-      }
-
       await this.api.isReady;
 
       this._log('checkpoint ' + JSON.stringify(checkpoint));
@@ -179,7 +167,9 @@ export default class Api {
         receivers: receivers,
         senders: senders,
       };
-      this.flagUtxoDataChanged = receivers.length > 0 || senders.length > 0;
+      if (!this.flagUtxoDataChanged) {
+        this.flagUtxoDataChanged = receivers.length > 0 || senders.length > 0;
+      }
       this._log('pull response: ' + JSON.stringify(pull_result));
       return pull_result;
     } catch (err) {

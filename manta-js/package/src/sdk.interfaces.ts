@@ -27,6 +27,8 @@ export type SignedTransaction = {
   txs: SubmittableExtrinsic<'promise', any>[]
 }
 
+export type RequestUserSeedPhrase = () => Promise<string | null>;
+
 export type PrivateWalletConfig = {
   environment: Environment,
   network: Network,
@@ -34,7 +36,10 @@ export type PrivateWalletConfig = {
   maxReceiversPullSize?: number,
   maxSendersPullSize?: number,
   pullCallback?: any,
-  errorCallback?: any
+  errorCallback?: any,
+  provingFilePath: string,
+  parametersFilePath: string,
+  requestUserSeedPhrase: RequestUserSeedPhrase,
 }
 
 export interface IMantaPrivateWallet {
@@ -48,16 +53,16 @@ export interface IMantaPrivateWallet {
   loggingEnabled: boolean;
   parameters: any;
 
-  loadUserMnemonic():any;
+  loadUserSeedPhrase():any;
   loadAuthorizationContext():any;
   dropAuthorizationContext():any;
-  dropUserMnemonic():any;
+  dropUserSeedPhrase():any;
   convertPrivateAddressToJson(address: string): any
   getNetworks(): any;
   getZkAddress(): Promise<Address>;
   getAssetMetadata(assetId: BN): Promise<any>;
   initalWalletSync(): Promise<boolean>;
-  walletSync(): Promise<boolean>;
+  walletSync(forceSync?: boolean): Promise<boolean>;
   getPrivateBalance(assetId: BN): Promise<BN | null>;
   toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
   toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
