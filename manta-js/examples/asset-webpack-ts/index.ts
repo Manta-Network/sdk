@@ -39,6 +39,7 @@ const publicTransferTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const assetId = new BN("1"); // DOL
@@ -89,6 +90,7 @@ const privateTransferTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const assetId = new BN("1"); // DOL
@@ -130,6 +132,7 @@ const toPrivateOnlySignTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const privateAddress = await privateWallet.getZkAddress();
@@ -163,6 +166,7 @@ const toPrivateTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const privateAddress = await privateWallet.getZkAddress();
@@ -205,6 +209,7 @@ const toPublicTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const privateAddress = await privateWallet.getZkAddress();
