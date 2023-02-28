@@ -4,15 +4,15 @@ import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 import type { Signer as InjectSigner } from '@polkadot/api/types';
 
-let globalPrivateWallet: MantaPrivateWallet = null;
-let globalPolkadotConfig: PolkadotSigner = null;
-const globalAssetId = new BN("1");
-const globalAmount = new BN("10000000000000000000");
-
-interface PolkadotSigner {
+interface PolkadotConfig {
     polkadotSigner: InjectSigner;
     polkadotAddress: string;
 }
+
+let privateWallet: MantaPrivateWallet = null;
+let polkadotConfig: PolkadotConfig = null;
+const assetId = new BN("1");
+const assetAmount = new BN("10000000000000000000");
 
 function _log(...message: any[]) {
     console.log('[INFO]: '+ message.join(''));
@@ -43,23 +43,20 @@ const initWallet = async () => {
         network: Network.Dolphin,
         loggingEnabled: true
     }
-    globalPrivateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    
+    // just for test
     // @ts-ignore
-    window.globalPrivateWallet = globalPrivateWallet;
+    window.privateWallet = privateWallet;
 
-    globalPolkadotConfig = await getPolkadotSignerAndAddress();
+    polkadotConfig = await getPolkadotSignerAndAddress();
 
-    _log('Load User Mnemonic');
-    await globalPrivateWallet.loadUserMnemonic();
-    // _log('Load Authorization Context');
-    // await globalPrivateWallet.loadAuthorizationContext();
-    _log('Start get zkAddress');
-    const privateAddress = await globalPrivateWallet.getZkAddress();
+    _log('Load user mnemonic');
+    await privateWallet.loadUserMnemonic();
+    const privateAddress = await privateWallet.getZkAddress();
     _log("The zkAddress is: ", privateAddress);
 
-    _log('Sync start');
-    await globalPrivateWallet.initalWalletSync();
-    _log('Sync end');
+    await privateWallet.initalWalletSync();
 }
 
 const queryTransferResult = async (initialPrivateBalance: BN) => {
@@ -67,8 +64,8 @@ const queryTransferResult = async (initialPrivateBalance: BN) => {
     while (true) {
         await new Promise(r => setTimeout(r, 5000));
         _log("Syncing with ledger...");
-        await globalPrivateWallet.walletSync();
-        let newPrivateBalance = await globalPrivateWallet.getPrivateBalance(globalAssetId);
+        await privateWallet.walletSync();
+        let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
         _log("Private Balance after sync: ", newPrivateBalance.toString());
 
         if (!initialPrivateBalance.eq(newPrivateBalance)) {
@@ -79,6 +76,7 @@ const queryTransferResult = async (initialPrivateBalance: BN) => {
         }
         retryTimes += 1;
         if (retryTimes >= 5) {
+            _log("Check balance timeout");
             break;
         }
     }
@@ -87,17 +85,6 @@ const queryTransferResult = async (initialPrivateBalance: BN) => {
 
 /// Test to publicly transfer 10 DOL.
 const publicTransferTest = async () => {
-    const privateWalletConfig = {
-        environment: Environment.Development,
-        network: Network.Dolphin
-    }
-
-    const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
-    const polkadotConfig = await getPolkadotSignerAndAddress();
-
-    const assetId = new BN("1"); // DOL
-    const amount = new BN("10000000000000000000"); // 10 units
-
     const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
 
     const senderBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotConfig.polkadotAddress);
@@ -106,11 +93,11 @@ const publicTransferTest = async () => {
     const destinationBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, destinationAddress);
     _log("Destination Balance:" + JSON.stringify(destinationBalance.toString()));
 
-    await MantaUtilities.publicTransfer(privateWallet.api, assetId, amount, destinationAddress, polkadotConfig.polkadotAddress, polkadotConfig.polkadotSigner);
+    await MantaUtilities.publicTransfer(privateWallet.api, assetId, assetAmount, destinationAddress, polkadotConfig.polkadotAddress, polkadotConfig.polkadotSigner);
 
     await new Promise(r => setTimeout(r, 10000));
 
-    const senderBalanceAfterTransfer = await MantaUtilities.getPublicBalance(privateWallet.api, assetId,polkadotConfig.polkadotAddress);
+    const senderBalanceAfterTransfer = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotConfig.polkadotAddress);
     _log("Sender Balance After:" + JSON.stringify(senderBalanceAfterTransfer.toString()));
 
     const destinationBalanceAfterTransfer = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, destinationAddress);
@@ -121,29 +108,11 @@ const publicTransferTest = async () => {
 /// Test to sign a transaction that converts 10 DOL to pDOL,
 /// without publishing the transaction.
 const toPrivateOnlySignTest = async () => {
-
-    const privateWalletConfig = {
-        environment: Environment.Production,
-        network: Network.Dolphin
-    }
-
-    const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
-    const polkadotConfig = await getPolkadotSignerAndAddress();
-    const privateAddress = await privateWallet.getZkAddress();
-    _log("The private address is: ", privateAddress);
-
-    const assetId = new BN("1"); // DOL
-    const amount = new BN("10000000000000000000"); // 10 units
-
-    await privateWallet.initalWalletSync();
-
+    await privateWallet.walletSync();
     const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    _log("The initial private balance is: ", initialPrivateBalance.toString());
-
-    const signResult = await privateWallet.toPrivateBuild(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
-
+    _log("The initial balance is: ", initialPrivateBalance.toString());
+    const signResult = await privateWallet.toPrivateBuild(assetId, assetAmount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
     _log("The result of the signing: ", signResult);
-
     _log("Full: ", JSON.stringify(signResult.txs));
     // remove first 3 bytes of the signResult
     _log("For xcm remote transact payload, please use: [\"0x" + JSON.stringify(signResult.txs).slice(10));
@@ -152,31 +121,31 @@ const toPrivateOnlySignTest = async () => {
 /// Test to privately transfer 10 pDOL.
 const privateTransferTest = async () => {
     const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
-    await globalPrivateWallet.walletSync();
-    const initialPrivateBalance = await globalPrivateWallet.getPrivateBalance(globalAssetId);
+    await privateWallet.walletSync();
+    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     _log("The initial balance is: ", initialPrivateBalance.toString());
-    await globalPrivateWallet.privateTransferSend(globalAssetId, globalAmount, toPrivateTestAddress, globalPolkadotConfig.polkadotSigner, globalPolkadotConfig.polkadotAddress);
+    await privateWallet.privateTransferSend(assetId, assetAmount, toPrivateTestAddress, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
     await queryTransferResult(initialPrivateBalance);
 }
 
 /// Test to execute a `ToPrivate` transaction.
 /// Convert 10 DOL to 10 pDOL.
 const toPrivateTest = async () => {
-    await globalPrivateWallet.walletSync();
-    const initialPrivateBalance = await globalPrivateWallet.getPrivateBalance(globalAssetId);
+    await privateWallet.walletSync();
+    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     _log("The initial balance is: ", initialPrivateBalance.toString());
-    await globalPrivateWallet.toPrivateSend(globalAssetId, globalAmount, globalPolkadotConfig.polkadotSigner, globalPolkadotConfig.polkadotAddress);
+    await privateWallet.toPrivateSend(assetId, assetAmount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
     await queryTransferResult(initialPrivateBalance);
 }
 
 /// Test to execute a `ToPublic` transaction.
 /// Convert 10 pDOL to 10 DOL.
 const toPublicTest = async () => {
-    await globalPrivateWallet.walletSync();
-    const initialPrivateBalance = await globalPrivateWallet.getPrivateBalance(globalAssetId);
+    await privateWallet.walletSync();
+    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     _log("The initial balance is: ", initialPrivateBalance.toString());
 
-    await globalPrivateWallet.toPublicSend(globalAssetId, globalAmount, globalPolkadotConfig.polkadotSigner, globalPolkadotConfig.polkadotAddress);
+    await privateWallet.toPublicSend(assetId, assetAmount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
     await queryTransferResult(initialPrivateBalance);
 }
 
@@ -186,12 +155,13 @@ window.actions = {
     toPublicTest,
     privateTransferTest,
     publicTransferTest,
+    toPrivateOnlySignTest,
 };
 
 async function main() {
-    _log("init");
+    _log("Initial");
     await initWallet();
-    _log("init end");
+    _log("Initial end");
 };
 
 main();
