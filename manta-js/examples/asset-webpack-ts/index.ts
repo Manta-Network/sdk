@@ -12,7 +12,7 @@ interface PolkadotConfig {
 let privateWallet: MantaPrivateWallet = null;
 let polkadotConfig: PolkadotConfig = null;
 const assetId = new BN("1");
-const assetAmount = new BN("10000000000000000000");
+const assetAmount = new BN("500");
 
 function _log(...message: any[]) {
     console.log('[INFO]: '+ message.join(''));
@@ -75,12 +75,13 @@ const queryTransferResult = async (initialPrivateBalance: BN) => {
 
         if (!initialPrivateBalance.eq(newPrivateBalance)) {
             _log("Detected balance change after sync!");
+            _log("Try number: ", retryTimes.toString());
             _log("Old balance: ", initialPrivateBalance.toString());
             _log("New balance: ", newPrivateBalance.toString());
             break;
         }
         retryTimes += 1;
-        if (retryTimes >= 5) {
+        if (retryTimes >= 10) {
             _log("Check balance timeout");
             break;
         }
