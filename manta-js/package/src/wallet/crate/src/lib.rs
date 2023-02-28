@@ -1240,20 +1240,22 @@ impl Wallet {
 
     /// Loads `accounts` to `self` in `network`
     #[inline]
-    pub fn load_accounts(&self, accounts: AccountTable, network: Network) -> Promise {
-        self.with_async(
-            |this| Box::pin(async { this.load_accounts(accounts.0).await }),
-            network,
-        )
+    pub fn load_accounts(&self, accounts: AccountTable, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .load_accounts(accounts.into())
     }
 
     /// Drops the [`AccountTable`] from `self` in `network`.
     #[inline]
-    pub fn drop_accounts(&self, network: Network) -> Promise {
-        self.with_async(
-            |this| Box::pin(async { this.drop_accounts().await }),
-            network,
-        )
+    pub fn drop_accounts(&self, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .drop_accounts()
     }
 
     /// Loads `authorization_context` to `self` in `network`.
@@ -1262,48 +1264,55 @@ impl Wallet {
         &self,
         authorization_context: AuthorizationContext,
         network: Network,
-    ) -> Promise {
-        self.with_async(
-            move |this| {
-                Box::pin(async move {
-                    this.load_authorization_context(authorization_context.0)
-                        .await
-                })
-            },
-            network,
-        )
+    ) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .load_authorization_context(authorization_context.0)
     }
 
     /// Drops the [`AuthorizationContext`] from `self` in `network`.
     #[inline]
-    pub fn drop_authorization_context(&self, network: Network) -> Promise {
-        self.with_async(
-            |this| Box::pin(async { this.drop_authorization_context().await }),
-            network,
-        )
+    pub fn drop_authorization_context(&self, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .drop_authorization_context()
     }
 
     /// Updates the [`AuthorizationContext`] from the [`AccountTable`] in `network`, if possible.
     #[inline]
-    pub fn update_authorization_context(&self, network: Network) -> Promise {
-        self.with_async(
-            |this| Box::pin(async { this.update_authorization_context().await }),
-            network,
-        )
+    pub fn update_authorization_context(&self, network: Network) -> bool {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .update_authorization_context()
     }
 
     /// Saves `self` as a [`StorageStateOption`] in `network`.
     #[inline]
-    pub fn set_storage(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async { this.set_storage().await }), network)
+    pub fn set_storage(&self, network: Network) -> String {
+        serde_json::to_string(&StorageStateOption::from(functions::set_storage(
+            self.0.borrow()[usize::from(network.0)]
+                .as_ref()
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+                .signer(),
+        )))
+        .expect("Serialization is not allowed to fail")
     }
 
     /// Tries to update `self` from `storage_state` in `network`.
     #[inline]
-    pub fn get_storage(&self, storage_state: StorageStateOption, network: Network) -> Promise {
-        self.with_async(
-            |this| Box::pin(async { this.get_storage(storage_state.0).await }),
-            network,
+    pub fn get_storage(&self, storage_state: String, network: Network) -> bool {
+        functions::get_storage(
+            self.0.borrow_mut()[usize::from(network.0)]
+                .as_mut()
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+                .signer_mut(),
+            &StorageStateOption::from_string(storage_state).0,
         )
     }
 
