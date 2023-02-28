@@ -1064,12 +1064,12 @@ impl Signer {
     pub fn new(
         parameters: &RawFullParameters,
         proving_context: &RawMultiProvingContext,
-        storage_state: String,
+        storage_state: JsValue,
     ) -> Self {
         Self(functions::new_signer(
             FullParameters::from(parameters).0,
             MultiProvingContext::from(proving_context).into(),
-            &StorageStateOption::from_string(storage_state).0,
+            &StorageStateOption::new(storage_state).0,
         ))
     }
 
@@ -1106,20 +1106,16 @@ impl Signer {
 
     /// Tries to update `self` from `storage_state`.
     #[inline]
-    pub fn get_storage(&mut self, storage_state: String) -> bool {
-        functions::get_storage(
-            self.as_mut(),
-            &StorageStateOption::from_string(storage_state).0,
-        )
+    pub fn get_storage(&mut self, storage_state: JsValue) -> bool {
+        functions::get_storage(self.as_mut(), &StorageStateOption::new(storage_state).0)
     }
 
     /// Saves `self` as a [`StorageStateOption`].
     #[inline]
-    pub fn set_storage(&self) -> String {
-        serde_json::to_string(&StorageStateOption::from(functions::set_storage(
+    pub fn set_storage(&self) -> JsValue {
+        into_js(StorageStateOption::from(functions::set_storage(
             self.as_ref(),
         )))
-        .expect("Serialization is not allowed to fail")
     }
 
     /// Updates the internal ledger state, returning the new asset distribution.
@@ -1294,25 +1290,24 @@ impl Wallet {
 
     /// Saves `self` as a [`StorageStateOption`] in `network`.
     #[inline]
-    pub fn set_storage(&self, network: Network) -> String {
-        serde_json::to_string(&StorageStateOption::from(functions::set_storage(
+    pub fn set_storage(&self, network: Network) -> JsValue {
+        into_js(StorageStateOption::from(functions::set_storage(
             self.0.borrow()[usize::from(network.0)]
                 .as_ref()
                 .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
                 .signer(),
         )))
-        .expect("Serialization is not allowed to fail")
     }
 
     /// Tries to update `self` from `storage_state` in `network`.
     #[inline]
-    pub fn get_storage(&self, storage_state: String, network: Network) -> bool {
+    pub fn get_storage(&self, storage_state: JsValue, network: Network) -> bool {
         functions::get_storage(
             self.0.borrow_mut()[usize::from(network.0)]
                 .as_mut()
                 .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
                 .signer_mut(),
-            &StorageStateOption::from_string(storage_state).0,
+            &StorageStateOption::new(storage_state).0,
         )
     }
 
