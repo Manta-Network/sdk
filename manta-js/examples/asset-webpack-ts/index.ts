@@ -3,7 +3,7 @@ import { MantaPrivateWallet, SbtMantaPrivateWallet, Environment, Network, MantaU
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 import axios from "axios";
-import { u8aToHex, bnToU8a, u8aToBn } from '@polkadot/util';
+import { u8aToBn } from '@polkadot/util';
 
 const privateWalletConfig = {
     environment: Environment.Development,
@@ -58,6 +58,7 @@ const publicTransferTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const assetId = new BN("1"); // DOL
@@ -75,8 +76,8 @@ const publicTransferTest = async () => {
 
     await new Promise(r => setTimeout(r, 10000));
 
-    const senderBalanceAfterTrasnfer = await MantaUtilities.getPublicBalance(privateWallet.api, assetId,polkadotConfig.polkadotAddress);
-    console.log("Sender Balance After:" + JSON.stringify(senderBalanceAfterTrasnfer.toString()));
+    const senderBalanceAfterTransfer = await MantaUtilities.getPublicBalance(privateWallet.api, assetId,polkadotConfig.polkadotAddress);
+    console.log("Sender Balance After:" + JSON.stringify(senderBalanceAfterTransfer.toString()));
 
     const destinationBalanceAfterTransfer = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, destinationAddress);
     console.log("Dest Balance After:" + JSON.stringify(destinationBalanceAfterTransfer.toString()));
@@ -90,6 +91,7 @@ const privateTransferTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const assetId = new BN("1"); // DOL
@@ -99,8 +101,8 @@ const privateTransferTest = async () => {
 
     await privateWallet.initalWalletSync();
 
-    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("The inital private balance is: ", initalPrivateBalance.toString());
+    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    console.log("The initial private balance is: ", initialPrivateBalance.toString());
 
     await privateWallet.privateTransferSend(assetId, amount, toPrivateTestAddress, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
@@ -112,9 +114,9 @@ const privateTransferTest = async () => {
         let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
         console.log("Private Balance after sync: ", newPrivateBalance.toString());
 
-        if (initalPrivateBalance !== newPrivateBalance) {
+        if (initialPrivateBalance !== newPrivateBalance) {
             console.log("Detected balance change after sync!");
-            console.log("Old balance: ", initalPrivateBalance.toString());
+            console.log("Old balance: ", initialPrivateBalance.toString());
             console.log("New balance: ", newPrivateBalance.toString());
             break;
         }
@@ -132,6 +134,7 @@ const toPrivateOnlySignTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const privateAddress = await privateWallet.getZkAddress();
@@ -142,12 +145,16 @@ const toPrivateOnlySignTest = async () => {
 
     await privateWallet.initalWalletSync();
 
-    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("The inital private balance is: ", initalPrivateBalance.toString());
+    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    console.log("The initial private balance is: ", initialPrivateBalance.toString());
 
     const signResult = await privateWallet.toPrivateBuild(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
     console.log("The result of the signing: ", JSON.stringify(signResult));
+
+    console.log("Full: ", JSON.stringify(signResult.txs));
+    // remove first 3 bytes of the signResult
+    console.log("For xcm remote transact payload, please use: [\"0x" + JSON.stringify(signResult.txs).slice(10));
 }
 
 /// Test to execute a `ToPrivate` transaction.
@@ -161,6 +168,7 @@ const toPrivateTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const privateAddress = await privateWallet.getZkAddress();
@@ -171,8 +179,8 @@ const toPrivateTest = async () => {
 
     await privateWallet.initalWalletSync();
 
-    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("The inital private balance is: ", initalPrivateBalance.toString());
+    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    console.log("The initial private balance is: ", initialPrivateBalance.toString());
 
     await privateWallet.toPrivateSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
@@ -184,9 +192,9 @@ const toPrivateTest = async () => {
         let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
         console.log("Private Balance after sync: ", newPrivateBalance.toString());
 
-        if (initalPrivateBalance !== newPrivateBalance) {
+        if (initialPrivateBalance !== newPrivateBalance) {
             console.log("Detected balance change after sync!");
-            console.log("Old balance: ", initalPrivateBalance.toString());
+            console.log("Old balance: ", initialPrivateBalance.toString());
             console.log("New balance: ", newPrivateBalance.toString());
             break;
         }
@@ -203,6 +211,7 @@ const toPublicTest = async () => {
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+    await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
     const privateAddress = await privateWallet.getZkAddress();
@@ -213,8 +222,8 @@ const toPublicTest = async () => {
 
     await privateWallet.initalWalletSync();
 
-    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("The inital private balance is: ", initalPrivateBalance.toString());
+    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    console.log("The inital private balance is: ", initialPrivateBalance.toString());
 
     await privateWallet.toPublicSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
@@ -256,11 +265,11 @@ const reserve_id_test = async() => {
     for (let i = 0; i < 44; i++ ) {
         const reserveSbt = await privateWallet.buildReserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
         await reserveSbt.signAndSend(polkadotConfig.polkadotAddress);
-    
+
         await new Promise(r => setTimeout(r, 200));
     }
 
-    const assetIdRange = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
+    const assetIdRange: any = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
     if (assetIdRange.isNone) {
         console.error("no assetId in storage mapped to this account");
         return
@@ -294,10 +303,10 @@ const toSBTPrivateTest = async (verify: boolean) => {
     `);
 
     // example of some error handling of tx result
-    await reserveSbt.signAndSend(polkadotConfig.polkadotAddress, (status: any, events: any, dispatchError: any) => {
-        if (dispatchError) {
-            if (dispatchError.isModule) {
-                const moduleError = dispatchError.asModule;
+    await reserveSbt.signAndSend(polkadotConfig.polkadotAddress, {}, (result: {status: any, events: any, dispatchError: any}) => {
+        if (result.dispatchError) {
+            if (result.dispatchError.isModule) {
+                const moduleError = result.dispatchError.asModule;
                 // polkadot.js version is older need to convert to BN
                 const errorInfo = {index: moduleError.index, error: u8aToBn(moduleError.error)};
                 // for module errors, we have the section indexed, lookup
@@ -307,7 +316,7 @@ const toSBTPrivateTest = async (verify: boolean) => {
                 console.error("Call failed", `${section}.${name}: ${docs.join(' ')}`);
             } else {
                 // Other, CannotLookup, BadOrigin, no extra info
-                console.error("Call failed", dispatchError.toString());
+                console.error("Call failed", result.dispatchError.toString());
             }
         }
     });
@@ -315,7 +324,7 @@ const toSBTPrivateTest = async (verify: boolean) => {
     // pause to wait for tx to submit
     await new Promise(r => setTimeout(r, 2000));
 
-    const assetIdRange = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
+    const assetIdRange: any = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
     if (assetIdRange.isNone) {
         console.error("no assetId in storage mapped to this account");
         return
@@ -336,10 +345,10 @@ const toSBTPrivateTest = async (verify: boolean) => {
     `);
 
     // example of some error handling of tx result
-    await sbtMint.batchTx.signAndSend(polkadotConfig.polkadotAddress, (status: any, events: any, dispatchError: any) => {
-        if (dispatchError) {
-            if (dispatchError.isModule) {
-                const moduleError = dispatchError.asModule;
+    await sbtMint.batchTx.signAndSend(polkadotConfig.polkadotAddress, (result: {status: any, events: any, dispatchError: any}) => {
+        if (result.dispatchError) {
+            if (result.dispatchError.isModule) {
+                const moduleError = result.dispatchError.asModule;
                 // polkadot.js version is older need to convert to BN
                 const errorInfo = {index: moduleError.index, error: u8aToBn(moduleError.error)};
                 // for module errors, we have the section indexed, lookup
@@ -349,7 +358,7 @@ const toSBTPrivateTest = async (verify: boolean) => {
                 console.error("Call failed", `${section}.${name}: ${docs.join(' ')}`);
             } else {
                 // Other, CannotLookup, BadOrigin, no extra info
-                console.error("Call failed", dispatchError.toString());
+                console.error("Call failed", result.dispatchError.toString());
             }
         }
     });
@@ -363,9 +372,9 @@ const toSBTPrivateTest = async (verify: boolean) => {
     })
 
     if(verify == true) {
-        const addressBytes = privateWallet.getAddressBytes(privateAddress);
+        const addressBytes = SbtMantaPrivateWallet.getAddressBytes(privateAddress);
         console.log("Private address in json form: " + JSON.stringify(addressBytes));
-    
+
         const tx_datas = sbtMint.transactionDatas;
         const requests = await Promise.all(tx_datas.map(async (tx: any, index: number) => {
             var request: any = {"transaction_data": {"identifier": {},  "asset_info": {}, "zk_address": {"receiving_key": []}}};
@@ -378,11 +387,11 @@ const toSBTPrivateTest = async (verify: boolean) => {
             console.log(JSON.stringify(request))
             return request;
         }));
-    
+
         await new Promise(r => setTimeout(r, 5000));
-    
+
         const request = requests[0];
-    
+
         // Send data to manta-authentication verifier service to validate.
         // TODO: failed if loop all request.
         // requests.forEach(async (request: any) => {
@@ -390,26 +399,26 @@ const toSBTPrivateTest = async (verify: boolean) => {
             await axios.post("http://127.0.0.1:5000", request).then(function (response) {
                 console.log("tx id response:" + JSON.stringify(response.data));
             });
-    
+
             await new Promise(r => setTimeout(r, 5000));
-    
+
             console.log("virtual asset.....");
             await axios.post("http://127.0.0.1:5000/virtual_asset", request).then(async function (response) {
                 console.log("virtual asset response:" + JSON.stringify(response.data));
                 const json_str = JSON.stringify(response.data)
-                
+
                 const virtual_asset = `${json_str}`;
                 const identity_proof_response = await identityProofGen(privateWallet, virtual_asset);
                 // console.log("identity proof format response:");
                 // console.log(identity_proof_response);
-    
+
                 var validate_request: any = {"transaction_data": {}, "constructed_transfer_post": {"transfer_post": {}}};
                 validate_request.transaction_data = request.transaction_data;
                 const identity_response = JSON.parse(identity_proof_response)
                 validate_request.constructed_transfer_post.transfer_post = identity_response;
                 console.log("validate request:");
                 console.log(JSON.stringify(validate_request))
-    
+
                 console.log("validate proof id:");
                 await axios.post("http://127.0.0.1:5000/verify", validate_request).then(async function (response) {
                     console.log("validate response:" + JSON.stringify(response.data));
@@ -457,7 +466,7 @@ const reserveAndMints = async () => {
     // pause to wait for tx to submit
     await new Promise(r => setTimeout(r, 5000));
 
-    const assetIdRange = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
+    const assetIdRange: any = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
     if (assetIdRange.isNone) {
         console.error("no assetId in storage mapped to this account");
         return
@@ -480,7 +489,7 @@ const reserveAndMints = async () => {
     await new Promise(r => setTimeout(r, 5000));
 
     // second mint
-    const assetIdRange2 = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
+    const assetIdRange2: any = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
     if (assetIdRange2.isNone) {
         console.error("no assetId in storage mapped to this account");
         return

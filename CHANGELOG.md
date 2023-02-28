@@ -4,8 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
 ### Added
+- [\#51](https://github.com/Manta-Network/sdk/pull/51) Update to MantaPay v1
+- [\#71](https://github.com/Manta-Network/sdk/pull/71) Update to dense pull ledger diff
 
 ### Changed
 
@@ -17,13 +18,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Security
 
-## [0.0.0] 2022-12-21
-
-### Added
-- [\#51](https://github.com/Manta-Network/manta-signer/pull/51) Initial version of manta.js
-
-
-## [2.0.0] 2022-2-24
-
-### Changed
-- [\#86](https://github.com/Manta-Network/manta-signer/pull/86) Allow the PrivateWallet class to be initialized without polkadot.js api being connected to a node
+[Unreleased]: https://github.com/Manta-Network/sdk/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Manta-Network/sdk/releases/tag/v1.0.0
