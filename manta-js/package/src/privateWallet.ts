@@ -3,7 +3,7 @@ import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import Api, { ApiConfig } from './api/index';
 import BN from 'bn.js';
 import config from './manta-config.json';
-import { Transaction as WasmTransaction, Wallet as WasmWallet } from './wallet/crate/pkg/manta_wasm_wallet';
+import { StorageStateOption, Transaction as WasmTransaction, Wallet as WasmWallet } from './wallet/crate/pkg/manta_wasm_wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import {
   Address,
@@ -527,7 +527,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     };
   }
 
-  private static async saveStorageStateToLocal (network: string, data: string): Promise<boolean> {
+  private static async saveStorageStateToLocal (network: string, data: any): Promise<boolean> {
     try {
       await setIdbData(`storage_state_${network}`, data);
     } catch (ex) {
@@ -537,15 +537,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     return true;
   }
 
-  private static async getStorageStateFromLocal (network: string): Promise<string> {
+  private static async getStorageStateFromLocal (network: string): Promise<any> {
     let result: string;
     try {
       result = await getIdbData(`storage_state_${network}`);
-      debugger;
     } catch (ex) {
       console.error(ex);
     }
-    return result || 'null';
+    return result || null;
   }
 
   private startSaveStorageTask() {
@@ -555,13 +554,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         return;
       }
       this.walletIsBusy = true;
-      let stateString: string;
+      let stateString: any;
       try {
         stateString = await this.wasmWallet.set_storage(this.getWasmNetWork());
       } catch (ex) {
         // TODO
         console.error(ex);
       }
+      this.wasmApi.flagUtxoDataChanged = false;
       this.walletIsBusy = false;
       await MantaPrivateWallet.saveStorageStateToLocal(`${this.network}`, stateString);
     }, 10000);
