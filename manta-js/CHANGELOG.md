@@ -21,3 +21,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 - [\#51](https://github.com/Manta-Network/manta-signer/pull/51) Initial version of manta.js
+
+
+## [2.0.0] 2022-2-24
+
+### Changed
+- [\#86](https://github.com/Manta-Network/manta-signer/pull/86) Allow the PrivateWallet class to be initialized without polkadot.js api being connected to a node
