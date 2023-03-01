@@ -137,7 +137,7 @@ export default class Api {
       const receivers = decodedReceivers.map((receiver) => {
         return [
           this._utxo_to_json(receiver[0]),
-          this._full_incoming_note_to_jons(receiver[1])
+          this._full_incoming_note_to_json(receiver[1])
         ];
       });
 
@@ -222,7 +222,7 @@ export default class Api {
 
   // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
   async sbt_pull(checkpoint) {
-      try {
+    try {
       await this.api.isReady;
 
       this._log('checkpoint ' + JSON.stringify(checkpoint));
@@ -232,7 +232,7 @@ export default class Api {
         this.maxSendersPullSize
       );
 
-      this._log('pull result ' + JSON.stringify(result));
+      this._log('sbt pull result ' + JSON.stringify(result));
 
       const decodedReceivers = $Receivers.decode(
         base64Decode(result.receivers.toString())
@@ -241,7 +241,7 @@ export default class Api {
       const receivers = decodedReceivers.map((receiver) => {
         return [
           this._utxo_to_json(receiver[0]),
-          this._full_incoming_note_to_jons(receiver[1])
+          this._full_incoming_note_to_json(receiver[1])
         ];
       });
 
@@ -269,7 +269,7 @@ export default class Api {
         receivers: receivers,
         senders: senders,
       };
-      this._log('pull response: ' + JSON.stringify(pull_result));
+      this._log('sbt pull response: ' + JSON.stringify(pull_result));
       return pull_result;
     } catch (err) {
       if (this.errorCallback) {

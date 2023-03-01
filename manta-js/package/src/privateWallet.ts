@@ -355,7 +355,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     return { api };
   }
 
-  private checkApiIsReady(): void {
+  protected checkApiIsReady(): void {
     if (!this.api.isReady) {
       throw new Error('Polkadot.js API is not ready.');
     }

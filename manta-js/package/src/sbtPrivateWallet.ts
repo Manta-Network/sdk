@@ -40,6 +40,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
 
   /// Gets metadata of SBT, corresponds to image
   async getSBTMetadata(assetId: BN): Promise<string | null> {
+    this.checkApiIsReady();
     const metadata: any = await this.api.query.mantaSbt.sbtMetadata(assetId);
     if (metadata.isNone) {
       return null
@@ -54,6 +55,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
 
   /// Builds reserveSbt tx to whitelist to mint SBT
   async buildReserveSbt(polkadotSigner: Signer, polkadotAddress: Address): Promise<SubmittableExtrinsic<"promise", any>> {
+    this.checkApiIsReady();
     await this.waitForWallet();
     this.walletIsBusy = true;
     await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
@@ -73,6 +75,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
       console.error('Number of mints does not correspond to metadata');
       return null
     }
+    this.checkApiIsReady();
 
     try {
       await this.waitForWallet();
