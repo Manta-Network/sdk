@@ -12,7 +12,7 @@ interface PolkadotConfig {
 let privateWallet: MantaPrivateWallet = null;
 let polkadotConfig: PolkadotConfig = null;
 const assetId = new BN("1");
-const assetAmount = new BN("500");
+const assetAmount = new BN("5000000000000");
 
 function _log(...message: any[]) {
     console.log('[INFO]: '+ message.join(''));

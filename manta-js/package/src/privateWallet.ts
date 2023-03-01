@@ -207,15 +207,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// Pulls data from the ledger, synchronizing the currently connected wallet and
   /// balance state. This method runs until all the ledger data has arrived at and
   /// has been synchronized with the wallet.
-  async walletSync(forceSync?: boolean): Promise<boolean> {
+  async walletSync(): Promise<boolean> {
     try {
       if (!this.initialSyncIsFinished) {
         throw new Error('Must call initalWalletSync before walletSync!');
       }
       if (!this.isBindAuthorizationContext) {
-        if (!forceSync) {
-          return false;
-        }
         await this.loadUserSeedPhrase();
       }
       await this.waitForWallet();
@@ -554,16 +551,15 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         return;
       }
       this.walletIsBusy = true;
-      let stateString: any;
+      let stateData: any;
       try {
-        stateString = await this.wasmWallet.set_storage(this.getWasmNetWork());
+        stateData = await this.wasmWallet.set_storage(this.getWasmNetWork());
+        this.wasmApi.flagUtxoDataChanged = false;
       } catch (ex) {
-        // TODO
         console.error(ex);
       }
-      this.wasmApi.flagUtxoDataChanged = false;
       this.walletIsBusy = false;
-      await MantaPrivateWallet.saveStorageStateToLocal(`${this.network}`, stateString);
+      await MantaPrivateWallet.saveStorageStateToLocal(`${this.network}`, stateData);
     }, 10000);
     taskIntervalId = Number(intervalId);
   }
@@ -660,20 +656,20 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.wasmWallet.drop_accounts(this.getWasmNetWork());
   }
 
-  public async loadUserSeedPhrase() {
-    const seedPhrase = await this.getUserMnemonic();
+  public async loadUserSeedPhrase(initialSeedPhrase?: string) {
+    const seedPhrase = await this.getUserSeedPhrase(initialSeedPhrase);
     const accountTable = await this.wasm.accounts_from_mnemonic(seedPhrase);
     await this.wasmWallet.load_accounts(accountTable, this.getWasmNetWork());
     await this.wasmWallet.update_authorization_context(this.getWasmNetWork());
     this.isBindAuthorizationContext = true;
   }
 
-  public async loadAuthorizationContext() {
+  public async loadAuthorizationContext(initialSeedPhrase?: string) {
     const autoUpdateAuthContext = await this.wasmWallet.update_authorization_context(this.getWasmNetWork());
     if (autoUpdateAuthContext) {
       return;
     }
-    const seedPhrase = await this.getUserMnemonic();
+    const seedPhrase = await this.getUserSeedPhrase(initialSeedPhrase);
     const authorizationContext = await this.wasm.authorization_context_from_mnemonic(
       seedPhrase,
       this.parameters,
@@ -684,8 +680,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     );
   }
 
-  private async getUserMnemonic(): Promise<any> {
-    const seedPhrase = await this.requestUserSeedPhrase();
+  private async getUserSeedPhrase(initialSeedPhrase?: string): Promise<any> {
+    const seedPhrase = initialSeedPhrase || (await this.requestUserSeedPhrase());
     if (!seedPhrase) {
       throw new Error('User Rejected');
     }

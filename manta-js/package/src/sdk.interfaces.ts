@@ -53,8 +53,8 @@ export interface IMantaPrivateWallet {
   loggingEnabled: boolean;
   parameters: any;
 
-  loadUserSeedPhrase():any;
-  loadAuthorizationContext():any;
+  loadUserSeedPhrase(initialSeedPhrase?: string):any;
+  loadAuthorizationContext(initialSeedPhrase?: string):any;
   dropAuthorizationContext():any;
   dropUserSeedPhrase():any;
   convertPrivateAddressToJson(address: string): any
@@ -62,7 +62,7 @@ export interface IMantaPrivateWallet {
   getZkAddress(): Promise<Address>;
   getAssetMetadata(assetId: BN): Promise<any>;
   initalWalletSync(): Promise<boolean>;
-  walletSync(forceSync?: boolean): Promise<boolean>;
+  walletSync(): Promise<boolean>;
   getPrivateBalance(assetId: BN): Promise<BN | null>;
   toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
   toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
