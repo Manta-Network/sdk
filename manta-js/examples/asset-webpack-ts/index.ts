@@ -45,7 +45,7 @@ const initWallet = async () => {
         provingFilePath: 'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving',
         parametersFilePath: 'https://raw.githubusercontent.com/Manta-Network/manta-rs/main/manta-parameters/data/pay/parameters',
         requestUserSeedPhrase: async () => {
-            return await 'helmet say exclude blind crumble blur rival wonder exclude regret meadow tent';
+            return 'helmet say exclude blind crumble blur rival wonder exclude regret meadow tent';
         },
     }
     privateWallet = await MantaPrivateWallet.init(privateWalletConfig);

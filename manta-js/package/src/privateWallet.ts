@@ -3,7 +3,8 @@ import { base58Decode, base58Encode } from '@polkadot/util-crypto';
 import Api, { ApiConfig } from './api/index';
 import BN from 'bn.js';
 import config from './manta-config.json';
-import { StorageStateOption, Transaction as WasmTransaction, Wallet as WasmWallet } from './wallet/crate/pkg/manta_wasm_wallet';
+import type { Transaction as WasmTransaction, Wallet as WasmWallet } from './wallet/crate/pkg/manta_wasm_wallet';
+import * as mantaWasm from './wallet/crate/pkg/manta_wasm_wallet';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import {
   Address,
@@ -477,7 +478,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     priConfig: PrivateWalletConfig
   ): Promise<InitWasmResult> {
 
-    const wasm = await import('./wallet/crate/pkg/manta_wasm_wallet');
+    const wasm = mantaWasm; // await import('./wallet/crate/pkg/manta_wasm_wallet');
     wasm.init_panic_hook();
 
     if (priConfig.loggingEnabled) {

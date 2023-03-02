@@ -32,7 +32,7 @@
     "DEFAULT_PULL_SIZE": 4096,
     "RPC": {
         "mantaPay": {
-            "dense_pull_ledger_diff": {
+            "pull_ledger_diff": {
                 "description": "pull from mantaPay",
                 "params": [{
                         "name": "checkpoint",
@@ -47,7 +47,7 @@
                         "type": "u64"
                     }
                 ],
-                "type": "DensePullResponse"
+                "type": "PullResponse"
             }
         }
     },
@@ -83,12 +83,10 @@
             "ephemeral_public_key": "[u8; 32]",
             "ciphertext": "[[u8; 32]; 2]"
         },
-        "DensePullResponse": {
+        "PullResponse": {
             "should_continue": "bool",
-            "receivers": "String",
-            "senders": "String",
-            "senders_receivers_total": "[u8; 16]",
-            "next_checkpoint": "Option<Checkpoint>"
+            "receivers": "Vec<(Utxo, FullIncomingNote)>",
+            "senders": "Vec<([u8; 32], OutgoingNote)>"
         },
         "AuthorizationSignature": {
             "authorization_key": "[u8; 32]",

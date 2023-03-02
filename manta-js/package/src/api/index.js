@@ -2,17 +2,13 @@
 
 // Polkadot-JS Ledger API
 
-import { base64Decode } from '@polkadot/util-crypto';
-import * as $ from 'scale-codec';
-import { u8aToU8a } from '@polkadot/util';
-
 export class ApiConfig {
   constructor(
     maxReceiversPullSize,
     maxSendersPullSize,
     pullCallback = null,
     errorCallback = null,
-    loggingEnabled = false,
+    loggingEnabled = false
   ) {
     this.loggingEnabled = loggingEnabled;
     this.maxReceiversPullSize = maxReceiversPullSize;
@@ -56,41 +52,40 @@ export default class Api {
 
   // Converts an `outgoing note` into a JSON object.
   _outgoing_note_to_json(note) {
-    // [[u8; 32], 2]
-    const ciphertext = note.ciphertext;
-    const cipher0 = Array.from(ciphertext[0]);
-    const cipher1 = Array.from(ciphertext[1]);
+    // [u8; 64] -> [[u8; 32], 2]
+    const ciphertext = note.ciphertext.toU8a();
+    const cipher0 = Array.from(ciphertext.slice(0, 32));
+    const cipher1 = Array.from(ciphertext.slice(32, 64));
     return {
-      ephemeral_public_key: Array.from(u8aToU8a(note.ephemeral_public_key)),
+      ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
       ciphertext: [cipher0, cipher1]
     };
   }
 
   // Converts an `light incoming note` into a JSON object.
   _light_incoming_note_to_json(note) {
-    // [[u8; 32], 3]
-    const ciphertext = note.ciphertext;
-    const cipher0 = Array.from(ciphertext[0]);
-    const cipher1 = Array.from(ciphertext[1]);
-    const cipher2 = Array.from(ciphertext[2]);
+    const ciphertext = note.ciphertext.toU8a(); // hex to u8 array
+    const cipher0 = Array.from(ciphertext.slice(0, 32));
+    const cipher1 = Array.from(ciphertext.slice(32, 64));
+    const cipher2 = Array.from(ciphertext.slice(64, 96));
     return {
-      ephemeral_public_key: Array.from(u8aToU8a(note.ephemeral_public_key)),
+      ephemeral_public_key: Array.from(note.ephemeral_public_key.toU8a()),
       ciphertext: [cipher0, cipher1, cipher2]
     };
   }
 
   // Converts an `incoming note` into a JSON object.
   _incoming_note_to_json(note) {
-    // [[u8; 32]; 3]
-    const ciphertext = note.ciphertext;
-    const cipher0 = Array.from(ciphertext[0]);
-    const cipher1 = Array.from(ciphertext[1]);
-    const cipher2 = Array.from(ciphertext[2]);
+    // hex -> [u8; 96] -> [[u8; 32]; 3]
+    const ciphertext = note.ciphertext.toU8a();
+    const cipher0 = Array.from(ciphertext.slice(0, 32));
+    const cipher1 = Array.from(ciphertext.slice(32, 64));
+    const cipher2 = Array.from(ciphertext.slice(64, 96));
     return {
       ephemeral_public_key: Array.from(
-        u8aToU8a(note.ephemeral_public_key)
+        note.ephemeral_public_key.toU8a()
       ),
-      tag: Array.from(u8aToU8a(note.tag)),
+      tag: Array.from(note.tag.toU8a()),
       ciphertext: [cipher0, cipher1, cipher2]
     };
   }
@@ -98,7 +93,7 @@ export default class Api {
   // Converts an `full incoming note` into a JSON object.
   _full_incoming_note_to_jons(note) {
     return {
-      address_partition: note.address_partition,
+      address_partition: note.address_partition.toNumber(),
       incoming_note: this._incoming_note_to_json(note.incoming_note),
       light_incoming_note: this._light_incoming_note_to_json(note.light_incoming_note),
     };
@@ -106,16 +101,33 @@ export default class Api {
 
   // Converts an `utxo` into a JSON object.
   _utxo_to_json(utxo) {
-    const asset_id = Array.from(u8aToU8a(utxo.public_asset.id));
-    const asset_value = Array.from(u8aToU8a(utxo.public_asset.value));
+    const asset_id = Array.from(utxo.public_asset.id.toU8a()); // hex -> [u8; 32]
+    const asset_value = Array.from(utxo.public_asset.value.toU8a()); // to [u8; 16]
     return {
       is_transparent: utxo.is_transparent,
       public_asset: {
         id: asset_id,
         value: asset_value,
       },
-      commitment: Array.from(u8aToU8a(utxo.commitment))
+      commitment: Array.from(utxo.commitment.toU8a())
     };
+  }
+
+  formatPullResult(result) {
+    const walk = function(data, keys) {
+      for (const key of keys) {
+        if (key === 'is_transparent' && data[key] && typeof data[key].isTrue === 'boolean') {
+          data[key] = data[key].isTrue;
+        } else if (data[key]) {
+          const tKeys = Object.keys(data[key]);
+          if (tKeys.length > 0) {
+            walk(data[key], tKeys);
+          }
+        }
+      }
+    };
+    walk(result, Object.keys(result));
+    return result;
   }
 
   // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
@@ -124,7 +136,7 @@ export default class Api {
       await this.api.isReady;
 
       this._log('checkpoint ' + JSON.stringify(checkpoint));
-      let result = await this.api.rpc.mantaPay.dense_pull_ledger_diff(
+      let result = await this.api.rpc.mantaPay.pull_ledger_diff(
         checkpoint,
         this.maxReceiversPullSize,
         this.maxSendersPullSize
@@ -132,28 +144,18 @@ export default class Api {
 
       this._log('pull result ' + JSON.stringify(result));
 
-      const decodedReceivers = $Receivers.decode(
-        base64Decode(result.receivers.toString())
-      );
-      $.assert($Receivers, decodedReceivers);
-      const receivers = decodedReceivers.map((receiver) => {
+      const receivers = result.receivers.map((receiver_raw) => {
         return [
-          this._utxo_to_json(receiver[0]),
-          this._full_incoming_note_to_jons(receiver[1])
+          this._utxo_to_json(receiver_raw[0]),
+          this._full_incoming_note_to_jons(receiver_raw[1])
         ];
       });
-
-      const decodedSenders = $Senders.decode(
-        base64Decode(result.senders.toString())
-      );
-      $.assert($Senders, decodedSenders);
-      const senders = decodedSenders.map((sender) => {
+      const senders = result.senders.map((sender_raw) => {
         return [
-          Array.from(u8aToU8a(sender[0])),
-          this._outgoing_note_to_json(sender[1]),
+          Array.from(sender_raw[0].toU8a()),
+          this._outgoing_note_to_json(sender_raw[1]),
         ];
       });
-      
       if (this.pullCallback) {
         this.pullCallback(
           receivers,
@@ -162,11 +164,11 @@ export default class Api {
           result.sender_recievers_total.toNumber()
         );
       }
-      const pull_result = {
+      const pull_result = this.formatPullResult({
         should_continue: result.should_continue.isTrue,
         receivers: receivers,
         senders: senders,
-      };
+      });
       if (!this.flagUtxoDataChanged) {
         this.flagUtxoDataChanged = receivers.length > 0 || senders.length > 0;
       }
@@ -228,39 +230,3 @@ export default class Api {
 
 export const SUCCESS = 'success';
 export const FAILURE = 'failure';
-
-const $Asset = $.object(
-  $.field('id', $.sizedUint8Array(32)),
-  $.field('value', $.sizedUint8Array(16))
-);
-
-const $Utxo = $.object(
-  $.field('is_transparent', $.bool),
-  $.field('public_asset', $Asset),
-  $.field('commitment', $.sizedUint8Array(32))
-);
-
-const $IncomingNote = $.object(
-  $.field('ephemeral_public_key', $.sizedUint8Array(32)),
-  $.field('tag', $.sizedUint8Array(32)),
-  $.field('ciphertext', $.sizedArray($.sizedUint8Array(32), 3))
-);
-
-const $LightIncomingNote = $.object(
-  $.field('ephemeral_public_key', $.sizedUint8Array(32)),
-  $.field('ciphertext', $.sizedArray($.sizedUint8Array(32), 3))
-);
-
-const $FullIncomingNote = $.object(
-  $.field('address_partition', $.u8),
-  $.field('incoming_note', $IncomingNote),
-  $.field('light_incoming_note', $LightIncomingNote)
-);
-
-const $OutgoingNote = $.object(
-  $.field('ephemeral_public_key', $.sizedUint8Array(32)),
-  $.field('ciphertext', $.sizedArray($.sizedUint8Array(32), 2))
-);
-
-export const $Receivers = $.array($.tuple($Utxo, $FullIncomingNote));
-export const $Senders = $.array($.tuple($.sizedUint8Array(32), $OutgoingNote));
