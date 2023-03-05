@@ -61,7 +61,7 @@ const initWallet = async () => {
     const privateAddress = await privateWallet.getZkAddress();
     _log("The zkAddress is: ", privateAddress);
 
-    await privateWallet.initalWalletSync();
+    await privateWallet.initialWalletSync();
 }
 
 const queryTransferResult = async (initialPrivateBalance: BN) => {
@@ -70,7 +70,7 @@ const queryTransferResult = async (initialPrivateBalance: BN) => {
         await new Promise(r => setTimeout(r, 5000));
         _log("Syncing with ledger...");
         await privateWallet.walletSync();
-        let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+        let newPrivateBalance = await privateWallet.getZkBalance(assetId);
         _log("Private Balance after sync: ", newPrivateBalance.toString());
 
         if (!initialPrivateBalance.eq(newPrivateBalance)) {
@@ -115,9 +115,9 @@ const publicTransferTest = async () => {
 /// without publishing the transaction.
 const toPrivateOnlySignTest = async () => {
     await privateWallet.walletSync();
-    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
     _log("The initial balance is: ", initialPrivateBalance.toString());
-    const signResult = await privateWallet.toPrivateBuild(assetId, assetAmount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+    const signResult = await privateWallet.toPrivateBuild(assetId, assetAmount, polkadotConfig.polkadotAddress);
     _log("The result of the signing: ", signResult);
     _log("Full: ", JSON.stringify(signResult.txs));
     // remove first 3 bytes of the signResult
@@ -128,7 +128,7 @@ const toPrivateOnlySignTest = async () => {
 const privateTransferTest = async () => {
     const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
     await privateWallet.walletSync();
-    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
     _log("The initial balance is: ", initialPrivateBalance.toString());
     await privateWallet.privateTransferSend(assetId, assetAmount, toPrivateTestAddress, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
     await queryTransferResult(initialPrivateBalance);
@@ -138,7 +138,7 @@ const privateTransferTest = async () => {
 /// Convert 10 DOL to 10 pDOL.
 const toPrivateTest = async () => {
     await privateWallet.walletSync();
-    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
     _log("The initial balance is: ", initialPrivateBalance.toString());
     await privateWallet.toPrivateSend(assetId, assetAmount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
     await queryTransferResult(initialPrivateBalance);
@@ -148,7 +148,7 @@ const toPrivateTest = async () => {
 /// Convert 10 pDOL to 10 DOL.
 const toPublicTest = async () => {
     await privateWallet.walletSync();
-    const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
     _log("The initial balance is: ", initialPrivateBalance.toString());
 
     await privateWallet.toPublicSend(assetId, assetAmount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
