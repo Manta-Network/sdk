@@ -65,9 +65,9 @@ export interface IMantaPrivateWallet {
   walletSync(): Promise<boolean>;
   getPrivateBalance(assetId: BN): Promise<BN | null>;
   toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
+  toPrivateBuild(assetId: BN, amount: BN, polkadotAddress:Address): Promise<SignedTransaction | null>;
   privateTransferSend(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  privateTransferBuild(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
+  privateTransferBuild(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotAddress:Address): Promise<SignedTransaction | null>;
   toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  toPublicBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
+  toPublicBuild(assetId: BN, amount: BN, polkadotAddress:Address): Promise<SignedTransaction | null>;
 }

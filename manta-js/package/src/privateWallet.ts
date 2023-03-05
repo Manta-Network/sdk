@@ -285,13 +285,13 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     const signed = await this.toPrivateBuild(
       assetId,
       amount,
-      polkadotSigner,
       polkadotAddress
     );
     // transaction rejected by signer
     if (signed === null) {
       return;
     }
+    await this.setPolkadotSigner(polkadotSigner);
     await this.sendTransaction(polkadotAddress, signed);
     this.log('To Private transaction finished.');
   }
@@ -301,13 +301,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   async toPrivateBuild(
     assetId: BN,
     amount: BN,
-    polkadotSigner: Signer,
     polkadotAddress: Address
   ): Promise<SignedTransaction | null> {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
+      await this.setWasmExternalAccountSigner(polkadotAddress);
       const transaction = await this.toPrivateBuildUnsigned(assetId, amount);
       const signResult = await this.signTransaction(
         null,
@@ -335,13 +334,13 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       assetId,
       amount,
       toPrivateAddress,
-      polkadotSigner,
       polkadotAddress
     );
     // transaction rejected by signer
     if (signed === null) {
       return;
     }
+    await this.setPolkadotSigner(polkadotSigner);
     await this.sendTransaction(polkadotAddress, signed);
     this.log('Private Transfer transaction finished.');
   }
@@ -352,13 +351,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     assetId: BN,
     amount: BN,
     toPrivateAddress: Address,
-    polkadotSigner: Signer,
     polkadotAddress: Address
   ): Promise<SignedTransaction | null> {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
+      await this.setWasmExternalAccountSigner(polkadotAddress);
       const transaction = await this.privateTransferBuildUnsigned(
         assetId,
         amount,
@@ -388,13 +386,13 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     const signed = await this.toPublicBuild(
       assetId,
       amount,
-      polkadotSigner,
       polkadotAddress
     );
     // transaction rejected by signer
     if (signed === null) {
       return;
     }
+    await this.setPolkadotSigner(polkadotSigner);
     await this.sendTransaction(polkadotAddress, signed);
     this.log('To Public transaction finished.');
   }
@@ -404,13 +402,12 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   async toPublicBuild(
     assetId: BN,
     amount: BN,
-    polkadotSigner: Signer,
     polkadotAddress: Address
   ): Promise<SignedTransaction | null> {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
+      await this.setWasmExternalAccountSigner(polkadotAddress);
       const transaction = await this.toPublicBuildUnsigned(assetId, amount);
       const signResult = await this.signTransaction(
         transaction.assetMetadataJson,
@@ -569,13 +566,16 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     return this.wasm.Network.from_string(`"${this.network}"`);
   }
 
-  /// Sets the polkadot Signer to `polkadotSigner` and polkadot signing address to `polkadotAddress`.
+  /// Set polkadot signing address to `polkadotAddress`.
   private async setPolkadotSigner(
     polkadotSigner: Signer,
-    polkadotAddress: Address
   ): Promise<void> {
-    this.wasmApi.setExternalAccountSigner(polkadotAddress);
-    this.api.setSigner(polkadotSigner);
+    await this.api.setSigner(polkadotSigner);
+  }
+
+  /// Set the polkadot Signer to `polkadotSigner`
+  private async setWasmExternalAccountSigner(polkadotAddress: Address): Promise<void> {
+    await this.wasmApi.setExternalAccountSigner(polkadotAddress);
   }
 
   /// Returns the corresponding blockchain connection URL from Environment
