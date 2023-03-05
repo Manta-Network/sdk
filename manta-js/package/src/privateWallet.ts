@@ -126,7 +126,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// Convert a private address to JSON.
-  convertPrivateAddressToJson(address: string): any {
+  convertZkAddressToJson(address: string): any {
     const bytes = base58Decode(address);
     return JSON.stringify({
       receiving_key: Array.from(bytes),
@@ -157,18 +157,18 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     return config.NETWORKS;
   }
 
-  /// Returns the ZkAddress (Private Address) of the currently connected manta-signer instance.
+  /// Returns the ZkAddress (Zk Address) of the currently connected manta-signer instance.
   async getZkAddress(): Promise<Address> {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      const privateAddressRaw = await this.wasmWallet.address(
+      const zkAddressRaw = await this.wasmWallet.address(
         this.getWasmNetWork()
       );
-      const privateAddressBytes = [...privateAddressRaw.receiving_key];
-      const privateAddress = base58Encode(privateAddressBytes);
+      const zkAddressBytes = [...zkAddressRaw.receiving_key];
+      const zkAddress = base58Encode(zkAddressBytes);
       this.walletIsBusy = false;
-      return privateAddress;
+      return zkAddress;
     } catch (e) {
       this.walletIsBusy = false;
       console.error('Failed to fetch ZkAddress.', e);
@@ -181,7 +181,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   ///
   /// Requirements: Must be called once after creating an instance of MantaPrivateWallet
   /// and must be called before walletSync().
-  async initalWalletSync(): Promise<boolean> {
+  async initialWalletSync(): Promise<boolean> {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
@@ -235,9 +235,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
   }
 
-  /// Returns the private balance of the currently connected zkAddress for the currently
+  /// Returns the zk balance of the currently connected zkAddress for the currently
   /// connected network.
-  async getPrivateBalance(assetId: BN): Promise<BN | null> {
+  async getZkBalance(assetId: BN): Promise<BN | null> {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
@@ -250,7 +250,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return balance;
     } catch (e) {
       this.walletIsBusy = false;
-      console.error('Failed to fetch private balance.', e);
+      console.error('Failed to fetch zk balance.', e);
       return null;
     }
   }
@@ -326,14 +326,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   async privateTransferSend(
     assetId: BN,
     amount: BN,
-    toPrivateAddress: Address,
+    toZkAddress: Address,
     polkadotSigner: Signer,
     polkadotAddress: Address
   ): Promise<void> {
     const signed = await this.privateTransferBuild(
       assetId,
       amount,
-      toPrivateAddress,
+      toZkAddress,
       polkadotAddress
     );
     // transaction rejected by signer
@@ -350,7 +350,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   async privateTransferBuild(
     assetId: BN,
     amount: BN,
-    toPrivateAddress: Address,
+    toZkAddress: Address,
     polkadotAddress: Address
   ): Promise<SignedTransaction | null> {
     try {
@@ -360,7 +360,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const transaction = await this.privateTransferBuildUnsigned(
         assetId,
         amount,
-        toPrivateAddress
+        toZkAddress
       );
       const signResult = await this.signTransaction(
         transaction.assetMetadataJson,
@@ -606,10 +606,10 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private async privateTransferBuildUnsigned(
     assetId: BN,
     amount: BN,
-    toPrivateAddress: Address
+    toZkAddress: Address
   ): Promise<any> {
     try {
-      const addressJson = this.convertPrivateAddressToJson(toPrivateAddress);
+      const addressJson = this.convertZkAddressToJson(toZkAddress);
       const assetIdArray = Array.from(
         MantaPrivateWallet.assetIdToUInt8Array(assetId)
       );
