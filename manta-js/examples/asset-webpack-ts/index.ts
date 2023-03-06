@@ -4,11 +4,11 @@ import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 
 async function main() {
-    await toPrivateOnlySignTest();
-    await toPrivateTest();
-    await privateTransferTest();
+    //await toPrivateOnlySignTest();
+    //await toPrivateTest();
+    //await privateTransferTest();
     await toPublicTest();
-    await publicTransferTest();
+    //await publicTransferTest();
     console.log("END");
 }
 
@@ -108,7 +108,7 @@ const privateTransferTest = async () => {
 const toPrivateOnlySignTest = async () => {
 
     const privateWalletConfig = {
-        environment: Environment.Production,
+        environment: Environment.Development,
         network: Network.Dolphin
     }
 

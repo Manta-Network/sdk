@@ -293,7 +293,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       await this.waitForWallet();
       this.walletIsBusy = true;
       await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
-      const transaction = await this.toPublicBuildUnsigned(assetId, amount);
+      const transaction = await this.toPublicBuildUnsigned(assetId, amount, polkadotAddress);
       const signResult = await this.signTransaction(transaction.assetMetadataJson, transaction.transaction, this.network);
       this.walletIsBusy = false;
       return signResult;
@@ -407,7 +407,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const jsonObj = await this.getAssetMetadata(assetId);
       const decimals = jsonObj['metadata']['decimals'];
       const symbol = jsonObj['metadata']['symbol'];
-      const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
+      const assetMetadataJson = `{ "token_type": {"FT": ${decimals}}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
       return {
         transaction,
         assetMetadataJson
@@ -418,15 +418,17 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// Builds the "ToPublic" transaction in JSON format to be signed.
-  private async toPublicBuildUnsigned(assetId: BN, amount: BN): Promise<any> {
+  private async toPublicBuildUnsigned(assetId: BN, amount: BN, publicAddress: string): Promise<any> {
     try {
       const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
-      const txJson = `{ "ToPublic": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
+      const publicAddressArray = JSON.stringify(base58Decode(publicAddress));
+      console.log("Public Address Raw: ", publicAddressArray);
+      const txJson = `{ "ToPublic": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${publicAddressArray} ]}`;
       const transaction = this.wasm.Transaction.from_string(txJson);
       const jsonObj = await this.getAssetMetadata(assetId);
       const decimals = jsonObj['metadata']['decimals'];
       const symbol = jsonObj['metadata']['symbol'];
-      const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
+      const assetMetadataJson = `{ "token_type": {"FT": ${decimals}}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
       return {
         transaction,
         assetMetadataJson
