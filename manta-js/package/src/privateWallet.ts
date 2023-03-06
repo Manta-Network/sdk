@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { base58Decode, base58Encode } from '@polkadot/util-crypto';
+import { base58Decode, base58Encode, decodeAddress } from '@polkadot/util-crypto';
 // @ts-ignore
 import Api, {ApiConfig} from './api/index';
 import BN from 'bn.js';
@@ -421,9 +421,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private async toPublicBuildUnsigned(assetId: BN, amount: BN, publicAddress: string): Promise<any> {
     try {
       const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
-      const publicAddressArray = JSON.stringify(base58Decode(publicAddress));
-      console.log("Public Address Raw: ", publicAddressArray);
+      const publicAddressArray = `[${decodeAddress(publicAddress)}]`;
       const txJson = `{ "ToPublic": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${publicAddressArray} ]}`;
+      console.log("full tx: ", txJson);
       const transaction = this.wasm.Transaction.from_string(txJson);
       const jsonObj = await this.getAssetMetadata(assetId);
       const decimals = jsonObj['metadata']['decimals'];
