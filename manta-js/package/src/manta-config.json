@@ -111,7 +111,7 @@
             "receiver_posts": "Vec<ReceiverPost>",
             "sinks": "Vec<[u8; 16]>",
             "proof": "[u8; 128]",
-            "sinks_account": "Vec<[u8; 32]>"
+            "sink_accounts": "Vec<[u8; 32]>"
         }
     }
 }
