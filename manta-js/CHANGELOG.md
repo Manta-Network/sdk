@@ -6,10 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 
 ### Added
-- [\#103](https://github.com/Manta-Network/sdk/pull/103) Update manta-rs to v0.5.12.
 - [\#85](https://github.com/Manta-Network/sdk/pull/85) Key-dependent signer function APIs.
 
 ### Changed
+- [\#103](https://github.com/Manta-Network/sdk/pull/103) Update manta-rs to v0.5.12.
 
 ### Deprecated
 
