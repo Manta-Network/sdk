@@ -195,6 +195,7 @@ impl_js_compatible!(
     manta_accounting::transfer::Asset<config::Config>,
     "Asset"
 );
+impl_js_compatible!(AccountId, config::AccountId, "AccountId");
 impl_js_compatible!(AssetMetadata, signer::AssetMetadata, "Asset Metadata");
 impl_js_compatible!(
     MultiProvingContext,
@@ -533,6 +534,9 @@ pub struct TransferPost {
 
     /// Validity Proof
     proof: config::Proof,
+
+    /// Sink Accounts
+    sink_accounts: Vec<config::AccountId>,
 }
 
 #[wasm_bindgen]
@@ -548,6 +552,7 @@ impl TransferPost {
         receiver_posts: Vec<JsValue>,
         sinks: Vec<JsValue>,
         proof: JsValue,
+        sink_accounts: Vec<JsValue>,
     ) -> Self {
         Self {
             authorization_signature: authorization_signature.map(|x| {
@@ -565,6 +570,7 @@ impl TransferPost {
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
             sinks: sinks.into_iter().map(from_js).collect(),
             proof: from_js(proof),
+            sink_accounts: sink_accounts.into_iter().map(from_js).collect(),
         }
     }
 }
@@ -590,6 +596,7 @@ impl From<config::TransferPost> for TransferPost {
                 .map(|s| s.to_le_bytes())
                 .collect(),
             proof: post.body.proof,
+            sink_accounts: post.sink_accounts,
         }
     }
 }
@@ -607,6 +614,7 @@ impl From<TransferPost> for config::TransferPost {
                 sinks: post.sinks.into_iter().map(u128::from_le_bytes).collect(),
                 proof: post.proof,
             },
+            sink_accounts: post.sink_accounts,
         }
     }
 }
@@ -1127,9 +1135,13 @@ impl Signer {
     /// Generates an [`IdentityProof`] for `identified_asset` by
     /// signing a virtual [`ToPublic`](canonical::ToPublic) transaction.
     #[inline]
-    pub fn identity_proof(&mut self, identified_asset: IdentifiedAsset) -> Option<IdentityProof> {
+    pub fn identity_proof(
+        &mut self,
+        identified_asset: IdentifiedAsset,
+        public_account: AccountId,
+    ) -> Option<IdentityProof> {
         self.as_mut()
-            .identity_proof(identified_asset.into())
+            .identity_proof(identified_asset.into(), public_account.into())
             .map(Into::into)
     }
 
