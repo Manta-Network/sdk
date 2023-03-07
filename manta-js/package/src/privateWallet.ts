@@ -423,7 +423,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
       const publicAddressArray = `[${decodeAddress(publicAddress)}]`;
       const txJson = `{ "ToPublic": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${publicAddressArray} ]}`;
-      console.log("full tx: ", txJson);
+
       const transaction = this.wasm.Transaction.from_string(txJson);
       const jsonObj = await this.getAssetMetadata(assetId);
       const decimals = jsonObj['metadata']['decimals'];
