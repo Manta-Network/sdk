@@ -7,6 +7,8 @@ SBT sdk is extension of manta-pay sdk, and add some custom logic, including:
 
 Developer should use sdk to mint SBT, because current we need `Signer` to generate `TransferPost` which contains lots of zkp proof information.
 
+### Mint SBT
+
 Here is a example of mint SBT steps:
 
 1. initial wallet and signer.
@@ -44,3 +46,52 @@ Here is a example of mint SBT steps:
     await sbtMint.batchTx.signAndSend(polkadotConfig.polkadotAddress);
 ```
 
+### SBT Proof storage and verification
+
+After user mint SBT, the return value including proof key of SBT, the concept of proof key can be reference to manta pay api documentation. Third party project should use these proof key and asset id returned from `buildSbtBatch` method, and call our backend service api to store the proof information:
+
+POST http://backend_service_url/npo/raw-proofs
+
+```js
+{
+    "address": "0xRAW-001",
+    "proof_info": [{
+        "proof_id": "0x01234567890123456789012345678901",
+        "asset_id": "1",
+        "metadata": "https://example.com/1.png"
+    }]
+}
+```
+
+The return response like:
+
+```js
+{
+    "status": true
+}
+```
+
+After proof information is stored on our backend service, you can call our backend verifier service to verify if given proof information is valid or not:
+
+POST http://backend_service_url/npo/raw-proof
+
+```js
+{
+    "proof_id": ["0x01234567890123456789012345678901"]
+}
+```
+
+response:
+
+```js
+{
+    "status": true,
+    "data": [
+        {
+            "proof_id": "0x01234567890123456789012345678901",
+            "metadata": "https://example.com/1.png",
+            "asset_id": "1"
+        }
+    ]
+}
+```
