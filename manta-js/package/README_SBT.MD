@@ -1,15 +1,15 @@
 
-## SBT
+## zkSBT
 
-SBT sdk is extension of manta-pay sdk, and add some custom logic, including:
-- We have a pre-charge steps when reserve asset id of SBT.
-- User mint SBT by provide metadata, the metadata of SBT can be image url or anything, but we have a size limit of metadata(Current is 300 length).
+zkSBT sdk is extension of manta-pay sdk, and add some custom logic, including:
+- We have a pre-charge steps when reserve asset id of zkSBT.
+- User mint zkSBT by provide metadata, the metadata of zkSBT can be image url or anything, but we have a size limit of metadata(Current is 300 length).
 
-Developer should use sdk to mint SBT, because current we need `Signer` to generate `TransferPost` which contains lots of zkp proof information.
+Developer should use sdk to mint zkSBT, because current we need `Signer` to generate `TransferPost` which contains lots of zkp proof information.
 
-### Mint SBT
+### Mint zkSBT
 
-Here is a example of mint SBT steps:
+Here is a example of mint zkSBT steps:
 
 1. initial wallet and signer.
 
@@ -22,7 +22,7 @@ Here is a example of mint SBT steps:
     await privateWallet.initalWalletSync();
 ```
 
-2. reserve asest id before mint SBT.
+2. reserve asest id before mint zkSBT.
 
 ```js
     const reserveSbt = await privateWallet.buildReserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
@@ -30,9 +30,9 @@ Here is a example of mint SBT steps:
     await reserveSbt.signAndSend(polkadotConfig.polkadotAddress);
 ```
 
-3. Mint SBT by provide start asset id, number of token to mint, and metadata list.
+3. Mint zkSBT by provide start asset id, number of token to mint, and metadata list.
 
-> Notice: due to zkp proof extrinsic size is large than normal transaction, we current support at least 8 SBT in one batch.
+> Notice: due to zkp proof extrinsic size is large than normal transaction, we current support at least 8 zkSBT in one batch.
 
 ```js
     const numberOfMints = 2;
@@ -46,9 +46,9 @@ Here is a example of mint SBT steps:
     await sbtMint.batchTx.signAndSend(polkadotConfig.polkadotAddress);
 ```
 
-### SBT Proof storage and verification
+### zkSBT Proof storage and verification
 
-After user mint SBT, the return value including proof key of SBT, the concept of proof key can be reference to manta pay api documentation. Third party project should use these proof key and asset id returned from `buildSbtBatch` method, and call our backend service api to store the proof information:
+After user mint zkSBT, the return value including proof key of zkSBT, the concept of proof key can be reference to manta pay api documentation. Third party project should use these proof key and asset id returned from `buildSbtBatch` method, and call our backend service api to store the proof information:
 
 POST http://backend_service_url/npo/raw-proofs
 

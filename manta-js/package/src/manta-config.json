@@ -5,7 +5,7 @@
     "NETWORKS": {
         "Dolphin": {
             "name": "Dolphin",
-            "ws": "wss://ws.npoimage-backend-service.cloud:444",
+            "ws": "wss://kwaltz.baikal.testnet.dolphin.training",
             "ws_local": "ws://127.0.0.1:9944",
             "parachainId": 2084,
             "decimals": 12,

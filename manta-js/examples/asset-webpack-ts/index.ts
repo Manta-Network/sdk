@@ -6,8 +6,8 @@ import axios from "axios";
 import { u8aToBn } from '@polkadot/util';
 
 const privateWalletConfig = {
-    environment: Environment.Development,
-    network: Network.Calamari,
+    environment: Environment.Production,
+    network: Network.Dolphin,
     loggingEnabled: true
 }
 // const privateWalletConfig = {

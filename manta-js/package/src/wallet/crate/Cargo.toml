@@ -34,10 +34,10 @@ disable-restart = []
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", default-features = false }
 js-sys = { version = "0.3.60", default-features = false }
-manta-accounting = { git = "https://github.com/manta-network/manta-rs.git", branch="feat/sign_with_transaction_data", default-features = false, features = ["serde"] }
-manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", branch="feat/sign_with_transaction_data", default-features = false, features = ["serde"] }
-manta-pay = { git = "https://github.com/manta-network/manta-rs.git", branch="feat/sign_with_transaction_data", default-features = true, features = ["arkworks","groth16", "network", "http", "scale", "serde"] }
-manta-util = { git = "https://github.com/manta-network/manta-rs.git", branch="feat/sign_with_transaction_data", default-features = false, features = ["serde", "reqwest"] }
+manta-accounting = { git = "https://github.com/manta-network/manta-rs.git", rev="9f020c9eea0b93dcb12f8382f413a214826ff98b", default-features = false, features = ["serde"] }
+manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", rev="9f020c9eea0b93dcb12f8382f413a214826ff98b", default-features = false, features = ["serde"] }
+manta-pay = { git = "https://github.com/manta-network/manta-rs.git", rev="9f020c9eea0b93dcb12f8382f413a214826ff98b", default-features = true, features = ["arkworks","groth16", "std", "http", "scale", "serde"] }
+manta-util = { git = "https://github.com/manta-network/manta-rs.git", rev="9f020c9eea0b93dcb12f8382f413a214826ff98b", default-features = false, features = ["serde", "reqwest"] }
 scale-codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive", "max-encoded-len"] }
 serde_json = { version = "1.0.91", default-features = false, features = ["alloc", "arbitrary_precision"] }
 wasm-bindgen = { version = "0.2.83", default-features = false, features = ["serde-serialize", "std"] }
