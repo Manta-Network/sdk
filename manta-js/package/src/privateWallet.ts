@@ -1,5 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { base58Decode, base58Encode } from '@polkadot/util-crypto';
+import { base58Decode, base58Encode, decodeAddress } from '@polkadot/util-crypto';
+import { bnToU8a } from '@polkadot/util';
 // @ts-ignore
 import Api, {ApiConfig} from './api/index';
 import BN from 'bn.js';
@@ -79,23 +80,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     return JSON.stringify({
       receiving_key: Array.from(bytes)
     });
-  }
-
-  /// Convert asset_id string to UInt8Array, default UInt8 array size is 32.
-  static assetIdToUInt8Array(asset_id: BN, len=32): AssetId {
-    let hex = asset_id.toString(16); // to heximal format
-    if (hex.length % 2) { hex = '0' + hex; }
-
-    const u8a = new Uint8Array(len);
-
-    let i = 0;
-    let j = 0;
-    while (i < len) {
-      u8a[i] = parseInt(hex.slice(j, j+2), 16);
-      i += 1;
-      j += 2;
-    }
-    return u8a;
   }
 
   /// Returns information about the currently supported networks.
@@ -293,7 +277,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       await this.waitForWallet();
       this.walletIsBusy = true;
       await this.setPolkadotSigner(polkadotSigner, polkadotAddress);
-      const transaction = await this.toPublicBuildUnsigned(assetId, amount);
+      const transaction = await this.toPublicBuildUnsigned(assetId, amount, polkadotAddress);
       const signResult = await this.signTransaction(transaction.assetMetadataJson, transaction.transaction, this.network);
       this.walletIsBusy = false;
       return signResult;
@@ -388,7 +372,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// Builds the "ToPrivate" transaction in JSON format to be signed.
   private async toPrivateBuildUnsigned(assetId: BN, amount: BN): Promise<any> {
     try {
-      const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
+      const assetIdArray = bnToU8a(assetId, {bitLength: 256});
       const txJson = `{ "ToPrivate": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
       const transaction = this.wasm.Transaction.from_string(txJson);
       return transaction;
@@ -401,13 +385,13 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private async privateTransferBuildUnsigned(assetId: BN, amount: BN, toPrivateAddress: Address): Promise<any> {
     try {
       const addressJson = this.convertPrivateAddressToJson(toPrivateAddress);
-      const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
+      const assetIdArray = bnToU8a(assetId, {bitLength: 256});
       const txJson = `{ "PrivateTransfer": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${addressJson} ]}`;
       const transaction = this.wasm.Transaction.from_string(txJson);
       const jsonObj = await this.getAssetMetadata(assetId);
       const decimals = jsonObj['metadata']['decimals'];
       const symbol = jsonObj['metadata']['symbol'];
-      const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
+      const assetMetadataJson = `{ "token_type": {"FT": ${decimals}}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
       return {
         transaction,
         assetMetadataJson
@@ -418,15 +402,17 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// Builds the "ToPublic" transaction in JSON format to be signed.
-  private async toPublicBuildUnsigned(assetId: BN, amount: BN): Promise<any> {
+  private async toPublicBuildUnsigned(assetId: BN, amount: BN, publicAddress: string): Promise<any> {
     try {
-      const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
-      const txJson = `{ "ToPublic": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
+      const assetIdArray = bnToU8a(assetId, {bitLength: 256});
+      const publicAddressArray = `[${decodeAddress(publicAddress)}]`;
+      const txJson = `{ "ToPublic": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${publicAddressArray} ]}`;
+
       const transaction = this.wasm.Transaction.from_string(txJson);
       const jsonObj = await this.getAssetMetadata(assetId);
       const decimals = jsonObj['metadata']['decimals'];
       const symbol = jsonObj['metadata']['symbol'];
-      const assetMetadataJson = `{ "decimals": ${decimals}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
+      const assetMetadataJson = `{ "token_type": {"FT": ${decimals}}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
       return {
         transaction,
         assetMetadataJson

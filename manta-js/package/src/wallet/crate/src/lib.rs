@@ -32,7 +32,6 @@ use alloc::{
 use core::{cell::RefCell, fmt::Debug};
 use js_sys::{JsString, Promise};
 use manta_accounting::{
-    asset,
     transfer::canonical,
     wallet::{
         self,
@@ -189,7 +188,7 @@ impl_js_compatible!(
     manta_accounting::transfer::Asset<config::Config>,
     "Asset"
 );
-impl_js_compatible!(AssetMetadata, asset::AssetMetadata, "Asset Metadata");
+impl_js_compatible!(AssetMetadata, signer::AssetMetadata, "Asset Metadata");
 impl_js_compatible!(
     Transaction,
     canonical::Transaction<config::Config>,
@@ -202,6 +201,7 @@ impl_js_compatible!(
 );
 impl_js_compatible!(SenderPost, config::SenderPost, "Sender Post");
 impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
+impl_js_compatible!(AccountId, config::AccountId, "Account Id");
 
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
@@ -276,6 +276,9 @@ pub struct TransferPost {
 
     /// Validity Proof
     proof: config::Proof,
+
+    /// Sink accounts
+    sink_accounts: Vec<config::AccountId>,
 }
 
 #[wasm_bindgen]
@@ -291,6 +294,7 @@ impl TransferPost {
         receiver_posts: Vec<JsValue>,
         sinks: Vec<JsValue>,
         proof: JsValue,
+        sink_accounts: Vec<JsValue>,
     ) -> Self {
         Self {
             authorization_signature: authorization_signature.map(|x| {
@@ -302,12 +306,13 @@ impl TransferPost {
                     Decode::decode(x)
                         .expect("Decoding a field element from [u8; 32] is not allowed to fail"),
                 )
-            }), 
+            }),
             sources: sources.into_iter().map(from_js).collect(),
             sender_posts: sender_posts.into_iter().map(from_js).collect(),
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
             sinks: sinks.into_iter().map(from_js).collect(),
             proof: from_js(proof),
+            sink_accounts: sink_accounts.into_iter().map(from_js).collect(),
         }
     }
 }
@@ -326,8 +331,14 @@ impl From<config::TransferPost> for TransferPost {
                 .collect(),
             sender_posts: post.body.sender_posts,
             receiver_posts: post.body.receiver_posts,
-            sinks: post.body.sinks.into_iter().map(|s| s.to_le_bytes()).collect(),
+            sinks: post
+                .body
+                .sinks
+                .into_iter()
+                .map(|s| s.to_le_bytes())
+                .collect(),
             proof: post.body.proof,
+            sink_accounts: post.sink_accounts,
         }
     }
 }

@@ -127,7 +127,7 @@ const privateTransferTest = async () => {
 const toPrivateOnlySignTest = async () => {
 
     const privateWalletConfig = {
-        environment: Environment.Production,
+        environment: Environment.Development,
         network: Network.Dolphin
     }
 
