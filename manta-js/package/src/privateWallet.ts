@@ -15,9 +15,10 @@ import {
   SignedTransaction,
   PrivateWalletConfig,
   RequestUserSeedPhrase,
+  SaveStorageStateToLocal,
+  GetStorageStateFromLocal,
 } from './sdk.interfaces';
 import { NATIVE_TOKEN_ASSET_ID } from './utils';
-import { get as getIdbData, set as setIdbData } from 'idb-keyval';
 
 const rpc = config.RPC;
 const types = config.TYPES;
@@ -76,6 +77,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   isBindAuthorizationContext: boolean;
   parameters: any;
   requestUserSeedPhrase: RequestUserSeedPhrase;
+  saveStorageStateToLocal: SaveStorageStateToLocal;
+  getStorageStateFromLocal: GetStorageStateFromLocal;
 
   constructor(
     api: ApiPromise,
@@ -86,6 +89,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     loggingEnabled: boolean,
     parameters: any,
     requestUserSeedPhrase: RequestUserSeedPhrase,
+    saveStorageStateToLocal: SaveStorageStateToLocal,
+    getStorageStateFromLocal: GetStorageStateFromLocal,
   ) {
     this.api = api;
     this.wasm = wasm;
@@ -98,6 +103,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.isBindAuthorizationContext = false;
     this.parameters = parameters;
     this.requestUserSeedPhrase = requestUserSeedPhrase;
+    this.saveStorageStateToLocal = saveStorageStateToLocal;
+    this.getStorageStateFromLocal = getStorageStateFromLocal;
   }
 
   ///
@@ -122,6 +129,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       Boolean(config.loggingEnabled),
       parameters,
       config.requestUserSeedPhrase,
+      config.saveStorageStateToLocal,
+      config.getStorageStateFromLocal,
     );
   }
 
@@ -470,7 +479,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
     const multiProvingContext = new wasm.RawMultiProvingContext(...(provingFileList as [Uint8Array, Uint8Array, Uint8Array]));
     const fullParameters = new wasm.RawFullParameters(...(parameterFileList as [Uint8Array, Uint8Array, Uint8Array, Uint8Array, Uint8Array, Uint8Array, Uint8Array, Uint8Array, Uint8Array, Uint8Array, Uint8Array]));
-    const storageData = await MantaPrivateWallet.getStorageStateFromLocal(`${priConfig.network}`);
+    const storageData = await priConfig.getStorageStateFromLocal (`${priConfig.network}`);
     if (priConfig.loggingEnabled) {
       console.log(`Start initial signer: ${performance.now()}`);
     }
@@ -503,26 +512,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     };
   }
 
-  private static async saveStorageStateToLocal (network: string, data: any): Promise<boolean> {
-    try {
-      await setIdbData(`storage_state_${network}`, data);
-    } catch (ex) {
-      console.error(ex);
-      return false;
-    }
-    return true;
-  }
-
-  private static async getStorageStateFromLocal (network: string): Promise<any> {
-    let result: string;
-    try {
-      result = await getIdbData(`storage_state_${network}`);
-    } catch (ex) {
-      console.error(ex);
-    }
-    return result || null;
-  }
-
   private startSaveStorageTask() {
     clearInterval(taskIntervalId);
     const intervalId = setInterval(async () => {
@@ -538,7 +527,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         console.error(ex);
       }
       this.walletIsBusy = false;
-      await MantaPrivateWallet.saveStorageStateToLocal(`${this.network}`, stateData);
+      await this.saveStorageStateToLocal(`${this.network}`, stateData);
     }, 10000);
     taskIntervalId = Number(intervalId);
   }

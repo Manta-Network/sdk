@@ -28,6 +28,8 @@ export type SignedTransaction = {
 }
 
 export type RequestUserSeedPhrase = () => Promise<string | null>;
+export type SaveStorageStateToLocal = (network: string, data: any) => Promise<boolean>;
+export type GetStorageStateFromLocal = (network: string) => Promise<any>;
 
 export type PrivateWalletConfig = {
   environment: Environment,
@@ -40,6 +42,8 @@ export type PrivateWalletConfig = {
   provingFilePath: string,
   parametersFilePath: string,
   requestUserSeedPhrase: RequestUserSeedPhrase,
+  saveStorageStateToLocal: SaveStorageStateToLocal,
+  getStorageStateFromLocal: GetStorageStateFromLocal,
 }
 
 export interface IMantaPrivateWallet {
