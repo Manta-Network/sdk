@@ -94,7 +94,7 @@ export default class Api {
   }
 
   // Converts an `full incoming note` into a JSON object.
-  _full_incoming_note_to_jons(note) {
+  _full_incoming_note_to_json(note) {
     return {
       address_partition: note.address_partition,
       incoming_note: this._incoming_note_to_json(note.incoming_note),
@@ -137,7 +137,7 @@ export default class Api {
       const receivers = decodedReceivers.map((receiver) => {
         return [
           this._utxo_to_json(receiver[0]),
-          this._full_incoming_note_to_jons(receiver[1])
+          this._full_incoming_note_to_json(receiver[1])
         ];
       });
 
@@ -151,7 +151,7 @@ export default class Api {
           this._outgoing_note_to_json(sender[1]),
         ];
       });
-      
+
       if (this.pullCallback) {
         this.pullCallback(
           receivers,
