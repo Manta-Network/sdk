@@ -81,7 +81,7 @@ const privateTransferTest = async () => {
 
     const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
 
-    await privateWallet.initalWalletSync();
+    await privateWallet.initialWalletSync();
 
     const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("The initial private balance is: ", initialPrivateBalance.toString());
@@ -147,13 +147,13 @@ const toPrivateOnlySignTest = async () => {
     await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
-    const privateAddress = await privateWallet.getZkAddress();
-    console.log("The private address is: ", privateAddress);
+    const zkAddress = await privateWallet.getZkAddress();
+    console.log("The zk address is: ", zkAddress);
 
     const assetId = new BN("1"); // DOL
     const amount = new BN("10000000000000"); // 10 units
 
-    await privateWallet.initalWalletSync();
+    await privateWallet.initialWalletSync();
 
     const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("The initial private balance is: ", initialPrivateBalance.toString());
@@ -181,13 +181,13 @@ const toPrivateTest = async () => {
     await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
-    const privateAddress = await privateWallet.getZkAddress();
-    console.log("The private address is: ", privateAddress);
+    const zkAddress = await privateWallet.getZkAddress();
+    console.log("The zk address is: ", zkAddress);
 
     const assetId = new BN("1"); // DOL
     const amount = new BN("10000000000000"); // 10 units
 
-    await privateWallet.initalWalletSync();
+    await privateWallet.initialWalletSync();
 
     const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("The initial private balance is: ", initialPrivateBalance.toString());
@@ -255,16 +255,16 @@ const toPublicTest = async () => {
     await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
-    const privateAddress = await privateWallet.getZkAddress();
-    console.log("The private address is: ", privateAddress);
+    const zkAddress = await privateWallet.getZkAddress();
+    console.log("The zk address is: ", zkAddress);
 
     const assetId = new BN("1"); // DOL
     const amount = new BN("5000000000000"); // 5 units
 
-    await privateWallet.initalWalletSync();
+    await privateWallet.initialWalletSync();
 
     const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("The inital private balance is: ", initialPrivateBalance.toString());
+    console.log("The initial private balance is: ", initialPrivateBalance.toString());
 
     await privateWallet.toPublicSend(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
