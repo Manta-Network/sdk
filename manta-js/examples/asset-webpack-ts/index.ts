@@ -5,12 +5,12 @@ import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-da
 
 async function main() {
     await toPrivateOnlySignTest();
-    // await toPrivateTest();
-    // await privateTransferOnlySignTest();
-    // await privateTransferTest();
-    // await toPublicOnlySignTest();
-    // await toPublicTest();
-    // await publicTransferTest();
+    await toPrivateTest();
+    await privateTransferOnlySignTest();
+    await privateTransferTest();
+    await toPublicOnlySignTest();
+    await toPublicTest();
+    await publicTransferTest();
     console.log("END");
 }
 
@@ -32,18 +32,18 @@ const getPolkadotSignerAndAddress = async () => {
     }
 }
 
-/// Test to publicly transfer 10 DOL.
+/// Test to publicly transfer 10 KMA.
 const publicTransferTest = async () => {
     const privateWalletConfig = {
-        environment: Environment.Production,
-        network: Network.Dolphin
+        environment: Environment.Development,
+        network: Network.Calamari
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
-    const assetId = new BN("1"); // DOL
+    const assetId = new BN("1"); // KMA
     const amount = new BN("10000000000000"); // 10 units
 
     const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
@@ -65,18 +65,18 @@ const publicTransferTest = async () => {
     console.log("Dest Balance After:" + JSON.stringify(destinationBalanceAfterTransfer.toString()));
 }
 
-/// Test to privately transfer 5 pDOL.
+/// Test to privately transfer 5 pKMA.
 const privateTransferTest = async () => {
     const privateWalletConfig = {
-        environment: Environment.Production,
-        network: Network.Dolphin
+        environment: Environment.Development,
+        network: Network.Calamari
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
-    const assetId = new BN("1"); // DOL
+    const assetId = new BN("1"); // KMA
     const amount = new BN("5000000000000"); // 5 units
 
     const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
@@ -107,14 +107,14 @@ const privateTransferTest = async () => {
 
 const privateTransferOnlySignTest = async () => {
     const privateWalletConfig = {
-        environment: Environment.Production,
-        network: Network.Dolphin
+        environment: Environment.Development,
+        network: Network.Calamari
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
-    const assetId = new BN("1"); // DOL
+    const assetId = new BN("1"); // KMA
     const amount = new BN("5000000000000"); // 5 units
 
     const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
@@ -134,13 +134,13 @@ const privateTransferOnlySignTest = async () => {
 }
 
 
-/// Test to sign a transaction that converts 10 DOL to pDOL,
+/// Test to sign a transaction that converts 10 KMA to pKMA,
 /// without publishing the transaction.
 const toPrivateOnlySignTest = async () => {
 
     const privateWalletConfig = {
         environment: Environment.Development,
-        network: Network.Dolphin
+        network: Network.Calamari
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
@@ -150,7 +150,7 @@ const toPrivateOnlySignTest = async () => {
     const zkAddress = await privateWallet.getZkAddress();
     console.log("The zk address is: ", zkAddress);
 
-    const assetId = new BN("1"); // DOL
+    const assetId = new BN("1"); // KMA
     const amount = new BN("10000000000000"); // 10 units
 
     await privateWallet.initialWalletSync();
@@ -168,12 +168,12 @@ const toPrivateOnlySignTest = async () => {
 }
 
 /// Test to execute a `ToPrivate` transaction.
-/// Convert 10 DOL to 10 pDOL.
+/// Convert 10 KMA to 10 pKMA.
 const toPrivateTest = async () => {
 
     const privateWalletConfig = {
-        environment: Environment.Production,
-        network: Network.Dolphin,
+        environment: Environment.Development,
+        network: Network.Calamari,
         loggingEnabled: true
     }
 
@@ -184,7 +184,7 @@ const toPrivateTest = async () => {
     const zkAddress = await privateWallet.getZkAddress();
     console.log("The zk address is: ", zkAddress);
 
-    const assetId = new BN("1"); // DOL
+    const assetId = new BN("1"); // KMA
     const amount = new BN("10000000000000"); // 10 units
 
     await privateWallet.initialWalletSync();
@@ -215,8 +215,8 @@ const toPrivateTest = async () => {
 const toPublicOnlySignTest = async () => {
 
     const privateWalletConfig = {
-        environment: Environment.Production,
-        network: Network.Dolphin
+        environment: Environment.Development,
+        network: Network.Calamari
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
@@ -225,7 +225,7 @@ const toPublicOnlySignTest = async () => {
     const privateAddress = await privateWallet.getZkAddress();
     console.log("The private address is: ", privateAddress);
 
-    const assetId = new BN("1"); // DOL
+    const assetId = new BN("1"); // KMA
     const amount = new BN("5000000000000"); // 5 units
 
     await privateWallet.initalWalletSync();
@@ -243,12 +243,12 @@ const toPublicOnlySignTest = async () => {
 }
 
 /// Test to execute a `ToPublic` transaction.
-/// Convert 5 pDOL to 5 DOL.
+/// Convert 5 pKMA to 5 KMA.
 const toPublicTest = async () => {
 
     const privateWalletConfig = {
-        environment: Environment.Production,
-        network: Network.Dolphin
+        environment: Environment.Development,
+        network: Network.Calamari
     }
 
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
@@ -258,7 +258,7 @@ const toPublicTest = async () => {
     const zkAddress = await privateWallet.getZkAddress();
     console.log("The zk address is: ", zkAddress);
 
-    const assetId = new BN("1"); // DOL
+    const assetId = new BN("1"); // KMA
     const amount = new BN("5000000000000"); // 5 units
 
     await privateWallet.initialWalletSync();
