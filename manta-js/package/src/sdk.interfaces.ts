@@ -47,17 +47,17 @@ export interface IMantaPrivateWallet {
   initialSyncIsFinished: boolean;
   loggingEnabled: boolean;
 
-  convertPrivateAddressToJson(address: string): any
+  convertZkAddressToJson(address: string): any
   getNetworks(): any;
   getZkAddress(): Promise<Address>;
   getAssetMetadata(assetId: BN): Promise<any>;
-  initalWalletSync(): Promise<boolean>;
+  initialWalletSync(): Promise<boolean>;
   walletSync(): Promise<boolean>;
   getPrivateBalance(assetId: BN): Promise<BN | null>;
   toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
   toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
-  privateTransferSend(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  privateTransferBuild(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
+  privateTransferSend(assetId: BN, amount: BN, zkAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
+  privateTransferBuild(assetId: BN, amount: BN, zkAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
   toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
   toPublicBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
 }
