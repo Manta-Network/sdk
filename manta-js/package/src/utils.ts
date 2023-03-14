@@ -1,5 +1,5 @@
 import { Version, Address } from './sdk.interfaces';
-import { Signer } from '@polkadot/api/types';
+import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import { bnToU8a } from '@polkadot/util';
 import axios from 'axios';
 import config from './manta-config.json';
@@ -51,12 +51,7 @@ export class MantaUtilities {
   static async publicTransferSend(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void> {
     api.setSigner(polkadotSigner);
     try {
-      const assetIdArray = bnToU8a(assetId, {bitLength: 256});
-      const amountBN = amount.toArray('le', 16);
-      const tx = await api.tx.mantaPay.publicTransfer(
-        { id: assetIdArray, value: amountBN },
-        destinationAddress
-      );
+      const tx = await this.publicTransferBuild(api, assetId, amount, destinationAddress);
       await tx.signAndSend(senderAddress);
     } catch (e) {
       console.log('Failed to execute public transfer.');
@@ -65,8 +60,8 @@ export class MantaUtilities {
   }
 
   /// Creates a public transfer payload.
-  static async publicTransferBuild(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address): Promise<any> {
-    const assetIdArray = Array.from(MantaPrivateWallet.assetIdToUInt8Array(assetId));
+  static async publicTransferBuild(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address): Promise<SubmittableExtrinsic<'promise', any>> {
+    const assetIdArray = bnToU8a(assetId, {bitLength: 256}); 
       const amountBN = amount.toArray('le', 16);
       const tx = await api.tx.mantaPay.publicTransfer(
         { id: assetIdArray, value: amountBN },
