@@ -542,6 +542,7 @@ pub struct TransferPost {
 #[wasm_bindgen]
 impl TransferPost {
     /// Builds a new [`TransferPost`].
+    #[allow(clippy::too_many_arguments)]
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
@@ -1412,7 +1413,7 @@ impl Wallet {
     /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn restart(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async { this.restart().await }), network)
+        self.with_async(|this| Box::pin(this.restart()), network)
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
@@ -1430,7 +1431,7 @@ impl Wallet {
     /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn sync(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async { this.sync().await }), network)
+        self.with_async(|this| Box::pin(this.sync()), network)
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
@@ -1448,10 +1449,7 @@ impl Wallet {
     /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn sync_partial(&self, network: Network) -> Promise {
-        self.with_async(
-            |this| Box::pin(async { this.sync_partial().await }),
-            network,
-        )
+        self.with_async(|this| Box::pin(this.sync_partial()), network)
     }
 
     /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for context. This
@@ -1509,12 +1507,7 @@ impl Wallet {
         network: Network,
     ) -> Promise {
         self.with_async(
-            |this| {
-                Box::pin(async {
-                    this.post(transaction.into(), metadata.map(Into::into))
-                        .await
-                })
-            },
+            |this| Box::pin(this.post(transaction.into(), metadata.map(Into::into))),
             network,
         )
     }
@@ -1522,7 +1515,7 @@ impl Wallet {
     /// Returns public receiving keys according to the `request`.
     #[inline]
     pub fn address(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async { this.address().await }), network)
+        self.with_async(|this| Box::pin(this.address()), network)
     }
 
     /// Retrieves the [`TransactionData`] associated with the [`TransferPost`]s in
@@ -1576,6 +1569,16 @@ impl Wallet {
             },
             network,
         )
+    }
+
+    /// Resets a [`Signer`] to its initial state.
+    #[inline]
+    pub fn reset_state(&self, network: Network) -> Promise {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .reset_state();
+        self.with_async(|this| Box::pin(this.load_initial_state()), network)
     }
 }
 
