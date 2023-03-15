@@ -208,6 +208,7 @@ impl_js_compatible!(
 );
 impl_js_compatible!(SenderPost, config::SenderPost, "Sender Post");
 impl_js_compatible!(ReceiverPost, config::ReceiverPost, "Receiver Post");
+impl_js_compatible!(AccountId, config::AccountId, "Account Id");
 
 impl_js_compatible!(ControlFlow, ops::ControlFlow, "Control Flow");
 impl_js_compatible!(Network, signer::client::network::Network, "Network Type");
@@ -288,6 +289,9 @@ pub struct TransferPost {
 
     /// Validity Proof
     proof: config::Proof,
+
+    /// Sink accounts
+    sink_accounts: Vec<config::AccountId>,
 }
 
 #[wasm_bindgen]
@@ -303,6 +307,7 @@ impl TransferPost {
         receiver_posts: Vec<JsValue>,
         sinks: Vec<JsValue>,
         proof: JsValue,
+        sink_accounts: Vec<JsValue>,
     ) -> Self {
         Self {
             authorization_signature: authorization_signature.map(|x| {
@@ -320,6 +325,7 @@ impl TransferPost {
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
             sinks: sinks.into_iter().map(from_js).collect(),
             proof: from_js(proof),
+            sink_accounts: sink_accounts.into_iter().map(from_js).collect(),
         }
     }
 }
@@ -345,6 +351,7 @@ impl From<config::TransferPost> for TransferPost {
                 .map(|s| s.to_le_bytes())
                 .collect(),
             proof: post.body.proof,
+            sink_accounts: post.sink_accounts,
         }
     }
 }
@@ -693,12 +700,12 @@ impl Wallet {
     /// Sign Identity proof, signer creates a ToPublic post from randomized inputs
     /// @TODO: fix JSObject bug with `Vec<VirtualAsset>`
     #[inline]
-    pub fn identity_proof(&self, virtual_asset: VirtualAsset, network: Network) -> Promise {
+    pub fn identity_proof(&self, virtual_asset: VirtualAsset, account_id: AccountId, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer_mut().set_network(Some(network.into()));
 
-                let virtual_assets: Vec<config::IdentifiedAsset> = vec![virtual_asset.into()];
+                let virtual_assets: Vec<(config::IdentifiedAsset, config::AccountId)> = vec![(virtual_asset.into(), account_id.into())];
                 let response = this.identity_proof(virtual_assets).await.map(|response| {
                     response
                         .0
@@ -1098,12 +1105,12 @@ impl SBTWallet {
     /// Sign Identity proof, signer creates a ToPublic post from randomized inputs
     /// @TODO: fix JSObject bug with `Vec<VirtualAsset>`
     #[inline]
-    pub fn identity_proof(&self, virtual_asset: VirtualAsset, network: Network) -> Promise {
+    pub fn identity_proof(&self, virtual_asset: VirtualAsset, account_id: AccountId, network: Network) -> Promise {
         self.with_async(|this| {
             Box::pin(async {
                 this.signer_mut().set_network(Some(network.into()));
 
-                let virtual_assets: Vec<config::IdentifiedAsset> = vec![virtual_asset.into()];
+                let virtual_assets: Vec<(config::IdentifiedAsset, config::AccountId)> = vec![(virtual_asset.into(), account_id.into())];
                 let response = this.identity_proof(virtual_assets).await.map(|response| {
                     response
                         .0

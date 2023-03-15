@@ -19,7 +19,7 @@ Here is a example of mint zkSBT steps:
     const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
-    await privateWallet.initalWalletSync();
+    await privateWallet.initialWalletSync();
 ```
 
 2. reserve asest id before mint zkSBT.

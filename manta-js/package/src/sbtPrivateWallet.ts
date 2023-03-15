@@ -119,13 +119,14 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
   }
 
   /// Produces Identity Proof from randomness in `virtualAsset`
-  async getIdentityProof(virtualAsset: string) {
+  async getIdentityProof(virtualAsset: string, account: Address) {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
       const networkType = this.wasm.Network.from_string(`"${this.network}"`);
       const asset = this.wasm.VirtualAsset.from_string(virtualAsset);
-      const identityProof = this.wasmWallet.identity_proof(asset, networkType);
+      const account_id = this.wasm.Account.from_string(account);
+      const identityProof = this.wasmWallet.identity_proof(asset, account_id, networkType);
       this.walletIsBusy = false;
       return identityProof;
     } catch (e) {

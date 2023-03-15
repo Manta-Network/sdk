@@ -1,11 +1,11 @@
 import { Version, Address } from './sdk.interfaces';
 import { Signer } from '@polkadot/api/types';
+import { bnToU8a } from '@polkadot/util';
 import axios from 'axios';
 import config from './manta-config.json';
 import BN from 'bn.js';
 import { ApiPromise } from '@polkadot/api';
 import { MantaPrivateWallet } from './privateWallet';
-import { bnToU8a } from '@polkadot/util';
 
 export const NATIVE_TOKEN_ASSET_ID = '1';
 
@@ -51,10 +51,10 @@ export class MantaUtilities {
   static async publicTransfer(api:ApiPromise, assetId: BN, amount: BN, destinationAddress: Address, senderAddress:Address, polkadotSigner:Signer): Promise<void> {
     api.setSigner(polkadotSigner);
     try {
-      const u8a = bnToU8a(assetId, {bitLength: 256});
+      const assetIdArray = bnToU8a(assetId, {bitLength: 256});
       const amountBN = amount.toArray('le', 16);
       const tx = await api.tx.mantaPay.publicTransfer(
-        { id: u8a, value: amountBN },
+        { id: assetIdArray, value: amountBN },
         destinationAddress
       );
       await tx.signAndSend(senderAddress);
