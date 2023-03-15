@@ -3,30 +3,8 @@
 // Polkadot-JS Ledger API
 
 import { base64Decode } from '@polkadot/util-crypto';
-import * as $ from 'scale-codec';
+import * as $ from 'manta-scale-codec';
 import { u8aToU8a } from '@polkadot/util';
-
-
-// function dataURItoBlob(dataURI) {
-//   // convert base64 to raw binary data held in a string
-//   const byteString = atob(dataURI.split(',')[1]);
-
-//   // separate out the mime component
-//   const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-
-//   // write the bytes of the string to an ArrayBuffer
-//   const arrayBuffer = new ArrayBuffer(byteString.length);
-//   const _ia = new Uint8Array(arrayBuffer);
-//   for (let i = 0; i < byteString.length; i++) {
-//     _ia[i] = byteString.charCodeAt(i);
-//   }
-
-//   const dataView = new DataView(arrayBuffer);
-//   const blob = new Blob([dataView], { type: mimeString });
-//   return blob;
-// }
-
-const formatStorageKey = (key) => `storage_data_${key}`;
 
 export class ApiConfig {
   constructor(
@@ -34,7 +12,7 @@ export class ApiConfig {
     maxSendersPullSize,
     pullCallback = null,
     errorCallback = null,
-    loggingEnabled = false
+    loggingEnabled = false,
   ) {
     this.loggingEnabled = loggingEnabled;
     this.maxReceiversPullSize = maxReceiversPullSize;
@@ -60,7 +38,8 @@ export default class Api {
 
   _log(message) {
     if (this.loggingEnabled) {
-      console.log('[INFO]: '+message);
+      console.log('[INFO]: '+ message);
+      console.log(performance.now());
     }
   }
 
@@ -116,7 +95,7 @@ export default class Api {
   }
 
   // Converts an `full incoming note` into a JSON object.
-  _full_incoming_note_to_jons(note) {
+  _full_incoming_note_to_json(note) {
     return {
       address_partition: note.address_partition,
       incoming_note: this._incoming_note_to_json(note.incoming_note),
@@ -159,7 +138,7 @@ export default class Api {
       const receivers = decodedReceivers.map((receiver) => {
         return [
           this._utxo_to_json(receiver[0]),
-          this._full_incoming_note_to_jons(receiver[1])
+          this._full_incoming_note_to_json(receiver[1])
         ];
       });
 
@@ -183,7 +162,7 @@ export default class Api {
         );
       }
       const pull_result = {
-        should_continue: result.should_continue,
+        should_continue: result.should_continue.isTrue,
         receivers: receivers,
         senders: senders,
       };
@@ -240,44 +219,6 @@ export default class Api {
       console.error(err);
       return { Ok: FAILURE };
     }
-  }
-
-  /**
-   * storage data to local
-   * @param {String} key `${network.toString()}`
-   * @param {Blob} data
-   * @returns {Promise<Object>}
-   */
-  async saveStorageDataToLocal(key, data) {
-    // in Extension, this api will be: chrome.storage.local.set
-    // will encrypt data with a user key
-    const reader = new FileReader();
-    return new Promise((resolve) => {
-      try {
-        reader.addEventListener('load', () => {
-          localStorage.setItem(formatStorageKey(key), reader.result);
-          resolve({Ok: SUCCESS});
-        });
-        reader.addEventListener('error', () => {
-          resolve({Ok: FAILURE});
-        });
-        // Read the contents of the specified Blob or File
-        reader.readAsDataURL(data);
-      } catch (ex) {
-        resolve({Ok: FAILURE});
-      }
-    });
-  }
-
-  /**
-   * read storage data from local
-   * @param {String} key `${network.toString()}`
-   * @returns {String}
-   */
-  async loadStorageDataFromLocal(key) {
-    // in Extension, this api will be: chrome.storage.local.get
-    // will decrypt data with a user key
-    return localStorage.getItem(formatStorageKey(key)) || null;
   }
 }
 

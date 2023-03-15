@@ -195,6 +195,7 @@ impl_js_compatible!(
     manta_accounting::transfer::Asset<config::Config>,
     "Asset"
 );
+impl_js_compatible!(AccountId, config::AccountId, "AccountId");
 impl_js_compatible!(AssetMetadata, signer::AssetMetadata, "Asset Metadata");
 impl_js_compatible!(
     MultiProvingContext,
@@ -533,11 +534,15 @@ pub struct TransferPost {
 
     /// Validity Proof
     proof: config::Proof,
+
+    /// Sink Accounts
+    sink_accounts: Vec<config::AccountId>,
 }
 
 #[wasm_bindgen]
 impl TransferPost {
     /// Builds a new [`TransferPost`].
+    #[allow(clippy::too_many_arguments)]
     #[inline]
     #[wasm_bindgen(constructor)]
     pub fn new(
@@ -548,6 +553,7 @@ impl TransferPost {
         receiver_posts: Vec<JsValue>,
         sinks: Vec<JsValue>,
         proof: JsValue,
+        sink_accounts: Vec<JsValue>,
     ) -> Self {
         Self {
             authorization_signature: authorization_signature.map(|x| {
@@ -565,6 +571,7 @@ impl TransferPost {
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
             sinks: sinks.into_iter().map(from_js).collect(),
             proof: from_js(proof),
+            sink_accounts: sink_accounts.into_iter().map(from_js).collect(),
         }
     }
 }
@@ -590,6 +597,7 @@ impl From<config::TransferPost> for TransferPost {
                 .map(|s| s.to_le_bytes())
                 .collect(),
             proof: post.body.proof,
+            sink_accounts: post.sink_accounts,
         }
     }
 }
@@ -607,6 +615,7 @@ impl From<TransferPost> for config::TransferPost {
                 sinks: post.sinks.into_iter().map(u128::from_le_bytes).collect(),
                 proof: post.proof,
             },
+            sink_accounts: post.sink_accounts,
         }
     }
 }
@@ -1064,49 +1073,13 @@ impl Signer {
     pub fn new(
         parameters: &RawFullParameters,
         proving_context: &RawMultiProvingContext,
-        storage_state_option: StorageStateOption,
+        storage_state: JsValue,
     ) -> Self {
         Self(functions::new_signer(
             FullParameters::from(parameters).0,
             MultiProvingContext::from(proving_context).into(),
-            &storage_state_option.0,
+            &StorageStateOption::new(storage_state).0,
         ))
-    }
-
-    /// Builds a default [`Signer`].
-    ///
-    /// # Crypto Safety
-    ///
-    /// This function randomly samples a proving context instead of using the set of
-    /// proving keys in manta-parameters, computed in the trusted setup ceremony. A signer initialized in
-    /// this way should only be used for testing purposes.
-    #[inline]
-    pub fn new_default_with_random_context() -> Self {
-        let parameters = get_transfer_parameters();
-        let mut rng = manta_crypto::rand::OsRng;
-        let full_parameters = FullParameters::from(&parameters).0;
-        let full_parameters_ref = config::FullParametersRef::new(
-            &full_parameters.base,
-            &full_parameters.utxo_accumulator_model,
-        );
-        let (to_private, _) =
-            config::ToPrivate::generate_context(&(), full_parameters_ref, &mut rng)
-                .expect("Unable to create proving and verifying contexts.");
-        let (private_transfer, _) =
-            config::PrivateTransfer::generate_context(&(), full_parameters_ref, &mut rng)
-                .expect("Unable to create proving and verifying contexts.");
-        let (to_public, _) = config::ToPublic::generate_context(&(), full_parameters_ref, &mut rng)
-            .expect("Unable to create proving and verifying contexts.");
-        let proving_context = MultiProvingContext(config::MultiProvingContext {
-            to_private,
-            private_transfer,
-            to_public,
-        });
-        Self::new(
-            &parameters,
-            &proving_context.into(),
-            StorageStateOption(None),
-        )
     }
 
     /// Loads `accounts` to `self`.
@@ -1142,14 +1115,16 @@ impl Signer {
 
     /// Tries to update `self` from `storage_state`.
     #[inline]
-    pub fn get_storage(&mut self, storage_state: &StorageStateOption) -> bool {
-        functions::get_storage(self.as_mut(), &storage_state.0)
+    pub fn set_storage(&mut self, storage_state: JsValue) -> bool {
+        functions::set_storage(self.as_mut(), &StorageStateOption::new(storage_state).0)
     }
 
     /// Saves `self` as a [`StorageStateOption`].
     #[inline]
-    pub fn set_storage(&self) -> StorageStateOption {
-        functions::set_storage(self.as_ref()).into()
+    pub fn get_storage(&self) -> JsValue {
+        into_js(StorageStateOption::from(functions::get_storage(
+            self.as_ref(),
+        )))
     }
 
     /// Updates the internal ledger state, returning the new asset distribution.
@@ -1161,9 +1136,13 @@ impl Signer {
     /// Generates an [`IdentityProof`] for `identified_asset` by
     /// signing a virtual [`ToPublic`](canonical::ToPublic) transaction.
     #[inline]
-    pub fn identity_proof(&mut self, identified_asset: IdentifiedAsset) -> Option<IdentityProof> {
+    pub fn identity_proof(
+        &mut self,
+        identified_asset: IdentifiedAsset,
+        public_account: AccountId,
+    ) -> Option<IdentityProof> {
         self.as_mut()
-            .identity_proof(identified_asset.into())
+            .identity_proof(identified_asset.into(), public_account.into())
             .map(Into::into)
     }
 
@@ -1324,25 +1303,26 @@ impl Wallet {
 
     /// Saves `self` as a [`StorageStateOption`] in `network`.
     #[inline]
-    pub fn set_storage(&self, network: Network) -> StorageStateOption {
+    pub fn get_storage(&self, network: Network) -> JsValue {
+        // TODO: This should only take an immutable reference to signer. Change
+        // this in manta-rs.
+        into_js(StorageStateOption::from(functions::get_storage(
+            self.0.borrow_mut()[usize::from(network.0)]
+                .as_mut()
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+                .signer_mut(),
+        )))
+    }
+
+    /// Tries to update `self` from `storage_state` in `network`.
+    #[inline]
+    pub fn set_storage(&self, storage_state: JsValue, network: Network) -> bool {
         functions::set_storage(
             self.0.borrow_mut()[usize::from(network.0)]
                 .as_mut()
                 .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
                 .signer_mut(),
-        )
-        .into()
-    }
-
-    /// Tries to update `self` from `storage_state` in `network`.
-    #[inline]
-    pub fn get_storage(&self, storage_state: StorageStateOption, network: Network) -> bool {
-        functions::get_storage(
-            self.0.borrow_mut()[usize::from(network.0)]
-                .as_mut()
-                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
-                .signer_mut(),
-            &storage_state.0,
+            &StorageStateOption::new(storage_state).0,
         )
     }
 
@@ -1433,7 +1413,7 @@ impl Wallet {
     /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn restart(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async { this.restart().await }), network)
+        self.with_async(|this| Box::pin(this.restart()), network)
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
@@ -1451,7 +1431,7 @@ impl Wallet {
     /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn sync(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async { this.sync().await }), network)
+        self.with_async(|this| Box::pin(this.sync()), network)
     }
 
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
@@ -1469,10 +1449,7 @@ impl Wallet {
     /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn sync_partial(&self, network: Network) -> Promise {
-        self.with_async(
-            |this| Box::pin(async { this.sync_partial().await }),
-            network,
-        )
+        self.with_async(|this| Box::pin(this.sync_partial()), network)
     }
 
     /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for context. This
@@ -1530,12 +1507,7 @@ impl Wallet {
         network: Network,
     ) -> Promise {
         self.with_async(
-            |this| {
-                Box::pin(async {
-                    this.post(transaction.into(), metadata.map(Into::into))
-                        .await
-                })
-            },
+            |this| Box::pin(this.post(transaction.into(), metadata.map(Into::into))),
             network,
         )
     }
@@ -1543,7 +1515,7 @@ impl Wallet {
     /// Returns public receiving keys according to the `request`.
     #[inline]
     pub fn address(&self, network: Network) -> Promise {
-        self.with_async(|this| Box::pin(async { this.address().await }), network)
+        self.with_async(|this| Box::pin(this.address()), network)
     }
 
     /// Retrieves the [`TransactionData`] associated with the [`TransferPost`]s in
@@ -1597,6 +1569,16 @@ impl Wallet {
             },
             network,
         )
+    }
+
+    /// Resets a [`Signer`] to its initial state.
+    #[inline]
+    pub fn reset_state(&self, network: Network) -> Promise {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .reset_state();
+        self.with_async(|this| Box::pin(this.load_initial_state()), network)
     }
 }
 

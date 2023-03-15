@@ -6,7 +6,7 @@
         "Dolphin": {
             "name": "Dolphin",
             "ws": "wss://ws.calamari.seabird.systems",
-            "ws_local": "ws://127.0.0.1:9944",
+            "ws_local": "ws://127.0.0.1:9801",
             "parachainId": 2084,
             "decimals": 12,
             "subscanUrl": "https://dolphin.subscan.io"
@@ -110,7 +110,8 @@
             "sender_posts": "Vec<SenderPost>",
             "receiver_posts": "Vec<ReceiverPost>",
             "sinks": "Vec<[u8; 16]>",
-            "proof": "[u8; 128]"
+            "proof": "[u8; 128]",
+            "sink_accounts": "Vec<[u8; 32]>"
         }
     }
 }

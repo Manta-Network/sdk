@@ -27,6 +27,10 @@ export type SignedTransaction = {
   txs: SubmittableExtrinsic<'promise', any>[]
 }
 
+export type RequestUserSeedPhrase = () => Promise<string | null>;
+export type SaveStorageStateToLocal = (network: string, data: any) => Promise<boolean>;
+export type GetStorageStateFromLocal = (network: string) => Promise<any>;
+
 export type PrivateWalletConfig = {
   environment: Environment,
   network: Network,
@@ -34,7 +38,12 @@ export type PrivateWalletConfig = {
   maxReceiversPullSize?: number,
   maxSendersPullSize?: number,
   pullCallback?: any,
-  errorCallback?: any
+  errorCallback?: any,
+  provingFilePath: string,
+  parametersFilePath: string,
+  requestUserSeedPhrase: RequestUserSeedPhrase,
+  saveStorageStateToLocal: SaveStorageStateToLocal,
+  getStorageStateFromLocal: GetStorageStateFromLocal,
 }
 
 export interface IMantaPrivateWallet {
@@ -48,21 +57,21 @@ export interface IMantaPrivateWallet {
   loggingEnabled: boolean;
   parameters: any;
 
-  loadUserMnemonic():any;
-  loadAuthorizationContext():any;
+  loadUserSeedPhrase(initialSeedPhrase?: string):any;
+  loadAuthorizationContext(initialSeedPhrase?: string):any;
   dropAuthorizationContext():any;
-  dropUserMnemonic():any;
-  convertPrivateAddressToJson(address: string): any
+  dropUserSeedPhrase():any;
+  convertZkAddressToJson(address: string): any
   getNetworks(): any;
   getZkAddress(): Promise<Address>;
   getAssetMetadata(assetId: BN): Promise<any>;
-  initalWalletSync(): Promise<boolean>;
+  initialWalletSync(): Promise<boolean>;
   walletSync(): Promise<boolean>;
-  getPrivateBalance(assetId: BN): Promise<BN | null>;
+  getZkBalance(assetId: BN): Promise<BN | null>;
   toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  toPrivateBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
-  privateTransferSend(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  privateTransferBuild(assetId: BN, amount: BN, toPrivateAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
+  toPrivateBuild(assetId: BN, amount: BN, polkadotAddress:Address): Promise<SignedTransaction | null>;
+  privateTransferSend(assetId: BN, amount: BN, toZkAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
+  privateTransferBuild(assetId: BN, amount: BN, toZkAddress: Address, polkadotAddress:Address): Promise<SignedTransaction | null>;
   toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  toPublicBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
+  toPublicBuild(assetId: BN, amount: BN, polkadotAddress:Address): Promise<SignedTransaction | null>;
 }
