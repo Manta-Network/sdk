@@ -29,7 +29,7 @@
         }
     },
     "PRIVATE_LEDGER_ACCOUNT_PUBLIC_KEY": "0x6d6f646c6d616e74617061790000000000000000000000000000000000000000",
-    "DEFAULT_PULL_SIZE": 4096,
+    "DEFAULT_PULL_SIZE": 2,
     "RPC": {
         "mantaPay": {
             "dense_pull_ledger_diff": {

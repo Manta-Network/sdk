@@ -170,10 +170,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// Requirements: Must be called once after creating an instance of MantaPrivateWallet
   /// and must be called before walletSync().
   async initialWalletSync(): Promise<boolean> {
-    const result = await this.loopSyncPartialWallet();
-    if (result) {
-      this.initialSyncIsFinished = true;
-    }
+    const result = await this.loopSyncPartialWallet(true);
     return result;
   }
 
@@ -184,7 +181,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     if (!this.initialSyncIsFinished) {
       throw new Error('Must call initialWalletSync before walletSync!');
     }
-    const result = await this.loopSyncPartialWallet();
+    const result = await this.loopSyncPartialWallet(false);
     return result;
   }
 
@@ -475,14 +472,16 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     };
   }
 
-  private async loopSyncPartialWallet(): Promise<boolean> {
+  private async loopSyncPartialWallet(isInitial: boolean): Promise<boolean> {
     if (!this.isBindAuthorizationContext) {
       await this.loadUserSeedPhrase();
     }
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      await this.wasmWallet.reset_state(this.getWasmNetWork());
+      if (isInitial) {
+        await this.wasmWallet.reset_state(this.getWasmNetWork());
+      }
       let syncResult = null;
       let retryTimes = 0;
       do {
@@ -499,6 +498,9 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         }
       } while (syncResult && syncResult.continue);
       this.walletIsBusy = false;
+      if (isInitial) {
+        this.initialSyncIsFinished = true;
+      }
     } catch (ex) {
       this.walletIsBusy = false;
       throw ex;
