@@ -11,6 +11,7 @@ async function main() {
     await toPublicOnlySignTest();
     await toPublicTest();
     await publicTransferTest();
+    await publicTransferOnlySignTest();
     console.log("END");
 }
 
@@ -54,7 +55,7 @@ const publicTransferTest = async () => {
     const destinationBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, destinationAddress);
     console.log("Destination Balance:" + JSON.stringify(destinationBalance.toString()));
 
-    await MantaUtilities.publicTransfer(privateWallet.api, assetId, amount, destinationAddress, polkadotConfig.polkadotAddress, polkadotConfig.polkadotSigner);
+    await MantaUtilities.publicTransferSend(privateWallet.api, assetId, amount, destinationAddress, polkadotConfig.polkadotAddress, polkadotConfig.polkadotSigner);
 
     await new Promise(r => setTimeout(r, 10000));
 
@@ -65,7 +66,26 @@ const publicTransferTest = async () => {
     console.log("Dest Balance After:" + JSON.stringify(destinationBalanceAfterTransfer.toString()));
 }
 
-/// Test to privately transfer 5 pKMA.
+/// Test to publicly transfer 5 zkKMA.
+const publicTransferOnlySignTest = async () => {
+
+    const privateWalletConfig = {
+        environment: Environment.Production,
+        network: Network.Dolphin
+    }
+
+    const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+
+    const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
+    const assetId = new BN("1"); // DOL
+    const amount = new BN("10000000000000"); // 10 units
+
+    let tx = MantaUtilities.publicTransferBuild(privateWallet.api, assetId, amount, destinationAddress);
+
+    console.log("The resulting tx payload is : ", tx);
+}
+
+/// Test to privately transfer 5 pDOL.
 const privateTransferTest = async () => {
     const privateWalletConfig = {
         environment: Environment.Development,
@@ -134,7 +154,7 @@ const privateTransferOnlySignTest = async () => {
 }
 
 
-/// Test to sign a transaction that converts 10 KMA to pKMA,
+/// Test to sign a transaction that converts 10 KMA to zkKMA,
 /// without publishing the transaction.
 const toPrivateOnlySignTest = async () => {
 
@@ -168,7 +188,7 @@ const toPrivateOnlySignTest = async () => {
 }
 
 /// Test to execute a `ToPrivate` transaction.
-/// Convert 10 KMA to 10 pKMA.
+/// Convert 10 KMA to 10 zkKMA.
 const toPrivateTest = async () => {
 
     const privateWalletConfig = {
@@ -243,7 +263,7 @@ const toPublicOnlySignTest = async () => {
 }
 
 /// Test to execute a `ToPublic` transaction.
-/// Convert 5 pKMA to 5 KMA.
+/// Convert 5 zkKMA to 5 KMA.
 const toPublicTest = async () => {
 
     const privateWalletConfig = {
