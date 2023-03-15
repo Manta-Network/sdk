@@ -1115,14 +1115,14 @@ impl Signer {
 
     /// Tries to update `self` from `storage_state`.
     #[inline]
-    pub fn get_storage(&mut self, storage_state: JsValue) -> bool {
-        functions::get_storage(self.as_mut(), &StorageStateOption::new(storage_state).0)
+    pub fn set_storage(&mut self, storage_state: JsValue) -> bool {
+        functions::set_storage(self.as_mut(), &StorageStateOption::new(storage_state).0)
     }
 
     /// Saves `self` as a [`StorageStateOption`].
     #[inline]
-    pub fn set_storage(&self) -> JsValue {
-        into_js(StorageStateOption::from(functions::set_storage(
+    pub fn get_storage(&self) -> JsValue {
+        into_js(StorageStateOption::from(functions::get_storage(
             self.as_ref(),
         )))
     }
@@ -1303,10 +1303,10 @@ impl Wallet {
 
     /// Saves `self` as a [`StorageStateOption`] in `network`.
     #[inline]
-    pub fn set_storage(&self, network: Network) -> JsValue {
+    pub fn get_storage(&self, network: Network) -> JsValue {
         // TODO: This should only take an immutable reference to signer. Change
         // this in manta-rs.
-        into_js(StorageStateOption::from(functions::set_storage(
+        into_js(StorageStateOption::from(functions::get_storage(
             self.0.borrow_mut()[usize::from(network.0)]
                 .as_mut()
                 .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
@@ -1316,8 +1316,8 @@ impl Wallet {
 
     /// Tries to update `self` from `storage_state` in `network`.
     #[inline]
-    pub fn get_storage(&self, storage_state: JsValue, network: Network) -> bool {
-        functions::get_storage(
+    pub fn set_storage(&self, storage_state: JsValue, network: Network) -> bool {
+        functions::set_storage(
             self.0.borrow_mut()[usize::from(network.0)]
                 .as_mut()
                 .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))

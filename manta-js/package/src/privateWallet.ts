@@ -511,7 +511,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private async syncPartialWallet(): Promise<{success: boolean, continue: boolean}> {
     try {
       const result = await this.wasmWallet.sync_partial(this.getWasmNetWork());
-      const stateData = await this.wasmWallet.set_storage(this.getWasmNetWork());
+      const stateData = await this.wasmWallet.get_storage(this.getWasmNetWork());
       await this.saveStorageStateToLocal(`${this.network}`, stateData);
       return {
         success: true,
