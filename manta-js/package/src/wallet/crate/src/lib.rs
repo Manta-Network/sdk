@@ -239,6 +239,11 @@ impl_js_compatible!(SignError, signer::SignError, "Signing Error");
 impl_js_compatible!(SignResult, signer::SignResult, "Signing Result");
 impl_js_compatible!(SyncRequest, signer::SyncRequest, "Synchronization Request");
 impl_js_compatible!(
+    InitialSyncData,
+    signer::InitialSyncData,
+    "Initial Synchronization Data"
+);
+impl_js_compatible!(
     SyncResponse,
     signer::SyncResponse,
     "Synchronization Response"
@@ -1131,6 +1136,12 @@ impl Signer {
     #[inline]
     pub fn sync(&mut self, request: SyncRequest) -> SyncResult {
         self.as_mut().sync(request.into()).into()
+    }
+
+    ///
+    #[inline]
+    pub fn initial_sync(&mut self, request: InitialSyncData) -> SyncResult {
+        self.as_mut().initial_sync(request.into()).into()
     }
 
     /// Generates an [`IdentityProof`] for `identified_asset` by
