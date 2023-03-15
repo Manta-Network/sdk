@@ -34,7 +34,6 @@ export default class Api {
     this.txResHandler = null;
     this.pullCallback = this.config.pullCallback;
     this.errorCallback = this.config.errorCallback;
-    this.flagUtxoDataChanged = true;
   }
 
   _log(message) {
@@ -167,9 +166,6 @@ export default class Api {
         receivers: receivers,
         senders: senders,
       };
-      if (!this.flagUtxoDataChanged) {
-        this.flagUtxoDataChanged = receivers.length > 0 || senders.length > 0;
-      }
       this._log('pull response: ' + JSON.stringify(pull_result));
       return pull_result;
     } catch (err) {

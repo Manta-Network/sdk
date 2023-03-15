@@ -6,7 +6,7 @@
         "Dolphin": {
             "name": "Dolphin",
             "ws": "wss://ws.calamari.seabird.systems",
-            "ws_local": "ws://127.0.0.1:9944",
+            "ws_local": "ws://127.0.0.1:9801",
             "parachainId": 2084,
             "decimals": 12,
             "subscanUrl": "https://dolphin.subscan.io"

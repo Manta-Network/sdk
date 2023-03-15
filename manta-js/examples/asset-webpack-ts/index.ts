@@ -4,7 +4,7 @@ import {
   Environment,
   Network,
   MantaUtilities,
-} from "manta.js";
+} from "manta-extension-sdk";
 import BN from "bn.js";
 import {
   web3Accounts,
@@ -50,7 +50,7 @@ const getPolkadotSignerAndAddress = async () => {
 
 const initWallet = async () => {
   const privateWalletConfig = {
-    environment: Environment.Production,
+    environment: Environment.Development,
     network: Network.Dolphin,
     loggingEnabled: true,
     provingFilePath:

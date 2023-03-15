@@ -62,8 +62,6 @@ const PayProvingNames = [
   'to-public.lfs',
 ];
 
-let taskIntervalId = -1;
-
 /// MantaPrivateWallet class
 export class MantaPrivateWallet implements IMantaPrivateWallet {
   api: ApiPromise;
@@ -172,57 +170,22 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// Requirements: Must be called once after creating an instance of MantaPrivateWallet
   /// and must be called before walletSync().
   async initialWalletSync(): Promise<boolean> {
-    try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
-      this.log('Beginning initial sync');
-      const startTime = performance.now();
-      await this.wasmWallet.restart(this.getWasmNetWork());
-      const endTime = performance.now();
-      this.log(
-        `Initial sync finished in ${(endTime - startTime) / 1000} seconds`
-      );
-      this.walletIsBusy = false;
+    const result = await this.loopSyncPartialWallet();
+    if (result) {
       this.initialSyncIsFinished = true;
-
-      this.startSaveStorageTask();
-
-      return true;
-    } catch (e) {
-      this.walletIsBusy = false;
-      console.error('Initial sync failed.', e);
-      return false;
     }
+    return result;
   }
 
   /// Pulls data from the ledger, synchronizing the currently connected wallet and
   /// balance state. This method runs until all the ledger data has arrived at and
   /// has been synchronized with the wallet.
   async walletSync(): Promise<boolean> {
-    try {
-      if (!this.initialSyncIsFinished) {
-        throw new Error('Must call initalWalletSync before walletSync!');
-      }
-      if (!this.isBindAuthorizationContext) {
-        await this.loadUserSeedPhrase();
-      }
-      await this.waitForWallet();
-      this.walletIsBusy = true;
-      this.log('Beginning sync');
-      const networkType = this.wasm.Network.from_string(`"${this.network}"`);
-      const startTime = performance.now();
-      await this.wasmWallet.sync(networkType);
-      const endTime = performance.now();
-      this.log(
-        `Initial sync finished in ${(endTime - startTime) / 1000} seconds`
-      );
-      this.walletIsBusy = false;
-      return true;
-    } catch (e) {
-      this.walletIsBusy = false;
-      console.error('Sync failed.', e);
-      return false;
+    if (!this.initialSyncIsFinished) {
+      throw new Error('Must call initialWalletSync before walletSync!');
     }
+    const result = await this.loopSyncPartialWallet();
+    return result;
   }
 
   /// Returns the zk balance of the currently connected zkAddress for the currently
@@ -512,24 +475,53 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     };
   }
 
-  private startSaveStorageTask() {
-    clearInterval(taskIntervalId);
-    const intervalId = setInterval(async () => {
-      if (this.walletIsBusy || !this.wasmApi.flagUtxoDataChanged) {
-        return;
-      }
+  private async loopSyncPartialWallet(): Promise<boolean> {
+    if (!this.isBindAuthorizationContext) {
+      await this.loadUserSeedPhrase();
+    }
+    try {
+      await this.waitForWallet();
       this.walletIsBusy = true;
-      let stateData: any;
-      try {
-        stateData = await this.wasmWallet.set_storage(this.getWasmNetWork());
-        this.wasmApi.flagUtxoDataChanged = false;
-      } catch (ex) {
-        console.error(ex);
-      }
+      await this.wasmWallet.reset_state(this.getWasmNetWork());
+      let syncResult = null;
+      let retryTimes = 0;
+      do {
+        this.log('Sync partial start');
+        syncResult = await this.syncPartialWallet();
+        this.log(`Sync partial end, success: ${syncResult.success}, continue: ${syncResult.continue}`, );
+        if (!syncResult.success) {
+          retryTimes += 1;
+        } else {
+          retryTimes = 0;
+        }
+        if (retryTimes > 5) {
+          throw new Error('Sync partial failed');
+        }
+      } while (syncResult && syncResult.continue);
       this.walletIsBusy = false;
+    } catch (ex) {
+      this.walletIsBusy = false;
+      throw ex;
+    }
+    return true;
+  }
+
+  private async syncPartialWallet(): Promise<{success: boolean, continue: boolean}> {
+    try {
+      const result = await this.wasmWallet.sync_partial(this.getWasmNetWork());
+      const stateData = await this.wasmWallet.set_storage(this.getWasmNetWork());
       await this.saveStorageStateToLocal(`${this.network}`, stateData);
-    }, 10000);
-    taskIntervalId = Number(intervalId);
+      return {
+        success: true,
+        continue: Object.keys(result)[0] === 'Continue',
+      };
+    } catch (e) {
+      console.error('Sync partial failed.', e);
+      return {
+        success: false,
+        continue: true,
+      };
+    }
   }
 
   private getWasmNetWork(): any {
@@ -645,6 +637,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       authorizationContext,
       this.getWasmNetWork()
     );
+    this.isBindAuthorizationContext = true;
   }
 
   private async getUserSeedPhrase(initialSeedPhrase?: string): Promise<any> {
