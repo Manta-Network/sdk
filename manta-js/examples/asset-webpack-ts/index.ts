@@ -9,6 +9,7 @@ async function main() {
     await privateTransferTest();
     await toPublicTest();
     await publicTransferTest();
+    await publicTransferOnlySignTest();
     console.log("END");
 }
 
@@ -52,7 +53,7 @@ const publicTransferTest = async () => {
     const destinationBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, destinationAddress);
     console.log("Destination Balance:" + JSON.stringify(destinationBalance.toString()));
 
-    await MantaUtilities.publicTransfer(privateWallet.api, assetId, amount, destinationAddress, polkadotConfig.polkadotAddress, polkadotConfig.polkadotSigner);
+    await MantaUtilities.publicTransferSend(privateWallet.api, assetId, amount, destinationAddress, polkadotConfig.polkadotAddress, polkadotConfig.polkadotSigner);
 
     await new Promise(r => setTimeout(r, 10000));
 
@@ -61,6 +62,24 @@ const publicTransferTest = async () => {
 
     const destinationBalanceAfterTransfer = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, destinationAddress);
     console.log("Dest Balance After:" + JSON.stringify(destinationBalanceAfterTransfer.toString()));
+}
+
+const publicTransferOnlySignTest = async () => {
+
+    const privateWalletConfig = {
+        environment: Environment.Production,
+        network: Network.Dolphin
+    }
+
+    const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
+
+    const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
+    const assetId = new BN("1"); // DOL
+    const amount = new BN("10000000000000"); // 10 units
+
+    let tx = MantaUtilities.publicTransferBuild(privateWallet.api, assetId, amount, destinationAddress);
+
+    console.log("The resulting tx payload is : ", tx);
 }
 
 /// Test to privately transfer 5 pDOL.
