@@ -384,7 +384,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// private transfer transaction
   private async privateTransferBuildUnsigned(assetId: BN, amount: BN, zkAddress: Address): Promise<any> {
     try {
-      const addressJson = this.convertPrivateAddressToJson(toPrivateAddress);
+      const addressJson = this.convertZkAddressToJson(zkAddress);
       const assetIdArray = bnToU8a(assetId, {bitLength: 256});
       const txJson = `{ "PrivateTransfer": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${addressJson} ]}`;
       const transaction = this.wasm.Transaction.from_string(txJson);
