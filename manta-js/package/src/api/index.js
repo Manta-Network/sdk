@@ -118,6 +118,30 @@ export default class Api {
   }
 
   // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
+  async initial_pull(checkpoint) {
+    try {
+      await this.api.isReady;
+
+      this._log('checkpoint ' + JSON.stringify(checkpoint));
+      await this.api.isReady;
+
+      let result = await this.api.rpc.mantaPay.initial_pull(checkpoint, this.maxReceiversPullSize);
+
+      this._log('initial read result ' + JSON.stringify(result));
+
+      const read_result = {
+        ...result,
+      };
+      this._log('initial read response: ' + JSON.stringify(read_result));
+      return read_result;
+    } catch (err) {
+      if (this.errorCallback) {
+        this.errorCallback();
+      }
+    }
+  }
+
+  // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
   async pull(checkpoint) {
     try {
       await this.api.isReady;

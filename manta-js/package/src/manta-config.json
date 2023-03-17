@@ -48,6 +48,19 @@
                     }
                 ],
                 "type": "DensePullResponse"
+            },
+            "initial_pull": {
+                "description": "pull initial data from mantaPay",
+                "params": [{
+                        "name": "checkpoint",
+                        "type": "Checkpoint"
+                    },
+                    {
+                        "name": "max_receiver",
+                        "type": "u64"
+                    }
+                ],
+                "type": "InitialSyncResponse"
             }
         }
     },
@@ -112,6 +125,17 @@
             "sinks": "Vec<[u8; 16]>",
             "proof": "[u8; 128]",
             "sink_accounts": "Vec<[u8; 32]>"
+        },
+        "CurrentPath": {
+            "sibling_digest": "[u8; 32]",
+            "leaf_index": "u32",
+            "inner_path": "Vec<[u8; 32]>"
+        },
+        "InitialSyncResponse": {
+            "should_continue": "bool",
+            "utxos": "Vec<Utxo>",
+            "paths": "Vec<CurrentPath>",
+            "nullifier_count": "u128"
         }
     }
 }
