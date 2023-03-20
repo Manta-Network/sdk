@@ -149,6 +149,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   async getZkAddress(): Promise<Address> {
     try {
       await this.waitForWallet();
+
       this.walletIsBusy = true;
       const zkAddressRaw = await this.wasmWallet.address(
         this.getWasmNetWork()
@@ -161,6 +162,24 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       this.walletIsBusy = false;
       console.error('Failed to fetch ZkAddress.', e);
     }
+  }
+
+  async initialNewAccountWalletSync(): Promise<boolean> {
+    if (!this.isBindAuthorizationContext) {
+      await this.loadUserSeedPhrase();
+    }
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      await this.wasmWallet.reset_state(this.getWasmNetWork());
+      // const result = await this.wasmWallet.initial_sync(this.getWasmNetWork())
+      this.walletIsBusy = false;
+      this.initialSyncIsFinished = true;
+    } catch (ex) {
+      this.walletIsBusy = false;
+      throw ex;
+    }
+    return true;
   }
 
   /// Performs full wallet recovery. Restarts `self` with an empty state and
