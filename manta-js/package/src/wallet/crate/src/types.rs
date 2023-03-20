@@ -1,6 +1,9 @@
 use alloc::{boxed::Box, vec::Vec};
 use core::fmt::Debug;
-use manta_accounting::wallet::{ledger::ReadResponse, signer::SyncData};
+use manta_accounting::wallet::{
+    ledger::ReadResponse,
+    signer::{InitialSyncData, SyncData},
+};
 use manta_crypto::{
     arkworks::{algebra::Group, constraint::fp::Fp, ec::ProjectiveCurve},
     encryption::{hybrid, EmptyHeader},
@@ -292,6 +295,86 @@ impl TryFrom<RawPullResponse> for ReadResponse<SyncData<config::Config>> {
                     }) // check type
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(|_| ())?,
+            },
+        })
+    }
+}
+
+///
+pub type RawLeafDigest = [u8; 32];
+
+///
+pub type RawInnerPath = [u8; 32];
+
+/// Raw Current Path
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde")]
+pub struct RawCurrentPath {
+    ///
+    pub sibling_digest: RawLeafDigest,
+
+    ///
+    pub leaf_index: u32,
+
+    ///
+    pub inner_path: Vec<RawInnerPath>,
+}
+
+impl TryFrom<RawCurrentPath> for config::CurrentPath {
+    type Error = ();
+
+    #[inline]
+    fn try_from(path: RawCurrentPath) -> Result<Self, Self::Error> {
+        Ok(Self::new(
+            fp_decode(path.sibling_digest.to_vec()).map_err(|_| ())?,
+            (path.leaf_index as usize).into(),
+            path.inner_path
+                .into_iter()
+                .map(|x| fp_decode(x.to_vec()))
+                .collect::<Result<_, _>>()
+                .map_err(|_| ())?,
+        ))
+    }
+}
+
+/// Raw Initial Pull Response
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde")]
+pub struct RawInitialPullResponse {
+    /// Should Continue Flag
+    pub should_continue: bool,
+
+    /// Utxo Data
+    pub utxo_data: Vec<RawUtxo>,
+
+    /// Memebership Proof Data
+    pub membership_proof_data: Vec<RawCurrentPath>,
+
+    /// Sender Data
+    pub nullifier_count: u128,
+}
+
+impl TryFrom<RawInitialPullResponse> for ReadResponse<InitialSyncData<config::Config>> {
+    type Error = ();
+
+    #[inline]
+    fn try_from(response: RawInitialPullResponse) -> Result<Self, Self::Error> {
+        Ok(Self {
+            should_continue: response.should_continue,
+            data: InitialSyncData {
+                utxo_data: response
+                    .utxo_data
+                    .into_iter()
+                    .map(|utxo| utxo.try_into())
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| ())?,
+                membership_proof_data: response
+                    .membership_proof_data
+                    .into_iter()
+                    .map(|path| config::CurrentPath::try_from(path).map(Into::into))
+                    .collect::<Result<_, _>>()
+                    .map_err(|_| ())?,
+                nullifier_count: response.nullifier_count,
             },
         })
     }
