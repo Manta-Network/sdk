@@ -304,7 +304,7 @@ impl TryFrom<RawPullResponse> for ReadResponse<SyncData<config::Config>> {
 pub type RawLeafDigest = [u8; 32];
 
 ///
-pub type RawInnerPath = [u8; 32];
+pub type RawInnerDigest = [u8; 32];
 
 /// Raw Current Path
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
@@ -317,7 +317,7 @@ pub struct RawCurrentPath {
     pub leaf_index: u32,
 
     ///
-    pub inner_path: Vec<RawInnerPath>,
+    pub inner_path: Vec<RawInnerDigest>,
 }
 
 impl TryFrom<RawCurrentPath> for config::CurrentPath {

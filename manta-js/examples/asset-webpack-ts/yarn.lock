@@ -4174,7 +4174,7 @@ make-fetch-happen@^9.1.0:
     socks-proxy-agent "^6.0.0"
     ssri "^8.0.0"
 
-"manta-extension-sdk@file:../../package":
+manta-extension-sdk@../../package:
   version "1.0.3-beta.2"
   dependencies:
     "@polkadot/api" "6.8.1"
