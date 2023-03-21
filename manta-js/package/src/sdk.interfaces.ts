@@ -68,6 +68,7 @@ export interface IMantaPrivateWallet {
   initialWalletSync(): Promise<boolean>;
   walletSync(): Promise<boolean>;
   getZkBalance(assetId: BN): Promise<BN | null>;
+  getMultiZkBalance(assetId: BN[]): Promise<BN[] | null>;
   toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
   toPrivateBuild(assetId: BN, amount: BN, polkadotAddress:Address): Promise<SignedTransaction | null>;
   privateTransferSend(assetId: BN, amount: BN, toZkAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;

@@ -4,7 +4,6 @@ import axios from 'axios';
 import config from './manta-config.json';
 import BN from 'bn.js';
 import { ApiPromise } from '@polkadot/api';
-import { MantaPrivateWallet } from './privateWallet';
 import { bnToU8a } from '@polkadot/util';
 
 export const NATIVE_TOKEN_ASSET_ID = '1';

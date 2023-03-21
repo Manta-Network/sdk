@@ -223,6 +223,28 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return null;
     }
   }
+  
+  /// Returns the multi zk balance of the currently connected zkAddress for the currently
+  /// connected network.
+  async getMultiZkBalance(assetIds: BN[]): Promise<BN[] | null> {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      const balances = await Promise.all(assetIds.map(async (assetId) => {
+        const balanceString = await this.wasmWallet.balance(
+          assetId.toString(),
+          this.getWasmNetWork(),
+        );
+        return new BN(balanceString);
+      }));
+      this.walletIsBusy = false;
+      return balances;
+    } catch (e) {
+      this.walletIsBusy = false;
+      console.error('Failed to fetch zk balance.', e);
+      return null;
+    }
+  }
 
   /// Returns the metadata for an asset with a given `assetId` for the currently
   /// connected network.
