@@ -4,7 +4,7 @@
 
 import { base64Decode } from '@polkadot/util-crypto';
 import * as $ from 'manta-scale-codec';
-import { u8aToU8a } from '@polkadot/util';
+import { u8aToBigInt, u8aToU8a } from '@polkadot/util';
 
 export class ApiConfig {
   constructor(
@@ -117,6 +117,17 @@ export default class Api {
     };
   }
 
+  _current_path_to_json(currentPath) {
+    const sibling_digest = Array.from(u8aToU8a(currentPath.sibling_digest));
+    const leaf_index = currentPath.leaf_index.toNumber();
+    const inner_path = currentPath.inner_path.map((path) => Array.from(u8aToU8a(path)));
+    return {
+      sibling_digest,
+      leaf_index,
+      inner_path,
+    };
+  }
+
   // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
   async initial_pull(checkpoint) {
     try {
@@ -129,8 +140,18 @@ export default class Api {
 
       this._log('initial read result ' + JSON.stringify(result));
 
+      const json = JSON.parse(JSON.stringify(result));
+
+      const should_continue = json.should_continue;
+      const utxo_data = result.utxos.map((utxo) => this._utxo_to_json(utxo));
+      const membership_proof_data = result.paths.map((currentPath) => this._current_path_to_json(currentPath));
+      const nullifier_count = u8aToBigInt(json.nullifier_count);
+
       const read_result = {
-        ...result,
+        should_continue,
+        utxo_data,
+        membership_proof_data,
+        nullifier_count,
       };
       this._log('initial read response: ' + JSON.stringify(read_result));
       return read_result;

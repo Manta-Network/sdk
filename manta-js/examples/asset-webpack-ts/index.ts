@@ -21,7 +21,7 @@ interface PolkadotConfig {
 let privateWallet: MantaPrivateWallet = null;
 let polkadotConfig: PolkadotConfig = null;
 const assetId = new BN("1");
-const assetAmount = new BN("50000000000");
+const assetAmount = new BN("5000000000000");
 
 function _log(...message: any[]) {
   console.log("[INFO]: " + message.join(""));
@@ -58,7 +58,7 @@ const initWallet = async () => {
     parametersFilePath:
       "https://raw.githubusercontent.com/Manta-Network/manta-rs/main/manta-parameters/data/pay/parameters",
     requestUserSeedPhrase: async () => {
-      return "must payment asthma judge tray recall another course zebra morning march engine";
+      return "spike napkin obscure diamond slice style excess table process story excuse absurd";
     },
     saveStorageStateToLocal: async (
       network: string,
@@ -95,7 +95,7 @@ const initWallet = async () => {
   const privateAddress = await privateWallet.getZkAddress();
   _log("The zkAddress is: ", privateAddress);
 
-  await privateWallet.initialWalletSync();
+  await privateWallet.initialNewAccountWalletSync();
 };
 
 const queryTransferResult = async (initialPrivateBalance: BN) => {
@@ -194,7 +194,7 @@ const toPrivateOnlySignTest = async () => {
 
 /// Test to privately transfer 10 pDOL.
 const privateTransferTest = async () => {
-  const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
+  const toPrivateTestAddress = "2JZCtGNR1iz6dR613g9p2VGHAAmXQK8xYJ117DLzs4s4";
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log("The initial balance is: ", initialPrivateBalance.toString());
