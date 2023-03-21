@@ -162,6 +162,8 @@ export default class Api {
         membership_proof_data,
         nullifier_count,
       };
+      debugger;
+      console.log(read_result);
       return read_result;
     } catch (err) {
       console.error(err);
