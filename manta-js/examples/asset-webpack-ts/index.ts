@@ -21,7 +21,7 @@ interface PolkadotConfig {
 let privateWallet: MantaPrivateWallet = null;
 let polkadotConfig: PolkadotConfig = null;
 const assetId = new BN("1");
-const assetAmount = new BN("5000000000000");
+const assetAmount = new BN("5000000000000000000");
 
 function _log(...message: any[]) {
   console.log("[INFO]: " + message.join(""));
@@ -58,6 +58,7 @@ const initWallet = async () => {
     parametersFilePath:
       "https://raw.githubusercontent.com/Manta-Network/manta-rs/main/manta-parameters/data/pay/parameters",
     requestUserSeedPhrase: async () => {
+      // return "must payment asthma judge tray recall another course zebra morning march engine";
       return "spike napkin obscure diamond slice style excess table process story excuse absurd";
     },
     saveStorageStateToLocal: async (

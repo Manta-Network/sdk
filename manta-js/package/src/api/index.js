@@ -143,7 +143,11 @@ export default class Api {
       const json = JSON.parse(JSON.stringify(result));
 
       const should_continue = json.should_continue;
-      const utxo_data = result.utxos.map((utxo) => this._utxo_to_json(utxo));
+      const utxo_data = result.utxos.map((utxo) => {
+        const utxo_info = this._utxo_to_json(utxo);
+        utxo_info.is_transparent = utxo_info.is_transparent.isTrue;
+        return utxo_info;
+      });
       const membership_proof_data = result.paths.map((currentPath) => this._current_path_to_json(currentPath));
       const nullifier_count = u8aToBigInt(json.nullifier_count);
 
