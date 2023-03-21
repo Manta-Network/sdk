@@ -147,15 +147,20 @@ export default class Api {
       const membership_proof_data = result.paths.map((currentPath) => this._current_path_to_json(currentPath));
       const nullifier_count = u8aToBigInt(json.nullifier_count);
 
+      // const should_continue = result.should_continue.isTrue;
+      // const utxo_data = $Utxos.decode(base64Decode(result.utxos.toString()));
+      // const membership_proof_data = $CurrentPaths.decode(base64Decode(result.paths.toString()));
+      // const nullifier_count = BigInt(result.nullifier_count.toString());
+
       const read_result = {
         should_continue,
         utxo_data,
         membership_proof_data,
         nullifier_count,
       };
-      this._log('initial read response: ' + JSON.stringify(read_result));
       return read_result;
     } catch (err) {
+      console.error(err);
       if (this.errorCallback) {
         this.errorCallback();
       }
@@ -214,6 +219,7 @@ export default class Api {
       this._log('pull response: ' + JSON.stringify(pull_result));
       return pull_result;
     } catch (err) {
+      console.error(err);
       if (this.errorCallback) {
         this.errorCallback();
       }
@@ -305,3 +311,13 @@ const $OutgoingNote = $.object(
 
 export const $Receivers = $.array($.tuple($Utxo, $FullIncomingNote));
 export const $Senders = $.array($.tuple($.sizedUint8Array(32), $OutgoingNote));
+
+const $Utxos = $.array($Utxo);
+
+const $CurrentPath = $.object(
+  $.field('sibling_digest', $.sizedUint8Array(32)),
+  $.field('leaf_index', $.u32),
+  $.field('inner_path',  $.array($.sizedUint8Array(32))),
+);
+
+const $CurrentPaths = $.array($CurrentPath);

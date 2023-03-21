@@ -96,6 +96,7 @@ const initWallet = async () => {
   _log("The zkAddress is: ", privateAddress);
 
   await privateWallet.initialNewAccountWalletSync();
+  // await privateWallet.initialWalletSync();
 };
 
 const queryTransferResult = async (initialPrivateBalance: BN) => {
