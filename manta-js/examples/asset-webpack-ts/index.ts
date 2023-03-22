@@ -49,6 +49,9 @@ const getPolkadotSignerAndAddress = async () => {
 };
 
 const initWallet = async () => {
+
+  let isInitialed = false;
+
   const privateWalletConfig = {
     environment: Environment.Development,
     network: Network.Dolphin,
@@ -77,6 +80,7 @@ const initWallet = async () => {
       let result: string;
       try {
         result = await getIdbData(`storage_state_${network}`);
+        isInitialed = !!result;
       } catch (ex) {
         console.error(ex);
       }
@@ -96,8 +100,13 @@ const initWallet = async () => {
   const privateAddress = await privateWallet.getZkAddress();
   _log("The zkAddress is: ", privateAddress);
 
-  await privateWallet.initialNewAccountWalletSync();
-  // await privateWallet.initialWalletSync();
+  if (isInitialed) {
+    console.log('initialWalletSync');
+    await privateWallet.initialWalletSync();
+  } else {
+    console.log('initialNewAccountWalletSync');
+    await privateWallet.initialNewAccountWalletSync();
+  }
 };
 
 const queryTransferResult = async (initialPrivateBalance: BN) => {
