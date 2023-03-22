@@ -49,7 +49,7 @@
                 ],
                 "type": "DensePullResponse"
             },
-            "initial_pull": {
+            "dense_initial_pull": {
                 "description": "pull initial data from mantaPay",
                 "params": [{
                         "name": "checkpoint",
@@ -60,7 +60,7 @@
                         "type": "u64"
                     }
                 ],
-                "type": "InitialSyncResponse"
+                "type": "DenseInitialSyncResponse"
             }
         }
     },
@@ -126,15 +126,10 @@
             "proof": "[u8; 128]",
             "sink_accounts": "Vec<[u8; 32]>"
         },
-        "CurrentPath": {
-            "sibling_digest": "[u8; 32]",
-            "leaf_index": "u32",
-            "inner_path": "Vec<[u8; 32]>"
-        },
-        "InitialSyncResponse": {
+        "DenseInitialSyncResponse": {
             "should_continue": "bool",
-            "utxos": "Vec<Utxo>",
-            "paths": "Vec<CurrentPath>",
+            "utxo_data": "String",
+            "membership_proof_data": "String",
             "nullifier_count": "u128"
         }
     }

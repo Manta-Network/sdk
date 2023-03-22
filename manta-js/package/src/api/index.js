@@ -4,7 +4,7 @@
 
 import { base64Decode } from '@polkadot/util-crypto';
 import * as $ from 'manta-scale-codec';
-import { u8aToBigInt, u8aToU8a } from '@polkadot/util';
+import { nToBigInt, u8aToU8a } from '@polkadot/util';
 
 export class ApiConfig {
   constructor(
@@ -119,7 +119,7 @@ export default class Api {
 
   _current_path_to_json(currentPath) {
     const sibling_digest = Array.from(u8aToU8a(currentPath.sibling_digest));
-    const leaf_index = currentPath.leaf_index.toNumber();
+    const leaf_index = currentPath.leaf_index;
     const inner_path = currentPath.inner_path.map((path) => Array.from(u8aToU8a(path)));
     return {
       sibling_digest,
@@ -136,35 +136,28 @@ export default class Api {
       this._log('checkpoint ' + JSON.stringify(checkpoint));
       await this.api.isReady;
 
-      let result = await this.api.rpc.mantaPay.initial_pull(checkpoint, this.maxReceiversPullSize);
+      let result = await this.api.rpc.mantaPay.dense_initial_pull(checkpoint, this.maxReceiversPullSize);
 
-      this._log('initial read result ' + JSON.stringify(result));
+      this._log('initial pull result ' + JSON.stringify(result));
 
-      const json = JSON.parse(JSON.stringify(result));
+      const decodedUtxoData = $Utxos.decode(base64Decode(result.utxo_data.toString()));
+      const utxoData = decodedUtxoData.map((utxo) => this._utxo_to_json(utxo));
 
-      const should_continue = json.should_continue;
-      const utxo_data = result.utxos.map((utxo) => {
-        const utxo_info = this._utxo_to_json(utxo);
-        utxo_info.is_transparent = utxo_info.is_transparent.isTrue;
-        return utxo_info;
-      });
-      const membership_proof_data = result.paths.map((currentPath) => this._current_path_to_json(currentPath));
-      const nullifier_count = u8aToBigInt(json.nullifier_count);
+      const decodedMemberShipProofData = $CurrentPaths.decode(base64Decode(result.membership_proof_data.toString()));
+      const membershipProofData = decodedMemberShipProofData.map((currentPath) => this._current_path_to_json(currentPath));
 
-      // const should_continue = result.should_continue.isTrue;
-      // const utxo_data = $Utxos.decode(base64Decode(result.utxos.toString()));
-      // const membership_proof_data = $CurrentPaths.decode(base64Decode(result.paths.toString()));
-      // const nullifier_count = BigInt(result.nullifier_count.toString());
-
-      const read_result = {
-        should_continue,
-        utxo_data,
-        membership_proof_data,
-        nullifier_count,
+      const pull_result = {
+        should_continue: result.should_continue.isTrue,
+        utxo_data: utxoData,
+        membership_proof_data: membershipProofData,
+        nullifier_count: result.nullifier_count.toString(),
       };
-      debugger;
-      console.log(read_result);
-      return read_result;
+      this._log('initial pull response: ' + JSON.stringify(pull_result));
+
+      // JSON.stringify does not support bigint
+      pull_result.nullifier_count = nToBigInt(result.nullifier_count);
+
+      return pull_result;
     } catch (err) {
       console.error(err);
       if (this.errorCallback) {
