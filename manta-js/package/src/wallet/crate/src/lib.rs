@@ -1336,13 +1336,11 @@ impl Wallet {
     /// Saves `self` as a [`StorageStateOption`] in `network`.
     #[inline]
     pub fn get_storage(&self, network: Network) -> JsValue {
-        // TODO: This should only take an immutable reference to signer. Change
-        // this in manta-rs.
         into_js(StorageStateOption::from(functions::get_storage(
-            self.0.borrow_mut()[usize::from(network.0)]
-                .as_mut()
+            self.0.borrow()[usize::from(network.0)]
+                .as_ref()
                 .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
-                .signer_mut(),
+                .signer(),
         )))
     }
 
