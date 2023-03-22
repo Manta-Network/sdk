@@ -24,7 +24,7 @@ let currentSeedPhrase = 'spike napkin obscure diamond slice style excess table p
 let privateWallet: MantaPrivateWallet = null;
 let polkadotConfig: PolkadotConfig = null;
 const assetId = new BN("1");
-const assetAmount = new BN("5000000000000000000");
+const assetAmount = new BN("500000000000000000000");
 
 function _log(...message: any[]) {
   console.log("[INFO]: " + message.join(""));
@@ -97,19 +97,22 @@ const initWallet = async () => {
 };
 
 const initWalletData = async () => {
-  const isInitialed = (await getIdbData(`storage_state_${currentNetwork}`));
+  // const isInitialed = (await getIdbData(`storage_state_${currentNetwork}`));
   _log("Load user mnemonic");
   await privateWallet.loadUserSeedPhrase();
   const privateAddress = await privateWallet.getZkAddress();
   _log("The zkAddress is: ", privateAddress);
 
-  if (isInitialed) {
-    console.log('initialWalletSync');
-    await privateWallet.initialWalletSync();
-  } else {
-    console.log('initialNewAccountWalletSync');
-    await privateWallet.initialNewAccountWalletSync();
-  }
+  console.log('initialWalletSync');
+  await privateWallet.initialWalletSync();
+
+  // if (isInitialed) {
+  //   console.log('initialWalletSync');
+  //   await privateWallet.initialWalletSync();
+  // } else {
+  //   console.log('initialNewAccountWalletSync');
+  //   await privateWallet.initialNewAccountWalletSync();
+  // }
 }
 
 const queryTransferResult = async (initialPrivateBalance: BN) => {

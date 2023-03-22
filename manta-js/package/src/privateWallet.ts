@@ -74,6 +74,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   loggingEnabled: boolean;
   isBindAuthorizationContext: boolean;
   parameters: any;
+  provingContext: any;
   requestUserSeedPhrase: RequestUserSeedPhrase;
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
@@ -86,6 +87,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     wasmApi: any,
     loggingEnabled: boolean,
     parameters: any,
+    provingContext: any,
     requestUserSeedPhrase: RequestUserSeedPhrase,
     saveStorageStateToLocal: SaveStorageStateToLocal,
     getStorageStateFromLocal: GetStorageStateFromLocal,
@@ -100,6 +102,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.loggingEnabled = loggingEnabled;
     this.isBindAuthorizationContext = false;
     this.parameters = parameters;
+    this.provingContext = provingContext;
     this.requestUserSeedPhrase = requestUserSeedPhrase;
     this.saveStorageStateToLocal = saveStorageStateToLocal;
     this.getStorageStateFromLocal = getStorageStateFromLocal;
@@ -116,7 +119,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       config.network,
       Boolean(config.loggingEnabled)
     );
-    const { wasm, wasmWallet, wasmApi, parameters } =
+    const { wasm, wasmWallet, wasmApi, parameters, provingContext } =
       await MantaPrivateWallet.initWasmSdk(api, config);
     return new MantaPrivateWallet(
       api,
@@ -126,6 +129,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       wasmApi,
       Boolean(config.loggingEnabled),
       parameters,
+      provingContext,
       config.requestUserSeedPhrase,
       config.saveStorageStateToLocal,
       config.getStorageStateFromLocal,
@@ -428,7 +432,13 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// reset instance state
   async resetState() {
     await this.wasmWallet.reset_state(this.getWasmNetWork());
-    await this.wasmWallet.set_storage(null, this.getWasmNetWork());
+    const wasmSigner = new this.wasm.Signer(this.parameters, this.provingContext, null);
+    const wasmLedger = new this.wasm.PolkadotJsLedger(this.wasmApi);
+    this.wasmWallet.set_network(
+      wasmLedger,
+      wasmSigner,
+      this.getWasmNetWork(),
+    );
     this.dropUserSeedPhrase();
     this.dropAuthorizationContext();
     return true;
@@ -530,6 +540,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       wasmWallet,
       wasmApi,
       parameters: fullParameters,
+      provingContext: multiProvingContext,
     };
   }
 

@@ -19,6 +19,7 @@ export type InitWasmResult = {
   wasmWallet: Wallet,
   wasmApi: any,
   parameters: any;
+  provingContext: any;
 }
 
 export type SignedTransaction = {
