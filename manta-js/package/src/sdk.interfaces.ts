@@ -75,4 +75,5 @@ export interface IMantaPrivateWallet {
   privateTransferBuild(assetId: BN, amount: BN, toZkAddress: Address, polkadotAddress:Address): Promise<SignedTransaction | null>;
   toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
   toPublicBuild(assetId: BN, amount: BN, polkadotAddress:Address): Promise<SignedTransaction | null>;
+  resetState(): Promise<boolean>;
 }

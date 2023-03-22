@@ -425,6 +425,15 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
   }
 
+  /// reset instance state
+  async resetState() {
+    await this.wasmWallet.reset_state(this.getWasmNetWork());
+    await this.wasmWallet.set_storage(null, this.getWasmNetWork());
+    this.dropUserSeedPhrase();
+    this.dropAuthorizationContext();
+    return true;
+  }
+
   ///
   /// Private Methods
   ///
