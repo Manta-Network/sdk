@@ -33,12 +33,17 @@ where
     T::decode(&mut bytes.as_slice())
 }
 
+/// Raw Asset Identifier Type
 pub type RawAssetId = [u8; 32];
 
+/// Raw Asset Value Type
 pub type RawAssetValue = [u8; 16];
 
+/// Raw Utxo Commitment Type
 pub type RawUtxoCommitment = [u8; 32];
 
+/// Decodes a field element from `bytes`.
+#[inline]
 pub fn fp_decode<T>(bytes: Vec<u8>) -> Result<Fp<T>, scale_codec::Error>
 where
     T: manta_crypto::arkworks::ff::Field,
@@ -46,6 +51,8 @@ where
     Fp::try_from(bytes).map_err(|_e| scale_codec::Error::from("Fp Serialize"))
 }
 
+/// Decodes a group element from `bytes`.
+#[inline]
 pub fn group_decode<T>(bytes: Vec<u8>) -> Result<Group<T>, scale_codec::Error>
 where
     T: ProjectiveCurve,
@@ -53,6 +60,7 @@ where
     Group::try_from(bytes).map_err(|_e| scale_codec::Error::from("Group Serialize"))
 }
 
+/// Raw Asset
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
 pub struct RawAsset {
@@ -75,9 +83,11 @@ impl TryFrom<RawAsset> for config::Asset {
     }
 }
 
+/// Raw Nullifier Commitment
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
 pub struct RawNullifierCommitment {
+    /// Commitment
     pub commitment: [u8; 32],
 }
 
@@ -96,6 +106,7 @@ pub struct RawUtxo {
 }
 
 impl RawUtxo {
+    /// Tries to convert `self` into a [`Utxo`](utxo::Utxo)
     #[inline]
     pub fn try_into(self) -> Result<utxo::Utxo, Error> {
         Ok(utxo::Utxo {
@@ -118,6 +129,7 @@ pub struct RawLightIncomingNote {
     pub ciphertext: [[u8; 32]; 3],
 }
 
+/// Raw Incoming Note
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
 pub struct RawIncomingNote {
@@ -132,6 +144,7 @@ pub struct RawIncomingNote {
     pub ciphertext: [[u8; 32]; 3],
 }
 
+/// Raw Outgoing Note
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
 pub struct RawOutgoingNote {
@@ -143,10 +156,14 @@ pub struct RawOutgoingNote {
     pub ciphertext: [[u8; 32]; 2],
 }
 
+/// Raw Nullifier
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
 pub struct RawNulllifier {
+    /// Nullifier
     pub nullifier: RawNullifierCommitment,
+
+    /// Outgoing Note
     pub outgoing_note: RawOutgoingNote,
 }
 
@@ -163,11 +180,17 @@ impl TryFrom<RawNullifierCommitment>
     }
 }
 
+/// Raw Full Incoming Note
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
 pub struct RawFullIncomingNote {
+    /// Address Partition
     address_partition: u8,
+
+    /// Incoming Note
     incoming_note: RawIncomingNote,
+
+    /// Light Incoming Note
     light_incoming_note: RawLightIncomingNote,
 }
 
@@ -243,6 +266,7 @@ impl TryFrom<RawOutgoingNote> for utxo::OutgoingNote {
 }
 
 impl RawNulllifier {
+    /// Tries to convert `self` into a [`Nullifier`](utxo::Nullifier).
     #[inline]
     pub fn try_into(self) -> Result<utxo::Nullifier, Error> {
         Ok(utxo::Nullifier {
@@ -300,23 +324,23 @@ impl TryFrom<RawPullResponse> for ReadResponse<SyncData<config::Config>> {
     }
 }
 
-///
+/// Raw Leaf Digest
 pub type RawLeafDigest = [u8; 32];
 
-///
+/// Raw Inner Digest
 pub type RawInnerDigest = [u8; 32];
 
 /// Raw Current Path
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(crate = "manta_util::serde")]
 pub struct RawCurrentPath {
-    ///
+    /// Sibling Digest
     pub sibling_digest: RawLeafDigest,
 
-    ///
+    /// Leaf Index
     pub leaf_index: u32,
 
-    ///
+    /// Inner Path
     pub inner_path: Vec<RawInnerDigest>,
 }
 

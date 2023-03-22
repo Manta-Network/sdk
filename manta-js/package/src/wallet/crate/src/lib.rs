@@ -1159,7 +1159,14 @@ impl Signer {
         self.as_mut().sync(request.into()).into()
     }
 
+    /// Performs the initial synchronization of a new signer with the ledger data.
     ///
+    /// # Implementation Note
+    ///
+    /// Using this method to synchronize a signer will make it impossibile to spend any
+    /// [`Utxo`](utxo::Utxo)s already on the ledger at the time of synchronization.
+    /// Therefore, this method should only be used for the initial synchronization of a
+    /// new signer.
     #[inline]
     pub fn initial_sync(&mut self, request: InitialSyncRequest) -> SyncResult {
         self.as_mut().initial_sync(request.into()).into()
@@ -1611,7 +1618,27 @@ impl Wallet {
         self.with_async(|this| Box::pin(this.load_initial_state()), network)
     }
 
+    /// Pulls data from the ledger, synchronizing the wallet and balance state. This method
+    /// builds a [`InitialSyncRequest`] by continuously calling [`read`](ledger::Read::read)
+    /// until all the ledger data has arrived. Once the request is built, it executes
+    /// synchronizes the signer against it.
     ///
+    /// # Implementation Note
+    ///
+    /// Using this method to synchronize a signer will make it impossibile to spend any
+    /// [`Utxo`](utxo::Utxo)s already on the ledger at the time of synchronization.
+    /// Therefore, this method should only be used for the initial synchronization of a
+    /// new signer.
+    ///
+    /// # Failure Conditions
+    ///
+    /// This method returns an element of type [`Error`] on failure, which can result from any
+    /// number of synchronization issues between the wallet, the ledger, and the signer. See the
+    /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
+    /// how to resolve them.
+    ///
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
     #[inline]
     pub fn initial_sync(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(this.initial_sync()), network)
