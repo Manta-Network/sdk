@@ -181,7 +181,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      await this.wasmWallet.reset_state(this.getWasmNetWork());
       this.log('Start initial new account');
       await this.wasmWallet.initial_sync(this.getWasmNetWork());
       this.log('Initial new account completed');
