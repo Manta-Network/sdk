@@ -25,7 +25,7 @@ const types = config.TYPES;
 const DEFAULT_PULL_SIZE = config.DEFAULT_PULL_SIZE;
 const PRIVATE_ASSET_PREFIX = 'zk';
 
-/// The Envrionment that the sdk is configured to run for, if development
+/// The Environment that the sdk is configured to run for, if development
 /// is selected then it will attempt to connect to a local node instance.
 /// If production is selected it will attempt to connect to actual node.
 export enum Environment {
@@ -41,7 +41,7 @@ export enum Network {
 }
 
 // warning: do not update the array's order
-const PayParameterNames = [
+export const PayParameterNames = [
   'address-partition-function.dat',
   'group-generator.dat',
   'incoming-base-encryption-scheme.dat',
@@ -56,7 +56,7 @@ const PayParameterNames = [
 ];
 
 // warning: do not edit the array's order
-const PayProvingNames = [
+export const PayProvingNames = [
   'to-private.lfs',
   'private-transfer.lfs',
   'to-public.lfs',
@@ -171,8 +171,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// This method is optimized based on initialWalletSync
   ///
   /// Requirements: Must be called once after creating an instance of MantaPrivateWallet
-  /// and must be called before walletSync(). 
-  /// If it is a new wallet (the current solution is that the native token is 0), 
+  /// and must be called before walletSync().
+  /// If it is a new wallet (the current solution is that the native token is 0),
   /// you can call this method to save initialization time
   async initialNewAccountWalletSync(): Promise<boolean> {
     if (!this.isBindAuthorizationContext) {
@@ -199,8 +199,8 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   /// the current checkpoint and balance state.
   ///
   /// Requirements: Must be called once after creating an instance of MantaPrivateWallet
-  /// and must be called before walletSync(). 
-  /// If it is a new wallet (the current solution is that the native token is 0), 
+  /// and must be called before walletSync().
+  /// If it is a new wallet (the current solution is that the native token is 0),
   /// you can call initialNewAccountWalletSync to save initialization time
   async initialWalletSync(): Promise<boolean> {
     const result = await this.loopSyncPartialWallet(true);
@@ -237,7 +237,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       return null;
     }
   }
-  
+
   /// Returns the multi zk balance of the currently connected zkAddress for the currently
   /// connected network.
   async getMultiZkBalance(assetIds: BN[]): Promise<BN[] | null> {
@@ -448,7 +448,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   /// Conditionally logs the contents of `message` depending on if `loggingEnabled`
   /// is set to `true`.
-  private log(message: string): void {
+  protected log(message: string): void {
     if (this.loggingEnabled) {
       console.log('[INFO]: ' + message);
       console.log(performance.now());
@@ -457,14 +457,14 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   // WASM wallet doesn't allow you to call two methods at once, so before
   // calling methods it is necessary to wait for a pending call to finish.
-  private async waitForWallet(): Promise<void> {
+  protected async waitForWallet(): Promise<void> {
     while (this.walletIsBusy === true) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
   /// Private helper method for internal use to initialize the Polkadot.js API with web3Extension.
-  private static async initApi(
+  protected static async initApi(
     env: Environment,
     network: Network,
     loggingEnabled: boolean
@@ -489,7 +489,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// Private helper method for internal use to initialize the initialize manta-wasm-wallet.
-  private static async initWasmSdk(
+  protected static async initWasmSdk(
     api: ApiPromise,
     priConfig: PrivateWalletConfig
   ): Promise<InitWasmResult> {
@@ -542,7 +542,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     };
   }
 
-  private async loopSyncPartialWallet(isInitial: boolean): Promise<boolean> {
+  protected async loopSyncPartialWallet(isInitial: boolean): Promise<boolean> {
     if (!this.isBindAuthorizationContext) {
       await this.loadUserSeedPhrase();
     }
@@ -578,7 +578,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     return true;
   }
 
-  private async syncPartialWallet(): Promise<{success: boolean, continue: boolean}> {
+  protected async syncPartialWallet(): Promise<{success: boolean, continue: boolean}> {
     try {
       const result = await this.wasmWallet.sync_partial(this.getWasmNetWork());
       await this.saveStateToLocal();
@@ -595,30 +595,30 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
   }
 
-  private async saveStateToLocal() {
+  protected async saveStateToLocal() {
     const stateData = await this.wasmWallet.get_storage(this.getWasmNetWork());
     await this.saveStorageStateToLocal(`${this.network}`, stateData);
   }
 
-  private getWasmNetWork(): any {
+  protected getWasmNetWork(): any {
     return this.wasm.Network.from_string(`"${this.network}"`);
   }
 
   /// Set polkadot signing address to `polkadotAddress`.
-  private async setPolkadotSigner(
+  protected async setPolkadotSigner(
     polkadotSigner: Signer,
   ): Promise<void> {
     await this.api.setSigner(polkadotSigner);
   }
 
   /// Set the polkadot Signer to `polkadotSigner`
-  private async setWasmExternalAccountSigner(polkadotAddress: Address): Promise<void> {
+  protected async setWasmExternalAccountSigner(polkadotAddress: Address): Promise<void> {
     await this.wasmApi.setExternalAccountSigner(polkadotAddress);
   }
 
   /// Returns the corresponding blockchain connection URL from Environment
   /// and Network values.
-  private static envUrl(env: Environment, network: Network): string {
+  protected static envUrl(env: Environment, network: Network): string {
     let url = config.NETWORKS[network].ws_local;
     if (env == Environment.Production) {
       url = config.NETWORKS[network].ws;
@@ -627,7 +627,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// Builds the "ToPrivate" transaction in JSON format to be signed.
-  private async toPrivateBuildUnsigned(assetId: BN, amount: BN): Promise<any> {
+  protected async toPrivateBuildUnsigned(assetId: BN, amount: BN): Promise<any> {
     try {
       const assetIdArray = bnToU8a(assetId, {bitLength: 256});
       const txJson = `{ "ToPrivate": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
@@ -639,7 +639,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// private transfer transaction
-  private async privateTransferBuildUnsigned(
+  protected async privateTransferBuildUnsigned(
     assetId: BN,
     amount: BN,
     toZkAddress: Address
@@ -736,7 +736,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   /// Signs the a given transaction returning posts, transactions and batches.
   /// assetMetaDataJson is optional, pass in null if transaction should not contain any.
-  private async signTransaction(
+  protected async signTransaction(
     assetMetadataJson: any,
     transaction: WasmTransaction,
     network: Network
@@ -766,6 +766,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const txs = await this.transactionsToBatches(transactions, this.api);
       return {
         posts,
+        transaction_data: null,
         transactions,
         txs,
       };
@@ -777,7 +778,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   /// This method sends a transaction to the public ledger after it has been signed
   /// by Manta Signer.
-  private async sendTransaction(
+  protected async sendTransaction(
     signer: string,
     signedTransaction: SignedTransaction
   ): Promise<void> {
@@ -855,15 +856,11 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     const lightPk = x.note.light_incoming_note.ciphertext.ephemeral_public_key;
     // ciphertext is [u8; 96] on manta-rs, but runtime side is [[u8; 32]; 3]
     const lightCipher = x.note.light_incoming_note.ciphertext.ciphertext;
-    const lightCiper0 = lightCipher.slice(0, 32);
-    const lightCiper1 = lightCipher.slice(32, 64);
-    const lightCiper2 = lightCipher.slice(64, 96);
+    const lightCipher0 = lightCipher.slice(0, 32);
+    const lightCipher1 = lightCipher.slice(32, 64);
+    const lightCipher2 = lightCipher.slice(64, 96);
     x.note.light_incoming_note.ephemeral_public_key = lightPk;
-    x.note.light_incoming_note.ciphertext = [
-      lightCiper0,
-      lightCiper1,
-      lightCiper2,
-    ];
+    x.note.light_incoming_note.ciphertext = [lightCipher0, lightCipher1, lightCipher2];
     delete x.note.light_incoming_note.header;
 
     // convert asset value to [u8; 16]
@@ -880,11 +877,11 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private convertSenderPost(x: any) {
     const pk = x.nullifier.outgoing_note.ciphertext.ephemeral_public_key;
     const cipher = x.nullifier.outgoing_note.ciphertext.ciphertext;
-    const ciper0 = cipher.slice(0, 32);
-    const ciper1 = cipher.slice(32, 64);
+    const cipher0 = cipher.slice(0, 32);
+    const cipher1 = cipher.slice(32, 64);
     const outgoing = {
       ephemeral_public_key: pk,
-      ciphertext: [ciper0, ciper1],
+      ciphertext: [cipher0, cipher1]
     };
     x.outgoing_note = outgoing;
     const nullifier = x.nullifier.nullifier.commitment;
@@ -914,7 +911,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   }
 
   /// NOTE: `post` from manta-rs sign result should match runtime side data structure type.
-  private transferPost(post: any): any {
+  protected transferPost(post: any): any {
     const json = JSON.parse(JSON.stringify(this.formatPostData(post)));
 
     // transfer authorization_signature format
@@ -937,7 +934,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     return json;
   }
 
-  private static async fetchFiles(
+  protected static async fetchFiles(
     filePrefix: string,
     fileNames: string[]
   ): Promise<Uint8Array[] | null> {

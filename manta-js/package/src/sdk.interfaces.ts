@@ -1,5 +1,5 @@
 import { ApiPromise } from '@polkadot/api';
-import { Wallet } from './wallet/crate/pkg';
+import { SbtWallet, Wallet } from './wallet/crate/pkg';
 import { Environment, Network } from './privateWallet';
 import BN from 'bn.js';
 import { SubmittableExtrinsic, Signer } from '@polkadot/api/types';
@@ -15,7 +15,7 @@ export type InitApiResult = {
 
 export type InitWasmResult = {
   wasm: any,
-  wasmWallet: Wallet,
+  wasmWallet: Wallet | SbtWallet,
   wasmApi: any,
   parameters: any;
   provingContext: any;
@@ -23,6 +23,7 @@ export type InitWasmResult = {
 
 export type SignedTransaction = {
   posts: any,
+  transaction_data: any,
   transactions: SubmittableExtrinsic<'promise', any>[],
   txs: SubmittableExtrinsic<'promise', any>[]
 }
@@ -35,6 +36,7 @@ export type PrivateWalletConfig = {
   environment: Environment,
   network: Network,
   loggingEnabled?: boolean,
+  transactionDataEnabled?: boolean,
   maxReceiversPullSize?: number,
   maxSendersPullSize?: number,
   pullCallback?: any,
