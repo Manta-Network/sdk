@@ -4,7 +4,6 @@ import { Environment, Network } from './privateWallet';
 import BN from 'bn.js';
 import { SubmittableExtrinsic, Signer } from '@polkadot/api/types';
 
-export type Version = string;
 export type Address = string;
 
 // Must be a uint8Array of length 32.
