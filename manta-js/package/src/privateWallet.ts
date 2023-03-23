@@ -430,7 +430,6 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
 
   /// reset instance state
   async resetState() {
-    await this.wasmWallet.reset_state(this.getWasmNetWork());
     const wasmSigner = new this.wasm.Signer(this.parameters, this.provingContext, null);
     const wasmLedger = new this.wasm.PolkadotJsLedger(this.wasmApi);
     this.wasmWallet.set_network(
