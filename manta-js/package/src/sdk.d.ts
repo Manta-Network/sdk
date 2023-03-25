@@ -1,1 +1,0 @@
-declare module 'manta-wasm-wallet-api';

@@ -1,81 +1,98 @@
-import { ApiPromise } from '@polkadot/api';
-import { SbtWallet, Wallet } from './wallet/crate/pkg';
-import { Environment, Network } from './privateWallet';
-import BN from 'bn.js';
-import { SubmittableExtrinsic, Signer } from '@polkadot/api/types';
+import type BN from 'bn.js';
+import type { ApiPromise } from '@polkadot/api';
+import type { Wallet } from './wallet/crate/pkg';
+import type { Network } from './constants';
+import type { SubmittableExtrinsic } from '@polkadot/api/types';
+
+export type PalletName = 'mantaPay' | 'mantaSBT';
 
 export type Address = string;
 
-// Must be a uint8Array of length 32.
-export type AssetId = Uint8Array;
+export interface ILedgerApi {
+  api: any;
+  palletName: PalletName;
+  loggingEnabled: boolean;
 
-export type InitApiResult = {
-  api: ApiPromise
-}
-
-export type InitWasmResult = {
-  wasm: any,
-  wasmWallet: Wallet | SbtWallet,
-  wasmApi: any,
-  parameters: any;
-  provingContext: any;
+  initial_pull(checkpoint: any): any;
+  pull(checkpoint: any): any;
 }
 
 export type SignedTransaction = {
-  posts: any,
-  transaction_data: any,
-  transactions: SubmittableExtrinsic<'promise', any>[],
-  txs: SubmittableExtrinsic<'promise', any>[]
-}
+  posts: any;
+  transactionData: any;
+  transactions: SubmittableExtrinsic<'promise', any>[];
+  txs: SubmittableExtrinsic<'promise', any>[];
+};
 
-export type RequestUserSeedPhrase = () => Promise<string | null>;
-export type SaveStorageStateToLocal = (network: string, data: any) => Promise<boolean>;
-export type GetStorageStateFromLocal = (network: string) => Promise<any>;
+export type SignedMultiSbtTransaction = {
+  transactionDatas: any[];
+  batchedTx: SubmittableExtrinsic<'promise', any>;
+};
 
-export type PrivateWalletConfig = {
-  environment: Environment,
-  network: Network,
-  loggingEnabled?: boolean,
-  transactionDataEnabled?: boolean,
-  maxReceiversPullSize?: number,
-  maxSendersPullSize?: number,
-  pullCallback?: any,
-  errorCallback?: any,
-  provingFilePath: string,
-  parametersFilePath: string,
-  requestUserSeedPhrase: RequestUserSeedPhrase,
-  saveStorageStateToLocal: SaveStorageStateToLocal,
-  getStorageStateFromLocal: GetStorageStateFromLocal,
+export type SaveStorageStateToLocal = (
+  palletName: PalletName,
+  network: string,
+  data: any,
+) => Promise<boolean>;
+export type GetStorageStateFromLocal = (
+  palletName: PalletName,
+  network: string,
+) => Promise<any>;
+
+export type BaseWalletConfig = {
+  rpcUrl: string;
+  loggingEnabled: boolean;
+  provingFilePath: string;
+  parametersFilePath: string;
+  saveStorageStateToLocal: SaveStorageStateToLocal;
+  getStorageStateFromLocal: GetStorageStateFromLocal;
+};
+
+export interface IBaseWallet {
+  api: ApiPromise;
+  wasm: any;
+  loggingEnabled: boolean;
+  fullParameters: any;
+  multiProvingContext: any;
+  saveStorageStateToLocal: SaveStorageStateToLocal;
+  getStorageStateFromLocal: GetStorageStateFromLocal;
+  walletIsBusy: boolean;
 }
 
 export interface IMantaPrivateWallet {
-  api: ApiPromise;
-  wasm: any;
+  palletName: PalletName;
+  baseWallet: IBaseWallet;
   wasmWallet: Wallet;
-  network: Network;
-  wasmApi: any;
-  walletIsBusy: boolean;
+  ledgerApi: any;
   initialSyncIsFinished: boolean;
-  loggingEnabled: boolean;
-  parameters: any;
+  isBindAuthorizationContext: boolean;
+  network: Network;
 
-  loadUserSeedPhrase(initialSeedPhrase?: string):any;
-  loadAuthorizationContext(initialSeedPhrase?: string):any;
-  dropAuthorizationContext():any;
-  dropUserSeedPhrase():any;
-  convertZkAddressToJson(address: string): any
-  getNetworks(): any;
-  getZkAddress(): Promise<Address>;
-  getAssetMetadata(assetId: BN): Promise<any>;
+  initialSigner(): Promise<boolean>;
+  setNetwork(network: Network): Promise<boolean>;
+  loadUserSeedPhrase(seedPhrase: string): boolean;
+  loadAuthorizationContext(seedPhrase: string): boolean;
+  dropAuthorizationContext(): boolean;
+  dropUserSeedPhrase(): boolean;
   initialWalletSync(): Promise<boolean>;
   walletSync(): Promise<boolean>;
+  getZkAddress(): Promise<Address>;
   getZkBalance(assetId: BN): Promise<BN | null>;
   getMultiZkBalance(assetId: BN[]): Promise<BN[] | null>;
-  toPrivateSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  toPrivateBuild(assetId: BN, amount: BN, polkadotAddress:Address): Promise<SignedTransaction | null>;
-  privateTransferSend(assetId: BN, amount: BN, toZkAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  privateTransferBuild(assetId: BN, amount: BN, toZkAddress: Address, polkadotAddress:Address): Promise<SignedTransaction | null>;
-  toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
-  toPublicBuild(assetId: BN, amount: BN, polkadotAddress:Address): Promise<SignedTransaction | null>;
+  toPrivateBuild(assetId: BN, amount: BN): Promise<SignedTransaction | null>;
+  privateTransferBuild(
+    assetId: BN,
+    amount: BN,
+    toZkAddress: Address,
+  ): Promise<SignedTransaction | null>;
+  toPublicBuild(
+    assetId: BN,
+    amount: BN,
+    polkadotAddress: Address,
+  ): Promise<SignedTransaction | null>;
+  multiSbtBuild(
+    startingAssetId: BN,
+    metadataList: string[],
+  ): Promise<SignedMultiSbtTransaction | null>;
   resetState(): Promise<boolean>;
 }

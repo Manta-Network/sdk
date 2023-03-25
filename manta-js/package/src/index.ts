@@ -1,6 +1,6 @@
-import { MantaPrivateWallet, Network, Environment } from './privateWallet';
-import { SbtMantaPrivateWallet } from './sbtPrivateWallet';
-import { MantaUtilities } from './utils';
-import * as interfaces from './sdk.interfaces';
+import { BaseWallet } from './baseWallet';
+import { MantaPrivateWallet } from './privateWallet';
+import { Network } from './constants';
+import type * as interfaces from './sdk.interfaces';
 
-export { MantaPrivateWallet, SbtMantaPrivateWallet, Network, Environment, MantaUtilities, interfaces};
+export { BaseWallet, MantaPrivateWallet, Network, interfaces};
