@@ -52,6 +52,20 @@
           }
         ],
         "type": "DensePullResponse"
+      },
+      "dense_initial_pull": {
+        "description": "pull initial data from mantaPay",
+        "params": [
+          {
+            "name": "checkpoint",
+            "type": "Checkpoint"
+          },
+          {
+            "name": "max_receiver",
+            "type": "u64"
+          }
+        ],
+        "type": "DenseInitialSyncResponse"
       }
     }
   },

@@ -120,9 +120,11 @@ const initMantaSbtWallet = async (baseWallet: BaseWallet) => {
 };
 
 const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
+
+  // const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
+
   _log('Initial signer');
   await privateWallet.initialSigner();
-  // const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
   _log('Load user mnemonic');
   await privateWallet.loadUserSeedPhrase(currentSeedPhrase);
   const privateAddress = await privateWallet.getZkAddress();

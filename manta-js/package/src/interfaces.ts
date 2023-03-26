@@ -75,6 +75,7 @@ export interface IPrivateWallet {
   dropAuthorizationContext(): boolean;
   dropUserSeedPhrase(): boolean;
   initialWalletSync(): Promise<boolean>;
+  initialNewAccountWalletSync(): Promise<boolean>;
   walletSync(): Promise<boolean>;
   getZkAddress(): Promise<Address>;
   getZkBalance(assetId: BN): Promise<BN | null>;
