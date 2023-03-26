@@ -1,36 +1,46 @@
+import type { interfaces } from 'manta-extension-sdk';
+import type { Signer as InjectSigner } from '@polkadot/api/types';
+import type { SubmittableExtrinsic } from '@polkadot/api/types';
+
 import BN from 'bn.js';
-import { BaseWallet, MantaPrivateWallet, Network } from 'manta-extension-sdk';
+import { Network, BaseWallet, Pallets } from 'manta-extension-sdk';
+
 import {
   web3Accounts,
   web3Enable,
   web3FromSource,
 } from '@polkadot/extension-dapp';
+
 import {
   get as getIdbData,
   set as setIdbData,
   del as delIdbData,
 } from 'idb-keyval';
-import type { Signer as InjectSigner } from '@polkadot/api/types';
-import type { PalletName } from 'manta-extension-sdk/dist/browser/sdk.interfaces';
-import type { SubmittableExtrinsic } from '@polkadot/api/types';
 
 interface PolkadotConfig {
   polkadotSigner: InjectSigner;
   polkadotAddress: string;
 }
 
-const currentNetwork = Network.Dolphin;
+const loggingEnabled = true;
 const rpcUrl = 'wss://kwaltz.baikal.testnet.dolphin.training';
+const provingFilePath =
+  'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving';
+const parametersFilePath =
+  'https://raw.githubusercontent.com/Manta-Network/manta-rs/main/manta-parameters/data/pay/parameters';
+
+const currentNetwork = Network.Dolphin;
 let currentSeedPhrase =
   'spike napkin obscure diamond slice style excess table process story excuse absurd';
 
 let baseWallet: BaseWallet = null;
 let polkadotConfig: PolkadotConfig = null;
+
 const assetId = new BN('1');
-const assetAmount = new BN('50000000000000000000');
+const assetAmount = new BN('5000000000000000000');
 
 function _log(...message: any[]) {
-  console.log(`[Demo] ${performance.now()}: ${message.join('')}`);
+  console.log(`[Demo] ${performance.now().toFixed(4)}: ${message.join('')}`);
 }
 
 // Get Polkadot JS Signer and Polkadot JS account address.
@@ -64,13 +74,11 @@ const publishTransition = async (
 const initBaseLogics = async () => {
   baseWallet = await BaseWallet.init({
     rpcUrl,
-    loggingEnabled: true,
-    provingFilePath:
-      'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving',
-    parametersFilePath:
-      'https://raw.githubusercontent.com/Manta-Network/manta-rs/main/manta-parameters/data/pay/parameters',
+    loggingEnabled,
+    provingFilePath,
+    parametersFilePath,
     saveStorageStateToLocal: async (
-      palletName: PalletName,
+      palletName: interfaces.PalletName,
       network: string,
       data: any,
     ): Promise<boolean> => {
@@ -83,7 +91,7 @@ const initBaseLogics = async () => {
       return true;
     },
     getStorageStateFromLocal: async (
-      palletName: PalletName,
+      palletName: interfaces.PalletName,
       network: string,
     ): Promise<any> => {
       let result: string;
@@ -99,20 +107,27 @@ const initBaseLogics = async () => {
   baseWallet.api.setSigner(polkadotConfig.polkadotSigner);
 };
 
-const initWallet = async (palletName: PalletName, baseWallet: BaseWallet) => {
-  const privateWallet = MantaPrivateWallet.init(palletName, currentNetwork, baseWallet);
-  initWalletData(privateWallet);
-  return privateWallet;
+const initMantaPayWallet = async (baseWallet: BaseWallet) => {
+  const wallet = Pallets.MantaPayWallet.init(currentNetwork, baseWallet);
+  await initWalletData(wallet);
+  return wallet;
 };
 
-const initWalletData = async (privateWallet: MantaPrivateWallet) => {
+const initMantaSbtWallet = async (baseWallet: BaseWallet) => {
+  const wallet = Pallets.MantaSbtWallet.init(currentNetwork, baseWallet);
+  await initWalletData(wallet);
+  return wallet;
+};
+
+const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
+  _log('Initial signer');
+  await privateWallet.initialSigner();
   // const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
   _log('Load user mnemonic');
   await privateWallet.loadUserSeedPhrase(currentSeedPhrase);
   const privateAddress = await privateWallet.getZkAddress();
   _log('The zkAddress is: ', privateAddress);
 
-  await privateWallet.initialSigner();
   _log('initialWalletSync');
   await privateWallet.initialWalletSync();
 
@@ -126,7 +141,7 @@ const initWalletData = async (privateWallet: MantaPrivateWallet) => {
 };
 
 const queryTransferResult = async (
-  privateWallet: MantaPrivateWallet,
+  privateWallet: interfaces.IPrivateWallet,
   initialPrivateBalance: BN,
 ) => {
   let retryTimes = 0;
@@ -139,7 +154,7 @@ const queryTransferResult = async (
 
     if (!initialPrivateBalance.eq(newPrivateBalance)) {
       _log('Detected balance change after sync!');
-      _log('Try number: ', retryTimes.toString());
+      _log('Retry times: ', retryTimes.toString());
       _log('Old balance: ', initialPrivateBalance.toString());
       _log('New balance: ', newPrivateBalance.toString());
       break;
@@ -152,9 +167,11 @@ const queryTransferResult = async (
   }
 };
 
-/// Test to sign a transaction that converts 10 DOL to pDOL,
+/// Test to execute a `PrivateBuild` transaction.
 /// without publishing the transaction.
-const toPrivateOnlySignTest = async (privateWallet: MantaPrivateWallet) => {
+const toPrivateOnlySignTest = async (
+  privateWallet: interfaces.IMantaPayWallet,
+) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
@@ -168,8 +185,10 @@ const toPrivateOnlySignTest = async (privateWallet: MantaPrivateWallet) => {
   );
 };
 
-/// Test to privately transfer 10 pDOL.
-const privateTransferTest = async (privateWallet: MantaPrivateWallet) => {
+/// Test to execute a `PrivateTransfer` transaction.
+const privateTransferTest = async (
+  privateWallet: interfaces.IMantaPayWallet,
+) => {
   const toPrivateTestAddress = '2JZCtGNR1iz6dR613g9p2VGHAAmXQK8xYJ117DLzs4s4';
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
@@ -184,8 +203,7 @@ const privateTransferTest = async (privateWallet: MantaPrivateWallet) => {
 };
 
 /// Test to execute a `ToPrivate` transaction.
-/// Convert 10 DOL to 10 pDOL.
-const toPrivateTest = async (privateWallet: MantaPrivateWallet) => {
+const toPrivateTest = async (privateWallet: interfaces.IMantaPayWallet) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
@@ -195,8 +213,7 @@ const toPrivateTest = async (privateWallet: MantaPrivateWallet) => {
 };
 
 /// Test to execute a `ToPublic` transaction.
-/// Convert 10 pDOL to 10 DOL.
-const toPublicTest = async (privateWallet: MantaPrivateWallet) => {
+const toPublicTest = async (privateWallet: interfaces.IMantaPayWallet) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
@@ -210,8 +227,21 @@ const toPublicTest = async (privateWallet: MantaPrivateWallet) => {
   await queryTransferResult(privateWallet, initialPrivateBalance);
 };
 
-// TODO: fix the memory is too high when regenerating the instance
-const relaunch = async (privateWallet: MantaPrivateWallet) => {
+/// Test to execute a `MultiSbtBuild` transaction.
+const multiSbtBuildOnlySignTest = async (
+  privateWallet: interfaces.IMantaSbtWallet,
+  startAssetId: string,
+) => {
+  await privateWallet.walletSync();
+  const transaction = await privateWallet.multiSbtBuild(new BN(startAssetId), [
+    'test1',
+    'test2',
+  ]);
+  console.log(transaction);
+  _log(`Hex batchedTx: ${transaction.batchedTx.toHex()}`);
+};
+
+const relaunch = async (privateWallet: interfaces.IPrivateWallet) => {
   await privateWallet.resetState();
   await delIdbData(
     `storage_state_${privateWallet.palletName}_${currentNetwork}`,
@@ -221,22 +251,51 @@ const relaunch = async (privateWallet: MantaPrivateWallet) => {
   await initWalletData(privateWallet);
 };
 
+const pallets: Record<string, interfaces.IPrivateWallet> = {
+  mantaPay: null,
+  mantaSbt: null,
+};
+// @ts-ignore
+window.pallets = pallets;
+
 // @ts-ignore
 window.actions = {
-  toPrivateTest,
-  toPublicTest,
-  privateTransferTest,
-  toPrivateOnlySignTest,
-  relaunch,
+  async toPrivateTest() {
+    await toPrivateTest(pallets.mantaPay as interfaces.IMantaPayWallet);
+  },
+  async toPublicTest() {
+    await toPublicTest(pallets.mantaPay as interfaces.IMantaPayWallet);
+  },
+  async privateTransferTest() {
+    await privateTransferTest(pallets.mantaPay as interfaces.IMantaPayWallet);
+  },
+  async toPrivateOnlySignTest() {
+    await toPrivateOnlySignTest(pallets.mantaPay as interfaces.IMantaPayWallet);
+  },
+  async multiSbtBuildOnlySignTest(startAssetId: string) {
+    await multiSbtBuildOnlySignTest(
+      pallets.mantaSbt as interfaces.IMantaSbtWallet,
+      startAssetId,
+    );
+  },
+  async relaunch() {
+    await relaunch(pallets.mantaPay);
+    await relaunch(pallets.mantaSbt);
+  },
 };
 
 async function main() {
-  _log('Initial');
+  _log('Initial base');
   await initBaseLogics();
-  const mantaPayWallet = await initWallet('mantaPay', baseWallet);
-  _log('Initial end');
-  // @ts-ignore
-  window.mantaPayWallet = mantaPayWallet;
+  _log('Initial base end');
+
+  _log('Initial pallet mantaPay');
+  pallets.mantaPay = await initMantaPayWallet(baseWallet);
+  _log('Initial pallet mantaPay end');
+
+  _log('Initial pallet mantaSBT');
+  pallets.mantaSbt = await initMantaSbtWallet(baseWallet);
+  _log('Initial pallet mantaSBT end');
 }
 
 main();

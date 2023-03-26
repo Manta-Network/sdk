@@ -12,7 +12,7 @@ import $, {
   utxoToJson,
   currentPathToJson,
 } from './decodeUtils';
-import type { ILedgerApi, PalletName } from '../sdk.interfaces';
+import type { ILedgerApi, PalletName } from '../interfaces';
 
 export default class LedgerApi implements ILedgerApi {
   api: any;
@@ -27,7 +27,7 @@ export default class LedgerApi implements ILedgerApi {
 
   _log(message: string) {
     if (this.loggingEnabled) {
-      console.log(`[Ledger Api]: ${performance.now()}, ${message}`);
+      console.log(`[Ledger Api]: ${performance.now().toFixed(4)}, ${message}`);
     }
   }
 

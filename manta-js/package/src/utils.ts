@@ -3,7 +3,7 @@ import { ApiPromise } from '@polkadot/api';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import { base58Decode, decodeAddress } from '@polkadot/util-crypto';
 import { bnToU8a } from '@polkadot/util';
-import type { Address, PalletName } from './sdk.interfaces';
+import type { Address, PalletName } from './interfaces';
 import {
   Network,
   NATIVE_TOKEN_ASSET_ID,
@@ -57,6 +57,7 @@ export async function mapPostToTransaction(
 export async function getAssetMetadata(
   api: ApiPromise,
   assetId: BN,
+  network: Network,
 ): Promise<any> {
   await api.isReady;
   const data: any = await api.query.assetManager.assetIdMetadata(assetId);
@@ -65,7 +66,7 @@ export async function getAssetMetadata(
   // Dolphin is equivalent to Calamari on-chain, and only appears differently at UI level
   // so it is necessary to set its symbol and name manually
   if (
-    this.network === Network.Dolphin &&
+    network === Network.Dolphin &&
     assetId.toString() === NATIVE_TOKEN_ASSET_ID
   ) {
     jsonObj.metadata.symbol = 'DOL';
@@ -93,12 +94,13 @@ export async function privateTransferBuildUnsigned(
   assetId: BN,
   amount: BN,
   toZkAddress: Address,
+  network: Network,
 ): Promise<any> {
   const addressJson = convertZkAddressToJson(toZkAddress);
   const assetIdArray = bnToU8a(assetId, { bitLength: 256 });
   const txJson = `{ "PrivateTransfer": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${addressJson} ]}`;
   const transaction = wasm.Transaction.from_string(txJson);
-  const jsonObj = await getAssetMetadata(api, assetId);
+  const jsonObj = await getAssetMetadata(api, assetId, network);
   const decimals = jsonObj['metadata']['decimals'];
   const symbol = jsonObj['metadata']['symbol'];
   const assetMetadataJson = `{ "token_type": {"FT": ${decimals}}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;
@@ -115,13 +117,14 @@ export async function toPublicBuildUnsigned(
   assetId: BN,
   amount: BN,
   publicAddress: string,
+  network: Network,
 ): Promise<any> {
   const assetIdArray = bnToU8a(assetId, { bitLength: 256 });
   const publicAddressArray = `[${decodeAddress(publicAddress)}]`;
   const txJson = `{ "ToPublic": [{ "id": [${assetIdArray}], "value": ${amount.toString()} }, ${publicAddressArray} ]}`;
 
   const transaction = wasm.Transaction.from_string(txJson);
-  const jsonObj = await getAssetMetadata(api, assetId);
+  const jsonObj = await getAssetMetadata(api, assetId, network);
   const decimals = jsonObj['metadata']['decimals'];
   const symbol = jsonObj['metadata']['symbol'];
   const assetMetadataJson = `{ "token_type": {"FT": ${decimals}}, "symbol": "${PRIVATE_ASSET_PREFIX}${symbol}" }`;

@@ -1,6 +1,6 @@
 import type BN from 'bn.js';
 import type { ApiPromise } from '@polkadot/api';
-import type { Wallet } from './wallet/crate/pkg';
+import type { Wallet } from './wallet/crate/pkg/manta_wasm_wallet';
 import type { Network } from './constants';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 
@@ -59,7 +59,7 @@ export interface IBaseWallet {
   walletIsBusy: boolean;
 }
 
-export interface IMantaPrivateWallet {
+export interface IPrivateWallet {
   palletName: PalletName;
   baseWallet: IBaseWallet;
   wasmWallet: Wallet;
@@ -79,6 +79,10 @@ export interface IMantaPrivateWallet {
   getZkAddress(): Promise<Address>;
   getZkBalance(assetId: BN): Promise<BN | null>;
   getMultiZkBalance(assetId: BN[]): Promise<BN[] | null>;
+  resetState(): Promise<boolean>;
+}
+
+export interface IMantaPayWallet extends IPrivateWallet {
   toPrivateBuild(assetId: BN, amount: BN): Promise<SignedTransaction | null>;
   privateTransferBuild(
     assetId: BN,
@@ -90,9 +94,12 @@ export interface IMantaPrivateWallet {
     amount: BN,
     polkadotAddress: Address,
   ): Promise<SignedTransaction | null>;
+}
+
+export interface IMantaSbtWallet extends IPrivateWallet {
   multiSbtBuild(
     startingAssetId: BN,
     metadataList: string[],
   ): Promise<SignedMultiSbtTransaction | null>;
-  resetState(): Promise<boolean>;
+  getIdentityProof(asset: string, zkAddress: Address): Promise<string>;
 }
