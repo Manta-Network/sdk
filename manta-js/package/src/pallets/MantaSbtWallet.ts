@@ -62,7 +62,7 @@ export default class MantaSbtWallet
           amount,
         );
         startingAssetId = startingAssetId.add(new BN('1'));
-        const postsTxs = await this.wasmWallet.sign_with_transaction_data(
+        const postsTxs = await this.wasmWallet.sign_with_sbt_transaction_data(
           transactionUnsigned,
           null,
           this.getWasmNetWork(),
