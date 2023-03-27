@@ -4,7 +4,7 @@ import { Network } from './constants';
 
 import BaseWallet from './BaseWallet';
 import PrivateWallet from './PrivateWallet';
-import Pallets from './pallets';
 
+export * from './pallets';
+export { BaseWallet, PrivateWallet, Network };
 export type { interfaces };
-export { BaseWallet, PrivateWallet, Network, Pallets };

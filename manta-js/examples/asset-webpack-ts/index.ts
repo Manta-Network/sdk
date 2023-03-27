@@ -1,9 +1,10 @@
 import type { interfaces } from 'manta-extension-sdk';
 import type { Signer as InjectSigner } from '@polkadot/api/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
+import { ApiPromise, WsProvider } from "@polkadot/api";
 
 import BN from 'bn.js';
-import { Network, BaseWallet, Pallets } from 'manta-extension-sdk';
+import { Network, BaseWallet, MantaPayWallet, MantaSbtWallet } from 'manta-extension-sdk';
 
 import {
   web3Accounts,
@@ -108,13 +109,13 @@ const initBaseLogics = async () => {
 };
 
 const initMantaPayWallet = async (baseWallet: BaseWallet) => {
-  const wallet = Pallets.MantaPayWallet.init(currentNetwork, baseWallet);
+  const wallet = MantaPayWallet.init(currentNetwork, baseWallet);
   await initWalletData(wallet);
   return wallet;
 };
 
 const initMantaSbtWallet = async (baseWallet: BaseWallet) => {
-  const wallet = Pallets.MantaSbtWallet.init(currentNetwork, baseWallet);
+  const wallet = MantaSbtWallet.init(currentNetwork, baseWallet);
   await initWalletData(wallet);
   return wallet;
 };
@@ -172,7 +173,7 @@ const queryTransferResult = async (
 /// Test to execute a `PrivateBuild` transaction.
 /// without publishing the transaction.
 const toPrivateOnlySignTest = async (
-  privateWallet: interfaces.IMantaPayWallet,
+  privateWallet: MantaPayWallet,
 ) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
@@ -189,7 +190,7 @@ const toPrivateOnlySignTest = async (
 
 /// Test to execute a `PrivateTransfer` transaction.
 const privateTransferTest = async (
-  privateWallet: interfaces.IMantaPayWallet,
+  privateWallet: MantaPayWallet,
 ) => {
   const toPrivateTestAddress = '2JZCtGNR1iz6dR613g9p2VGHAAmXQK8xYJ117DLzs4s4';
   await privateWallet.walletSync();
@@ -205,7 +206,7 @@ const privateTransferTest = async (
 };
 
 /// Test to execute a `ToPrivate` transaction.
-const toPrivateTest = async (privateWallet: interfaces.IMantaPayWallet) => {
+const toPrivateTest = async (privateWallet: MantaPayWallet) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
@@ -215,7 +216,7 @@ const toPrivateTest = async (privateWallet: interfaces.IMantaPayWallet) => {
 };
 
 /// Test to execute a `ToPublic` transaction.
-const toPublicTest = async (privateWallet: interfaces.IMantaPayWallet) => {
+const toPublicTest = async (privateWallet: MantaPayWallet) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
@@ -231,7 +232,7 @@ const toPublicTest = async (privateWallet: interfaces.IMantaPayWallet) => {
 
 /// Test to execute a `MultiSbtBuild` transaction.
 const multiSbtBuildOnlySignTest = async (
-  privateWallet: interfaces.IMantaSbtWallet,
+  privateWallet: MantaSbtWallet,
   startAssetId: string,
 ) => {
   await privateWallet.walletSync();
@@ -263,20 +264,20 @@ window.pallets = pallets;
 // @ts-ignore
 window.actions = {
   async toPrivateTest() {
-    await toPrivateTest(pallets.mantaPay as interfaces.IMantaPayWallet);
+    await toPrivateTest(pallets.mantaPay as MantaPayWallet);
   },
   async toPublicTest() {
-    await toPublicTest(pallets.mantaPay as interfaces.IMantaPayWallet);
+    await toPublicTest(pallets.mantaPay as MantaPayWallet);
   },
   async privateTransferTest() {
-    await privateTransferTest(pallets.mantaPay as interfaces.IMantaPayWallet);
+    await privateTransferTest(pallets.mantaPay as MantaPayWallet);
   },
   async toPrivateOnlySignTest() {
-    await toPrivateOnlySignTest(pallets.mantaPay as interfaces.IMantaPayWallet);
+    await toPrivateOnlySignTest(pallets.mantaPay as MantaPayWallet);
   },
   async multiSbtBuildOnlySignTest(startAssetId: string) {
     await multiSbtBuildOnlySignTest(
-      pallets.mantaSbt as interfaces.IMantaSbtWallet,
+      pallets.mantaSbt as MantaSbtWallet,
       startAssetId,
     );
   },
