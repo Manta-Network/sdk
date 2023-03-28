@@ -56,7 +56,7 @@ export default class PrivateWallet implements IPrivateWallet {
   ///
 
   /// Initializes the PrivateWallet class, for a corresponding environment and network.
-  static getInitialParams(
+  protected static getInitialParams(
     palletName: PalletName,
     baseWallet: IBaseWallet,
   ): {
@@ -95,12 +95,6 @@ export default class PrivateWallet implements IPrivateWallet {
   }
 
   loadAuthorizationContext(seedPhrase: string) {
-    const autoUpdateAuthContext = this.wasmWallet.update_authorization_context(
-      this.getWasmNetWork(),
-    );
-    if (autoUpdateAuthContext) {
-      return true;
-    }
     const wasmSeedPhrase = this.wasm.mnemonic_from_phrase(seedPhrase);
     const authorizationContext = this.wasm.authorization_context_from_mnemonic(
       wasmSeedPhrase,
