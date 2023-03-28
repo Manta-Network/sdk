@@ -7,6 +7,7 @@ import type {
   PalletName,
   Network,
   IMantaSbtWallet,
+  SbtInfo,
 } from '.././interfaces';
 import {
   mapPostToTransaction,
@@ -46,22 +47,21 @@ export default class MantaSbtWallet
   }
 
   async multiSbtBuild(
-    startingAssetId: BN,
-    metadataList: string[],
+    sbtInfoList: SbtInfo[],
   ): Promise<SignedMultiSbtTransaction | null> {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
-      const amount = new BN('1');
+      const defaultAmount = new BN('1');
       const transactions = [];
       const transactionDatas = [];
-      for (let i = 0; i < metadataList.length; i += 1) {
+      for (let i = 0; i < sbtInfoList.length; i += 1) {
+        const sbtInfo = sbtInfoList[i];
         const transactionUnsigned = await toPrivateBuildUnsigned(
           this.wasm,
-          startingAssetId,
-          amount,
+          sbtInfo.assetId,
+          sbtInfo.amount ?? defaultAmount,
         );
-        startingAssetId = startingAssetId.add(new BN('1'));
         const postsTxs = await this.wasmWallet.sign_with_sbt_transaction_data(
           transactionUnsigned,
           null,
@@ -74,7 +74,8 @@ export default class MantaSbtWallet
             this.palletName,
             this.api,
             convertedPost,
-            metadataList[i],
+            sbtInfo.metadata,
+            sbtInfo.signature,
           );
           transactions.push(transaction);
         }

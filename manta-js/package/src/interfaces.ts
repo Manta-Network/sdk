@@ -49,6 +49,13 @@ export type BaseWalletConfig = {
   getStorageStateFromLocal: GetStorageStateFromLocal;
 };
 
+export type SbtInfo = {
+  assetId: BN;
+  amount?: BN;
+  signature?: string;
+  metadata?: string;
+}
+
 export interface IBaseWallet {
   api: ApiPromise;
   wasm: any;
@@ -100,8 +107,7 @@ export interface IMantaPayWallet extends IPrivateWallet {
 
 export interface IMantaSbtWallet extends IPrivateWallet {
   multiSbtBuild(
-    startingAssetId: BN,
-    metadataList: string[],
+    sbtInfoList: SbtInfo[],
   ): Promise<SignedMultiSbtTransaction | null>;
   getIdentityProof(asset: string, zkAddress: Address): Promise<string>;
 }

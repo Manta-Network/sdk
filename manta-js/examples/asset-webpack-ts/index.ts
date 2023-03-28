@@ -241,13 +241,10 @@ const toPublicTest = async (privateWallet: MantaPayWallet) => {
 /// Test to execute a `MultiSbtBuild` transaction.
 const multiSbtBuildOnlySignTest = async (
   privateWallet: MantaSbtWallet,
-  startAssetId: string,
+  sbtInfoList: interfaces.SbtInfo[],
 ) => {
   await privateWallet.walletSync();
-  const transaction = await privateWallet.multiSbtBuild(new BN(startAssetId), [
-    'test1',
-    'test2',
-  ]);
+  const transaction = await privateWallet.multiSbtBuild(sbtInfoList);
   console.log(transaction);
   _log(`Hex batchedTx: ${transaction.batchedTx.toHex()}`);
 };
@@ -285,9 +282,22 @@ window.actions = {
     await toPrivateOnlySignTest(pallets.mantaPay as MantaPayWallet);
   },
   async multiSbtBuildOnlySignTest(startAssetId: string) {
+    if (!startAssetId) {
+      throw new Error('startAssetId is required');
+    }
+    const sbtInfoList: interfaces.SbtInfo[] = [
+      {
+        assetId: new BN(startAssetId),
+        metadata: 'test1',
+      },
+      {
+        assetId: new BN(startAssetId).add(new BN(1)),
+        metadata: 'test2',
+      },
+    ];
     await multiSbtBuildOnlySignTest(
       pallets.mantaSbt as MantaSbtWallet,
-      startAssetId,
+      sbtInfoList,
     );
   },
   async relaunch() {
