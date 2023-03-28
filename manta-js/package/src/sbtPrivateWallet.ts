@@ -112,6 +112,21 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
     }
   }
 
+  async buildSbtPost(assetId: BN) {
+    const amount = new BN("1");
+    await this.waitForWallet();
+    this.walletIsBusy = true;
+    const transactionUnsigned = await this.toPrivateBuildUnsigned(assetId, amount);
+
+    const networkType = this.wasm.Network.from_string(`"${this.network}"`);
+    const posts_txs = await this.wasmWallet.sign_with_transaction_data(transactionUnsigned, null, networkType);
+    const posts = posts_txs[0];
+    const convertedPost = this.transferPost(posts[0]);
+
+    this.walletIsBusy = false;
+    return convertedPost
+  }
+
   private async sbtPostToTransaction(post: any, api: ApiPromise, metadata: string): Promise<SubmittableExtrinsic<'promise', any> | null> {
     const mintSBT = api.tx.mantaSbt.toPrivate(post, metadata);
 
