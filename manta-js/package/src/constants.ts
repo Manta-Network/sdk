@@ -26,9 +26,3 @@ export const PAY_PROVING_NAMES = [
   'private-transfer.lfs',
   'to-public.lfs',
 ];
-
-export enum Network {
-  Dolphin = 'Dolphin',
-  Calamari = 'Calamari',
-  Manta = 'Manta',
-}

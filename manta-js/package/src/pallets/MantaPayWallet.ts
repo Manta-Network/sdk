@@ -3,13 +3,14 @@ import type {
   Wallet as WasmWallet,
   Transaction as WasmTransaction,
 } from '../wallet/crate/pkg/manta_wasm_wallet';
-import {
+import type {
   Address,
   IMantaPayWallet,
   SignedTransaction,
   IBaseWallet,
   ILedgerApi,
   PalletName,
+  Network,
 } from '.././interfaces';
 import {
   mapPostToTransaction,
@@ -19,7 +20,6 @@ import {
   transactionsToBatches,
   transferPost,
 } from '../utils';
-import { Network } from '../constants';
 import PrivateWallet from '../PrivateWallet';
 
 const CURRENT_PALLET_NAME: PalletName = 'mantaPay';

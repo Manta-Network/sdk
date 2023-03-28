@@ -3,9 +3,8 @@ import { ApiPromise } from '@polkadot/api';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import { base58Decode, decodeAddress } from '@polkadot/util-crypto';
 import { bnToU8a } from '@polkadot/util';
-import type { Address, PalletName } from './interfaces';
+import type { Address, PalletName, Network } from './interfaces';
 import {
-  Network,
   NATIVE_TOKEN_ASSET_ID,
   PRIVATE_ASSET_PREFIX,
 } from './constants';
@@ -66,7 +65,7 @@ export async function getAssetMetadata(
   // Dolphin is equivalent to Calamari on-chain, and only appears differently at UI level
   // so it is necessary to set its symbol and name manually
   if (
-    network === Network.Dolphin &&
+    network === 'Dolphin' &&
     assetId.toString() === NATIVE_TOKEN_ASSET_ID
   ) {
     jsonObj.metadata.symbol = 'DOL';

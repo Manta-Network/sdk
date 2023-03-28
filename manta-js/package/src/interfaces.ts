@@ -1,10 +1,11 @@
 import type BN from 'bn.js';
 import type { ApiPromise } from '@polkadot/api';
 import type { Wallet } from './wallet/crate/pkg/manta_wasm_wallet';
-import type { Network } from './constants';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 
 export type PalletName = 'mantaPay' | 'mantaSBT';
+
+export type Network = 'Dolphin' | 'Calamari' | 'Manta';
 
 export type Address = string;
 
@@ -31,12 +32,12 @@ export type SignedMultiSbtTransaction = {
 
 export type SaveStorageStateToLocal = (
   palletName: PalletName,
-  network: string,
+  network: Network,
   data: any,
 ) => Promise<boolean>;
 export type GetStorageStateFromLocal = (
   palletName: PalletName,
-  network: string,
+  network: Network,
 ) => Promise<any>;
 
 export type BaseWalletConfig = {

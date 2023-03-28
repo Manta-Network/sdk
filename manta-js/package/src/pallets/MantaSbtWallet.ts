@@ -1,10 +1,11 @@
 import BN from 'bn.js';
 import type { Wallet as WasmWallet } from '../wallet/crate/pkg/manta_wasm_wallet';
-import {
+import type {
   SignedMultiSbtTransaction,
   IBaseWallet,
   ILedgerApi,
   PalletName,
+  Network,
   IMantaSbtWallet,
 } from '.././interfaces';
 import {
@@ -12,7 +13,6 @@ import {
   toPrivateBuildUnsigned,
   transferPost,
 } from '../utils';
-import { Network } from '../constants';
 import PrivateWallet from '../PrivateWallet';
 
 const CURRENT_PALLET_NAME: PalletName = 'mantaSBT';

@@ -1,15 +1,15 @@
 import BN from 'bn.js';
 import { base58Encode } from '@polkadot/util-crypto';
 import type { Wallet as WasmWallet } from './wallet/crate/pkg/manta_wasm_wallet';
-import {
+import type {
   Address,
   IPrivateWallet,
   IBaseWallet,
   ILedgerApi,
   PalletName,
+  Network,
 } from './interfaces';
 import LedgerApi from './ledger-api';
-import { Network } from './constants';
 
 export default class PrivateWallet implements IPrivateWallet {
   palletName: PalletName;
@@ -127,11 +127,7 @@ export default class PrivateWallet implements IPrivateWallet {
       this.network,
     );
 
-    PrivateWallet.log(
-      this.palletName,
-      this.baseWallet.loggingEnabled,
-      'Start initial signer',
-    );
+    this.log('Start initial signer');
 
     const wasmSigner = new this.wasm.Signer(
       this.baseWallet.fullParameters,
@@ -139,11 +135,8 @@ export default class PrivateWallet implements IPrivateWallet {
       storageData,
     );
 
-    PrivateWallet.log(
-      this.palletName,
-      this.baseWallet.loggingEnabled,
-      'Initial signer successful',
-    );
+    this.log('Initial signer successful');
+
     const wasmLedger = new this.baseWallet.wasm.PolkadotJsLedger(
       this.ledgerApi,
     );
@@ -282,22 +275,14 @@ export default class PrivateWallet implements IPrivateWallet {
 
   /// Conditionally logs the contents of `message` depending on if `loggingEnabled`
   /// is set to `true`.
-  protected static log(
-    palletName: PalletName,
-    loggingEnabled: boolean,
-    message: string,
-  ) {
-    if (loggingEnabled) {
+  protected log(message: string) {
+    if (this.baseWallet.loggingEnabled) {
       console.log(
-        `[Private Wallet ${palletName}]: ${performance
+        `[Private Wallet ${this.palletName}]: ${performance
           .now()
           .toFixed(4)}, ${message}`,
       );
     }
-  }
-
-  protected log(message: string) {
-    PrivateWallet.log(this.palletName, this.baseWallet.loggingEnabled, message);
   }
 
   protected getWasmNetWork(): any {
