@@ -80,7 +80,7 @@ export interface InjectedPrivateWallet {
   getMultiZkSbtBalance(
     payload: RequestMultiZkBalancePayload,
   ): Promise<string[] | null>
-  buildMultiSbt(
+  multiSbtBuild(
     sbtInfoList: RequestSbtInfo[],
   ): Promise<ResponseBuildMultiSbt | null>
   subscribeWalletState: (
