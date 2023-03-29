@@ -48,7 +48,7 @@ export async function mapPostToTransaction(
     }
   } else if (palletName === 'mantaSBT') {
     // TODO: update toPrivate to new function
-    const mint_tx = await api.tx.mantaSbt.toPrivate(post, metadata, signature);
+    const mint_tx = await api.tx.mantaSbt.toPrivate(post, metadata);
     return mint_tx;
   }
 }
