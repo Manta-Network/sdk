@@ -547,40 +547,48 @@ const ethMintSbt = async () => {
     const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
+    const signer = new Wallet("0x0123456789012345678901234567890123456789012345678901234567890123");
+    console.log("eth address: ", signer.address);
+
+    // BAB address
+    const address = {
+        bab: signer.address
+    };
+    const maybeAssetId: any = await privateWallet.api.query.mantaSbt.evmAddressWhitelist(address);
+    if (maybeAssetId.isNone) {
+        console.error("no assetId in storage mapped to this account");
+        return
+    }
+    const assetIdInfo = maybeAssetId.unwrap();
+    if (assetIdInfo.isAlreadyMinted) {
+        console.error("Eth address has already minted sbt");
+        return
+    }
+    const assetId = assetIdInfo.asAvailable;
+
+    await privateWallet.initialWalletSync();
+    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
+    console.log("NFT present: ", initalPrivateBalance.toString());
+
+    // generate zkp
+    const post = await privateWallet.buildSbtPost(assetId);
+
     const domain = {
         name: "Claim Free SBT",
         version: "1",
         chainId: privateWallet.api.consts.mantaSbt.chainId.toString(),
         salt: (await privateWallet.api.rpc.chain.getBlockHash(0)).toHex(),
     };
-
     const types = {
-        Transaction: [{ name: "substrateAddress", type: "bytes" }],
+        Transaction: [{ name: "proof", type: "bytes" }],
     };
-
-    const public_key = decodeAddress(polkadotConfig.polkadotAddress);
-    // Sign polkadot account
+    // Sign zkp proof
     const value = {
-        substrateAddress: public_key,
+        proof: post.proof,
     };
-
-    const signer = new Wallet("0x0123456789012345678901234567890123456789012345678901234567890123");
     const signature = await signer._signTypedData(domain, types, value);
-    console.log("eth address: ", signer.address);
 
-    const maybeAssetId: any = await privateWallet.api.query.mantaSbt.evmAddressWhitelist(signer.address);
-    if (maybeAssetId.isNone) {
-        console.error("no assetId in storage mapped to this account");
-        return
-    }
-    const assetId = maybeAssetId.unwrap();
-
-    await privateWallet.initialWalletSync();
-    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("NFT present: ", initalPrivateBalance.toString());
-
-    const post = await privateWallet.buildSbtPost(assetId);
-    const evmTx = await privateWallet.api.tx.mantaSbt.mintSbtEth(post, signature, "hello eth");
+    const evmTx = privateWallet.api.tx.mantaSbt.mintSbtEth(post, signature, address, "hello eth");
     privateWallet.api.setSigner(polkadotConfig.polkadotSigner);
     await evmTx.signAndSend(polkadotConfig.polkadotAddress);
 
