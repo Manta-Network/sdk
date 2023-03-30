@@ -378,59 +378,78 @@ const toSBTPrivateTest = async (verify: boolean) => {
         console.log("  randomness:" + toHexString(utxo_commitment_randomness));
     })
 
+    const addressBytes = SbtMantaPrivateWallet.getAddressBytes(privateAddress);
+    console.log("Private address in json form: " + JSON.stringify(addressBytes));
+
+    const tx_datas = sbtMint.transactionDatas;
+    const requests = await Promise.all(tx_datas.map(async (tx: any, index: number) => {
+        var request: any = {"transaction_data": {"identifier": {},  "asset_info": {}, "zk_address": {"receiving_key": []}}};
+        const identifier = tx[0].ToPrivate[0];
+        const asset_info = tx[0].ToPrivate[1];
+        request.transaction_data.identifier = identifier;
+        request.transaction_data.asset_info = asset_info;
+        request.transaction_data.zk_address.receiving_key = addressBytes;
+        console.log("tx data request[" + index + "]");
+        console.log(JSON.stringify(request))
+        return request;
+    }));
+
+    /// VERIFICATION TO MANTA_AUTH SERVICE.
     if(verify == true) {
-        const addressBytes = SbtMantaPrivateWallet.getAddressBytes(privateAddress);
-        console.log("Private address in json form: " + JSON.stringify(addressBytes));
-
-        const tx_datas = sbtMint.transactionDatas;
-        const requests = await Promise.all(tx_datas.map(async (tx: any, index: number) => {
-            var request: any = {"transaction_data": {"identifier": {},  "asset_info": {}, "zk_address": {"receiving_key": []}}};
-            const identifier = tx[0].ToPrivate[0];
-            const asset_info = tx[0].ToPrivate[1];
-            request.transaction_data.identifier = identifier;
-            request.transaction_data.asset_info = asset_info;
-            request.transaction_data.zk_address.receiving_key = addressBytes;
-            console.log("tx data request" + index);
-            console.log(JSON.stringify(request))
-            return request;
-        }));
-
-        await new Promise(r => setTimeout(r, 5000));
+        await new Promise(r => setTimeout(r, 6000));
 
         const request = requests[0];
+        const request2 = requests[1];
 
         // Send data to manta-authentication verifier service to validate.
         // TODO: failed if loop all request.
         // requests.forEach(async (request: any) => {
-            console.log("insert new transaction id.....");
-            await axios.post("http://127.0.0.1:5000", request).then(function (response) {
-                console.log("tx id response:" + JSON.stringify(response.data));
+        console.log("[insert_new_transaction_id]request.....");
+        await axios.post("http://127.0.0.1:5000", request).then(function (response) {
+            console.log("[insert_new_transaction_id]response1:" + JSON.stringify(response.data));
+        });
+
+        await new Promise(r => setTimeout(r, 5000));
+
+        console.log("[request_new_virtual_asset]request.....");
+        await axios.post("http://127.0.0.1:5000/virtual_asset", request).then(async function (response) {
+            console.log("[request_new_virtual_asset]virtual asset response:" + JSON.stringify(response.data));
+            const json_str = JSON.stringify(response.data)
+
+            const virtual_asset = `${json_str}`;
+            const identity_proof_response = await identityProofGen(privateWallet, virtual_asset, polkadotConfig.polkadotAddress);
+            console.log("identity proof format response:");
+            console.log(identity_proof_response);
+
+            var validate_request: any = {"transaction_data": {}, "constructed_transfer_post": {"transfer_post": {}}};
+            validate_request.transaction_data = request.transaction_data;
+            const identity_response = JSON.parse(identity_proof_response)
+            validate_request.constructed_transfer_post.transfer_post = identity_response;
+            console.log("[validate_proof_id]validate request:");
+            console.log(JSON.stringify(validate_request))
+
+            await axios.post("http://127.0.0.1:5000/verify", validate_request).then(async function (response) {
+                console.log("[validate_proof_id]validate response1:" + JSON.stringify(response.data));
             });
+        });
 
-            await new Promise(r => setTimeout(r, 5000));
+        await new Promise(r => setTimeout(r, 1000));
+        console.log("Second Transaction Data Request without IdendityProof:");
+        console.log("------------------------------------------------------");
+        await axios.post("http://127.0.0.1:5000", request2).then(function (response) {
+            console.log("[insert_new_transaction_id]response2:" + JSON.stringify(response.data));
+        });
 
-            console.log("virtual asset.....");
-            await axios.post("http://127.0.0.1:5000/virtual_asset", request).then(async function (response) {
-                console.log("virtual asset response:" + JSON.stringify(response.data));
-                const json_str = JSON.stringify(response.data)
+        await new Promise(r => setTimeout(r, 5000));
 
-                const virtual_asset = `${json_str}`;
-                const identity_proof_response = await identityProofGen(privateWallet, virtual_asset, polkadotConfig.polkadotAddress);
-                console.log("identity proof format response:");
-                console.log(identity_proof_response);
+        var validate_request2: any = {"transaction_data": {}};
+        validate_request2.transaction_data = request2.transaction_data;
+        console.log("[validate_proof_id]validate request2:");
+        console.log(JSON.stringify(validate_request2))
 
-                var validate_request: any = {"transaction_data": {}, "constructed_transfer_post": {"transfer_post": {}}};
-                validate_request.transaction_data = request.transaction_data;
-                const identity_response = JSON.parse(identity_proof_response)
-                validate_request.constructed_transfer_post.transfer_post = identity_response;
-                console.log("validate request:");
-                console.log(JSON.stringify(validate_request))
-
-                console.log("validate proof id:");
-                await axios.post("http://127.0.0.1:5000/verify", validate_request).then(async function (response) {
-                    console.log("validate response:" + JSON.stringify(response.data));
-                });
-            });
+        await axios.post("http://127.0.0.1:5000/verify", validate_request2).then(async function (response) {
+            console.log("[validate_proof_id]validate response2:" + JSON.stringify(response.data));
+        });
         // });
     }
 
@@ -523,7 +542,7 @@ const reserveAndMints = async () => {
 const identityProofGen = async (privateWallet: any, virtualAsset: string, address: string) => {
     const identityProof = await privateWallet.getIdentityProof(virtualAsset, address);
     // console.log("Idnetity Proof: ", identityProof);
-    console.log("Identity Proof JSON: ", JSON.stringify(identityProof));
+    // console.log("Identity Proof JSON: ", JSON.stringify(identityProof));
 
     // const identityProofJson = JSON.stringify(identityProof);
     const authorization_signature = identityProof[0].authorization_signature;
