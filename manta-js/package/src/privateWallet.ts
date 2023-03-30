@@ -74,6 +74,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   loggingEnabled: boolean;
   isBindAuthorizationContext: boolean;
   parameters: any;
+  provingContext: any;
   requestUserSeedPhrase: RequestUserSeedPhrase;
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
@@ -86,6 +87,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     wasmApi: any,
     loggingEnabled: boolean,
     parameters: any,
+    provingContext: any,
     requestUserSeedPhrase: RequestUserSeedPhrase,
     saveStorageStateToLocal: SaveStorageStateToLocal,
     getStorageStateFromLocal: GetStorageStateFromLocal,
@@ -100,6 +102,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     this.loggingEnabled = loggingEnabled;
     this.isBindAuthorizationContext = false;
     this.parameters = parameters;
+    this.provingContext = provingContext;
     this.requestUserSeedPhrase = requestUserSeedPhrase;
     this.saveStorageStateToLocal = saveStorageStateToLocal;
     this.getStorageStateFromLocal = getStorageStateFromLocal;
@@ -116,7 +119,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       config.network,
       Boolean(config.loggingEnabled)
     );
-    const { wasm, wasmWallet, wasmApi, parameters } =
+    const { wasm, wasmWallet, wasmApi, parameters, provingContext } =
       await MantaPrivateWallet.initWasmSdk(api, config);
     return new MantaPrivateWallet(
       api,
@@ -126,6 +129,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       wasmApi,
       Boolean(config.loggingEnabled),
       parameters,
+      provingContext,
       config.requestUserSeedPhrase,
       config.saveStorageStateToLocal,
       config.getStorageStateFromLocal,
@@ -149,6 +153,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   async getZkAddress(): Promise<Address> {
     try {
       await this.waitForWallet();
+
       this.walletIsBusy = true;
       const zkAddressRaw = await this.wasmWallet.address(
         this.getWasmNetWork()
@@ -163,12 +168,40 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
   }
 
+  /// This method is optimized based on initialWalletSync
+  ///
+  /// Requirements: Must be called once after creating an instance of MantaPrivateWallet
+  /// and must be called before walletSync(). 
+  /// If it is a new wallet (the current solution is that the native token is 0), 
+  /// you can call this method to save initialization time
+  async initialNewAccountWalletSync(): Promise<boolean> {
+    if (!this.isBindAuthorizationContext) {
+      await this.loadUserSeedPhrase();
+    }
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      this.log('Start initial new account');
+      await this.wasmWallet.initial_sync(this.getWasmNetWork());
+      this.log('Initial new account completed');
+      await this.saveStateToLocal();
+      this.walletIsBusy = false;
+      this.initialSyncIsFinished = true;
+    } catch (ex) {
+      this.walletIsBusy = false;
+      throw ex;
+    }
+    return true;
+  }
+
   /// Performs full wallet recovery. Restarts `self` with an empty state and
   /// performs a synchronization against the signer and ledger to catch up to
   /// the current checkpoint and balance state.
   ///
   /// Requirements: Must be called once after creating an instance of MantaPrivateWallet
-  /// and must be called before walletSync().
+  /// and must be called before walletSync(). 
+  /// If it is a new wallet (the current solution is that the native token is 0), 
+  /// you can call initialNewAccountWalletSync to save initialization time
   async initialWalletSync(): Promise<boolean> {
     const result = await this.loopSyncPartialWallet(true);
     return result;
@@ -198,6 +231,28 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       const balance = new BN(balanceString);
       this.walletIsBusy = false;
       return balance;
+    } catch (e) {
+      this.walletIsBusy = false;
+      console.error('Failed to fetch zk balance.', e);
+      return null;
+    }
+  }
+  
+  /// Returns the multi zk balance of the currently connected zkAddress for the currently
+  /// connected network.
+  async getMultiZkBalance(assetIds: BN[]): Promise<BN[] | null> {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      const balances = await Promise.all(assetIds.map(async (assetId) => {
+        const balanceString = await this.wasmWallet.balance(
+          assetId.toString(),
+          this.getWasmNetWork(),
+        );
+        return new BN(balanceString);
+      }));
+      this.walletIsBusy = false;
+      return balances;
     } catch (e) {
       this.walletIsBusy = false;
       console.error('Failed to fetch zk balance.', e);
@@ -373,6 +428,21 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
     }
   }
 
+  /// reset instance state
+  async resetState() {
+    await this.wasmWallet.reset_state(this.getWasmNetWork());
+    const wasmSigner = new this.wasm.Signer(this.parameters, this.provingContext, null);
+    const wasmLedger = new this.wasm.PolkadotJsLedger(this.wasmApi);
+    this.wasmWallet.set_network(
+      wasmLedger,
+      wasmSigner,
+      this.getWasmNetWork(),
+    );
+    this.dropUserSeedPhrase();
+    this.dropAuthorizationContext();
+    return true;
+  }
+
   ///
   /// Private Methods
   ///
@@ -469,6 +539,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
       wasmWallet,
       wasmApi,
       parameters: fullParameters,
+      provingContext: multiProvingContext,
     };
   }
 
@@ -511,8 +582,7 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
   private async syncPartialWallet(): Promise<{success: boolean, continue: boolean}> {
     try {
       const result = await this.wasmWallet.sync_partial(this.getWasmNetWork());
-      const stateData = await this.wasmWallet.get_storage(this.getWasmNetWork());
-      await this.saveStorageStateToLocal(`${this.network}`, stateData);
+      await this.saveStateToLocal();
       return {
         success: true,
         continue: Object.keys(result)[0] === 'Continue',
@@ -524,6 +594,11 @@ export class MantaPrivateWallet implements IMantaPrivateWallet {
         continue: true,
       };
     }
+  }
+
+  private async saveStateToLocal() {
+    const stateData = await this.wasmWallet.get_storage(this.getWasmNetWork());
+    await this.saveStorageStateToLocal(`${this.network}`, stateData);
   }
 
   private getWasmNetWork(): any {

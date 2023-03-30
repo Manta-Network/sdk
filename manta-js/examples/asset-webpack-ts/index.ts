@@ -12,16 +12,19 @@ import {
   web3FromSource,
 } from "@polkadot/extension-dapp";
 import type { Signer as InjectSigner } from "@polkadot/api/types";
-import { get as getIdbData, set as setIdbData } from "idb-keyval";
+import { get as getIdbData, set as setIdbData, del as delIdbData } from "idb-keyval";
 interface PolkadotConfig {
   polkadotSigner: InjectSigner;
   polkadotAddress: string;
 }
 
+const currentNetwork = Network.Dolphin;
+let currentSeedPhrase = 'spike napkin obscure diamond slice style excess table process story excuse absurd';
+
 let privateWallet: MantaPrivateWallet = null;
 let polkadotConfig: PolkadotConfig = null;
 const assetId = new BN("1");
-const assetAmount = new BN("50000000000");
+const assetAmount = new BN("500000000000000000000");
 
 function _log(...message: any[]) {
   console.log("[INFO]: " + message.join(""));
@@ -51,14 +54,14 @@ const getPolkadotSignerAndAddress = async () => {
 const initWallet = async () => {
   const privateWalletConfig = {
     environment: Environment.Development,
-    network: Network.Dolphin,
+    network: currentNetwork,
     loggingEnabled: true,
     provingFilePath:
       "https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving",
     parametersFilePath:
       "https://raw.githubusercontent.com/Manta-Network/manta-rs/main/manta-parameters/data/pay/parameters",
     requestUserSeedPhrase: async () => {
-      return "must payment asthma judge tray recall another course zebra morning march engine";
+      return currentSeedPhrase;
     },
     saveStorageStateToLocal: async (
       network: string,
@@ -90,13 +93,27 @@ const initWallet = async () => {
 
   polkadotConfig = await getPolkadotSignerAndAddress();
 
+  initWalletData();
+};
+
+const initWalletData = async () => {
+  // const isInitialed = (await getIdbData(`storage_state_${currentNetwork}`));
   _log("Load user mnemonic");
   await privateWallet.loadUserSeedPhrase();
   const privateAddress = await privateWallet.getZkAddress();
   _log("The zkAddress is: ", privateAddress);
 
+  console.log('initialWalletSync');
   await privateWallet.initialWalletSync();
-};
+
+  // if (isInitialed) {
+  //   console.log('initialWalletSync');
+  //   await privateWallet.initialWalletSync();
+  // } else {
+  //   console.log('initialNewAccountWalletSync');
+  //   await privateWallet.initialNewAccountWalletSync();
+  // }
+}
 
 const queryTransferResult = async (initialPrivateBalance: BN) => {
   let retryTimes = 0;
@@ -194,7 +211,7 @@ const toPrivateOnlySignTest = async () => {
 
 /// Test to privately transfer 10 pDOL.
 const privateTransferTest = async () => {
-  const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
+  const toPrivateTestAddress = "2JZCtGNR1iz6dR613g9p2VGHAAmXQK8xYJ117DLzs4s4";
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log("The initial balance is: ", initialPrivateBalance.toString());
@@ -239,6 +256,14 @@ const toPublicTest = async () => {
   await queryTransferResult(initialPrivateBalance);
 };
 
+// TODO: fix the memory is too high when regenerating the instance
+const relaunch = async () => {
+  await privateWallet.resetState();
+  await delIdbData(`storage_state_${currentNetwork}`);
+  currentSeedPhrase = 'must payment asthma judge tray recall another course zebra morning march engine';
+  await initWalletData();
+};
+
 // @ts-ignore
 window.actions = {
   toPrivateTest,
@@ -246,6 +271,7 @@ window.actions = {
   privateTransferTest,
   publicTransferTest,
   toPrivateOnlySignTest,
+  relaunch,
 };
 
 async function main() {

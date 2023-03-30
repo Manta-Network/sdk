@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 
 ### Added
+- [\#108](https://github.com/Manta-Network/sdk/pull/108) Added initial sync method.
 - [\#105](https://github.com/Manta-Network/sdk/pull/105) Save while syncing.
 - [\#85](https://github.com/Manta-Network/sdk/pull/85) Key-dependent signer function APIs.
 

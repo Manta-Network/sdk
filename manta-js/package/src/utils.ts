@@ -1,30 +1,13 @@
-import { Version, Address } from './sdk.interfaces';
+import { Address } from './sdk.interfaces';
 import { Signer } from '@polkadot/api/types';
-import axios from 'axios';
-import config from './manta-config.json';
 import BN from 'bn.js';
 import { ApiPromise } from '@polkadot/api';
-import { MantaPrivateWallet } from './privateWallet';
 import { bnToU8a } from '@polkadot/util';
 
 export const NATIVE_TOKEN_ASSET_ID = '1';
 
 /// MantaUtilities class
 export class MantaUtilities {
-
-  /// Returns the version of the currently connected manta-signer instance.
-  /// Note: Requires manta-signer to be running.
-  static async getSignerVersion(): Promise<Version | null> {
-    try {
-      const versionResult = await axios.get(`${config.SIGNER_URL}version`, {
-        timeout: 1500
-      });
-      const version: Version = versionResult.data;
-      return version;
-    } catch (error) {
-      return null;
-    }
-  }
 
   /// Returns the public balance associated with an account for a given AssetId.
   static async getPublicBalance(api:ApiPromise, assetId: BN, address:Address): Promise<BN | null> {

@@ -36,7 +36,7 @@ use manta_accounting::{
     transfer::canonical,
     wallet::{
         ledger::{self, ReadResponse},
-        signer::SyncData,
+        signer::{InitialSyncData, SyncData},
     },
 };
 use manta_crypto::signature::schnorr;
@@ -68,6 +68,9 @@ extern "C" {
 
     #[wasm_bindgen(structural, method)]
     async fn push(this: &Api, posts: Vec<JsValue>) -> JsValue;
+
+    #[wasm_bindgen(structural, method)]
+    async fn initial_pull(this: &Api, checkpoint: JsValue) -> JsValue;
 }
 
 #[wasm_bindgen]
@@ -238,6 +241,11 @@ impl_js_compatible!(SignResponse, signer::SignResponse, "Signing Response");
 impl_js_compatible!(SignError, signer::SignError, "Signing Error");
 impl_js_compatible!(SignResult, signer::SignResult, "Signing Result");
 impl_js_compatible!(SyncRequest, signer::SyncRequest, "Synchronization Request");
+impl_js_compatible!(
+    InitialSyncRequest,
+    signer::InitialSyncRequest,
+    "Initial Synchronization Request"
+);
 impl_js_compatible!(
     SyncResponse,
     signer::SyncResponse,
@@ -656,6 +664,24 @@ impl ledger::Read<SyncData<config::Config>> for PolkadotJsLedger {
         Box::pin(async {
             Ok(
                 from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
+                    .try_into()
+                    .expect("Conversion is not allowed to fail."),
+            )
+        })
+    }
+}
+
+impl ledger::Read<InitialSyncData<config::Config>> for PolkadotJsLedger {
+    type Checkpoint = utxo::Checkpoint;
+
+    #[inline]
+    fn read<'s>(
+        &'s mut self,
+        checkpoint: &'s Self::Checkpoint,
+    ) -> LocalBoxFutureResult<'s, ReadResponse<InitialSyncData<config::Config>>, Self::Error> {
+        Box::pin(async {
+            Ok(
+                from_js::<RawInitialPullResponse>(self.0.initial_pull(borrow_js(checkpoint)).await)
                     .try_into()
                     .expect("Conversion is not allowed to fail."),
             )
@@ -1133,6 +1159,19 @@ impl Signer {
         self.as_mut().sync(request.into()).into()
     }
 
+    /// Performs the initial synchronization of a new signer with the ledger data.
+    ///
+    /// # Implementation Note
+    ///
+    /// Using this method to synchronize a signer will make it impossibile to spend any
+    /// [`Utxo`](utxo::Utxo)s already on the ledger at the time of synchronization.
+    /// Therefore, this method should only be used for the initial synchronization of a
+    /// new signer.
+    #[inline]
+    pub fn initial_sync(&mut self, request: InitialSyncRequest) -> SyncResult {
+        self.as_mut().initial_sync(request.into()).into()
+    }
+
     /// Generates an [`IdentityProof`] for `identified_asset` by
     /// signing a virtual [`ToPublic`](canonical::ToPublic) transaction.
     #[inline]
@@ -1304,13 +1343,11 @@ impl Wallet {
     /// Saves `self` as a [`StorageStateOption`] in `network`.
     #[inline]
     pub fn get_storage(&self, network: Network) -> JsValue {
-        // TODO: This should only take an immutable reference to signer. Change
-        // this in manta-rs.
         into_js(StorageStateOption::from(functions::get_storage(
-            self.0.borrow_mut()[usize::from(network.0)]
-                .as_mut()
+            self.0.borrow()[usize::from(network.0)]
+                .as_ref()
                 .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
-                .signer_mut(),
+                .signer(),
         )))
     }
 
@@ -1579,6 +1616,32 @@ impl Wallet {
             .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
             .reset_state();
         self.with_async(|this| Box::pin(this.load_initial_state()), network)
+    }
+
+    /// Pulls data from the ledger, synchronizing the wallet and balance state. This method
+    /// builds a [`InitialSyncRequest`] by continuously calling [`read`](ledger::Read::read)
+    /// until all the ledger data has arrived. Once the request is built, it executes
+    /// synchronizes the signer against it.
+    ///
+    /// # Implementation Note
+    ///
+    /// Using this method to synchronize a signer will make it impossibile to spend any
+    /// [`Utxo`](utxo::Utxo)s already on the ledger at the time of synchronization.
+    /// Therefore, this method should only be used for the initial synchronization of a
+    /// new signer.
+    ///
+    /// # Failure Conditions
+    ///
+    /// This method returns an element of type [`Error`] on failure, which can result from any
+    /// number of synchronization issues between the wallet, the ledger, and the signer. See the
+    /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
+    /// how to resolve them.
+    ///
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
+    #[inline]
+    pub fn initial_sync(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(this.initial_sync()), network)
     }
 }
 

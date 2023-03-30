@@ -4,7 +4,7 @@
 
 import { base64Decode } from '@polkadot/util-crypto';
 import * as $ from 'manta-scale-codec';
-import { u8aToU8a } from '@polkadot/util';
+import { nToBigInt, u8aToU8a } from '@polkadot/util';
 
 export class ApiConfig {
   constructor(
@@ -117,6 +117,55 @@ export default class Api {
     };
   }
 
+  _current_path_to_json(currentPath) {
+    const sibling_digest = Array.from(u8aToU8a(currentPath.sibling_digest));
+    const leaf_index = currentPath.leaf_index;
+    const inner_path = currentPath.inner_path.map((path) => Array.from(u8aToU8a(path)));
+    return {
+      sibling_digest,
+      leaf_index,
+      inner_path,
+    };
+  }
+
+  // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
+  async initial_pull(checkpoint) {
+    try {
+      await this.api.isReady;
+
+      this._log('checkpoint ' + JSON.stringify(checkpoint));
+      await this.api.isReady;
+
+      let result = await this.api.rpc.mantaPay.dense_initial_pull(checkpoint, this.maxReceiversPullSize);
+
+      this._log('initial pull result ' + JSON.stringify(result));
+
+      const decodedUtxoData = $Utxos.decode(base64Decode(result.utxo_data.toString()));
+      const utxoData = decodedUtxoData.map((utxo) => this._utxo_to_json(utxo));
+
+      const decodedMemberShipProofData = $CurrentPaths.decode(base64Decode(result.membership_proof_data.toString()));
+      const membershipProofData = decodedMemberShipProofData.map((currentPath) => this._current_path_to_json(currentPath));
+
+      const pull_result = {
+        should_continue: result.should_continue.isTrue,
+        utxo_data: utxoData,
+        membership_proof_data: membershipProofData,
+        nullifier_count: result.nullifier_count.toString(),
+      };
+      this._log('initial pull response: ' + JSON.stringify(pull_result));
+
+      // JSON.stringify does not support bigint
+      pull_result.nullifier_count = nToBigInt(result.nullifier_count);
+
+      return pull_result;
+    } catch (err) {
+      console.error(err);
+      if (this.errorCallback) {
+        this.errorCallback();
+      }
+    }
+  }
+
   // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
   async pull(checkpoint) {
     try {
@@ -169,6 +218,7 @@ export default class Api {
       this._log('pull response: ' + JSON.stringify(pull_result));
       return pull_result;
     } catch (err) {
+      console.error(err);
       if (this.errorCallback) {
         this.errorCallback();
       }
@@ -260,3 +310,13 @@ const $OutgoingNote = $.object(
 
 export const $Receivers = $.array($.tuple($Utxo, $FullIncomingNote));
 export const $Senders = $.array($.tuple($.sizedUint8Array(32), $OutgoingNote));
+
+const $Utxos = $.array($Utxo);
+
+const $CurrentPath = $.object(
+  $.field('sibling_digest', $.sizedUint8Array(32)),
+  $.field('leaf_index', $.u32),
+  $.field('inner_path',  $.array($.sizedUint8Array(32))),
+);
+
+const $CurrentPaths = $.array($CurrentPath);
