@@ -5,6 +5,7 @@ import {Address, PrivateWalletConfig, InitWasmResult} from './sdk.interfaces';
 import Api, {ApiConfig} from './api/index';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import BN from 'bn.js';
+import { decodeAddress } from '@polkadot/util-crypto';
 
 /// SbtMantaPrivateWallet class
 export class SbtMantaPrivateWallet extends MantaPrivateWallet {
@@ -140,7 +141,8 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
       this.walletIsBusy = true;
       const networkType = this.wasm.Network.from_string(`"${this.network}"`);
       const asset = this.wasm.VirtualAsset.from_string(virtualAsset);
-      const account_id = this.wasm.Account.from_string(account);
+      // const address_decoded = `[${decodeAddress(account)}]`;
+      const account_id = this.wasm.AccountId.from_string(`[${decodeAddress(account)}]`);
       const identityProof = this.wasmWallet.identity_proof(asset, account_id, networkType);
       this.walletIsBusy = false;
       return identityProof;

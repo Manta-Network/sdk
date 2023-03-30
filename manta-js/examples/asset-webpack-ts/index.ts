@@ -24,8 +24,8 @@ async function main() {
     // const proof_json = await identityProofGen(privateWallet, id_proof);
     // console.log("proof json:" + proof_json);
 
-    await ethMintSbt();
-    //await toSBTPrivateTest(false);
+    // await ethMintSbt();
+    await toSBTPrivateTest(true);
     // await reserveAndMints();
     //await toPrivateOnlySignTest();
     //await toPrivateTest();
@@ -415,9 +415,9 @@ const toSBTPrivateTest = async (verify: boolean) => {
                 const json_str = JSON.stringify(response.data)
 
                 const virtual_asset = `${json_str}`;
-                const identity_proof_response = await identityProofGen(privateWallet, virtual_asset);
-                // console.log("identity proof format response:");
-                // console.log(identity_proof_response);
+                const identity_proof_response = await identityProofGen(privateWallet, virtual_asset, polkadotConfig.polkadotAddress);
+                console.log("identity proof format response:");
+                console.log(identity_proof_response);
 
                 var validate_request: any = {"transaction_data": {}, "constructed_transfer_post": {"transfer_post": {}}};
                 validate_request.transaction_data = request.transaction_data;
@@ -520,14 +520,16 @@ const reserveAndMints = async () => {
 }
 
 
-const identityProofGen = async (privateWallet: any, virtualAsset: string) => {
-    const identityProof = await privateWallet.getIdentityProof(virtualAsset);
+const identityProofGen = async (privateWallet: any, virtualAsset: string, address: string) => {
+    const identityProof = await privateWallet.getIdentityProof(virtualAsset, address);
     // console.log("Idnetity Proof: ", identityProof);
-    // console.log("Identity Proof JSON: ", JSON.stringify(identityProof));
+    console.log("Identity Proof JSON: ", JSON.stringify(identityProof));
 
     // const identityProofJson = JSON.stringify(identityProof);
     const authorization_signature = identityProof[0].authorization_signature;
+    const sink_accounts = identityProof[0].sink_accounts;
     delete identityProof[0].authorization_signature;
+    delete identityProof[0].sink_accounts;
     var identityProof2: any = {"authorization_signature": "", "body": {}};
     identityProof2.body = identityProof[0];
     identityProof2.authorization_signature = authorization_signature;
@@ -537,6 +539,8 @@ const identityProofGen = async (privateWallet: any, virtualAsset: string) => {
     const bn = u8aToBn(sink);
     identityProof2.body.sinks[0] = bn.toString();
     // console.log(JSON.stringify(identityProof2));
+
+    identityProof2.sink_accounts = sink_accounts;
 
     const identityProofJson = JSON.stringify(identityProof2);
     const format_json = identityProofJson.replace('"sinks":["', '"sinks":[').replace('"],"proof"', '],"proof"');
