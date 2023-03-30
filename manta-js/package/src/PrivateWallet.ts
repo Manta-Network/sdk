@@ -251,6 +251,8 @@ export default class PrivateWallet implements IPrivateWallet {
 
   /// reset instance state
   async resetState() {
+    this.initialSyncIsFinished = false;
+    this.isBindAuthorizationContext = false;
     const wasmSigner = new this.wasm.Signer(
       this.baseWallet.fullParameters,
       this.baseWallet.multiProvingContext,
@@ -270,13 +272,7 @@ export default class PrivateWallet implements IPrivateWallet {
   /// Conditionally logs the contents of `message` depending on if `loggingEnabled`
   /// is set to `true`.
   protected log(message: string) {
-    if (this.baseWallet.loggingEnabled) {
-      console.log(
-        `[Private Wallet ${this.palletName}]: ${performance
-          .now()
-          .toFixed(4)}, ${message}`,
-      );
-    }
+    this.baseWallet.log(message, `Private Wallet ${this.palletName}`);
   }
 
   protected getWasmNetWork(): any {

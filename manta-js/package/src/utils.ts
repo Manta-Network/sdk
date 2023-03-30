@@ -248,3 +248,10 @@ export function transferPost(post: any): any {
 
   return json;
 }
+
+export function log(enabled: boolean, message: string, name: string) {
+  if (!enabled) {
+    return;
+  }
+  console.log(`[${name}]: ${performance.now().toFixed(4)}, ${message}`);
+}

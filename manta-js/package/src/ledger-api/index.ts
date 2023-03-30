@@ -13,6 +13,7 @@ import $, {
   currentPathToJson,
 } from './decodeUtils';
 import type { ILedgerApi, PalletName } from '../interfaces';
+import { log } from '../utils';
 
 export default class LedgerApi implements ILedgerApi {
   api: any;
@@ -26,9 +27,7 @@ export default class LedgerApi implements ILedgerApi {
   }
 
   _log(message: string) {
-    if (this.loggingEnabled) {
-      console.log(`[Ledger Api]: ${performance.now().toFixed(4)}, ${message}`);
-    }
+    log(this.loggingEnabled, message, 'Ledger Api');
   }
 
   // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.

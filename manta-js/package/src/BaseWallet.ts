@@ -8,6 +8,7 @@ import type {
 } from './interfaces';
 import { PAY_PARAMETER_NAMES, PAY_PROVING_NAMES } from './constants';
 import mantaConfig from './config.json';
+import { log } from './utils';
 
 export default class BaseWallet implements IBaseWallet {
   api: ApiPromise;
@@ -37,6 +38,18 @@ export default class BaseWallet implements IBaseWallet {
     this.loggingEnabled = loggingEnabled;
   }
 
+  protected static log(
+    loggingEnabled: boolean,
+    message: string,
+    name = 'BaseWallet',
+  ) {
+    log(loggingEnabled, message, name);
+  }
+
+  log(message: string, name: string) {
+    BaseWallet.log(this.loggingEnabled, message, name);
+  }
+
   private static async initApi(
     rpcUrl: string,
     loggingEnabled: boolean,
@@ -53,8 +66,9 @@ export default class BaseWallet implements IBaseWallet {
         api.rpc.system.name(),
         api.rpc.system.version(),
       ]).then(([chain, nodeName, nodeVersion]) => {
-        console.log(
-          `[BaseWallet]: PrivateWallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`,
+        BaseWallet.log(
+          loggingEnabled,
+          `Wallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`,
         );
       });
     }
@@ -99,13 +113,13 @@ export default class BaseWallet implements IBaseWallet {
 
   static async init(config: BaseWalletConfig) {
     const loggingEnabled = Boolean(config.loggingEnabled);
+    BaseWallet.log(loggingEnabled, 'Initial api');
+
     const api = await BaseWallet.initApi(config.rpcUrl, loggingEnabled);
     if (loggingEnabled) {
       mantaWasm.init_panic_hook();
     }
-    if (loggingEnabled) {
-      console.log(`[BaseWallet]: Start download, ${performance.now().toFixed(4)}`);
-    }
+    BaseWallet.log(loggingEnabled, 'Start download');
     const provingFileList = await BaseWallet.fetchFiles(
       config.provingFilePath,
       PAY_PROVING_NAMES,
@@ -114,9 +128,7 @@ export default class BaseWallet implements IBaseWallet {
       config.parametersFilePath,
       PAY_PARAMETER_NAMES,
     );
-    if (loggingEnabled) {
-      console.log(`[BaseWallet]: Download successful, ${performance.now().toFixed(4)}`);
-    }
+    BaseWallet.log(loggingEnabled, 'Download successful');
 
     const multiProvingContext = new mantaWasm.RawMultiProvingContext(
       ...(provingFileList as [Uint8Array, Uint8Array, Uint8Array]),

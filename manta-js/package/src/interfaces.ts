@@ -65,6 +65,7 @@ export interface IBaseWallet {
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy: boolean;
+  log(message: string, name: string): void;
 }
 
 export interface IPrivateWallet {
