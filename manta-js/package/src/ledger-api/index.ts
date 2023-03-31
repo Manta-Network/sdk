@@ -20,15 +20,18 @@ export default class LedgerApi implements ILedgerApi {
   api: ApiPromise;
   palletName: PalletName;
   loggingEnabled: boolean;
+  errorCallback: (err: any) => void;
 
   constructor(
     api: ApiPromise,
     palletName: PalletName,
     loggingEnabled: boolean,
+    errorCallback: (err: Error) => void,
   ) {
     this.api = api;
     this.palletName = palletName;
     this.loggingEnabled = Boolean(loggingEnabled);
+    this.errorCallback = errorCallback;
   }
 
   _log(message: string) {
@@ -38,12 +41,7 @@ export default class LedgerApi implements ILedgerApi {
   // Pulls data from the ledger from the `checkpoint`
   async initial_pull(checkpoint: any) {
     try {
-      if (!this.api.isConnected) {
-        throw new Error('Network error');
-      }
-      if (this.loggingEnabled) {
-        this._log('checkpoint ' + JSON.stringify(checkpoint));
-      }
+      await this.api.isReady;
       // @ts-ignore
       const result = await this.api.rpc[this.palletName].dense_initial_pull(
         checkpoint,
@@ -80,17 +78,19 @@ export default class LedgerApi implements ILedgerApi {
 
       return pull_result;
     } catch (err) {
-      console.error(err);
-      throw wrapWasmError(err);
+      const newError = wrapWasmError(err);
+      if (typeof this.errorCallback === 'function') {
+        this.errorCallback(newError);
+      }
+      throw newError;
     }
   }
 
   // Pulls data from the ledger from the `checkpoint`
   async pull(checkpoint: any) {
     try {
-      if (!this.api.isConnected) {
-        throw new Error('Network error');
-      }
+      await this.api.isReady;
+
       if (this.loggingEnabled) {
         this._log('checkpoint ' + JSON.stringify(checkpoint));
       }
@@ -129,8 +129,11 @@ export default class LedgerApi implements ILedgerApi {
       }
       return pull_result;
     } catch (err) {
-      console.error(err);
-      throw wrapWasmError(err);
+      const newError = wrapWasmError(err);
+      if (typeof this.errorCallback === 'function') {
+        this.errorCallback(newError);
+      }
+      throw newError;
     }
   }
 }

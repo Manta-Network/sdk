@@ -28,9 +28,10 @@ interface PolkadotConfig {
 // const apiEndpoint = 'wss://kwaltz.baikal.testnet.dolphin.training';
 // const nativeTokenDecimals = 18;
 
-const loggingEnabled = true;
-const apiEndpoint = 'wss://zenlink.zqhxuyuan.cloud:444';
+const apiEndpoint = 'wss://ws.calamari.systems';
 const nativeTokenDecimals = 12;
+
+const loggingEnabled = true;
 const provingFilePath =
   'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving';
 const parametersFilePath =
@@ -114,6 +115,10 @@ const getBaseWallet = async () => {
       return result || null;
     },
   });
+  BaseWallet.onWasmCalledJsErrorCallback = (err, palletName) => {
+    console.log(palletName);
+    console.error(err);
+  };
   return baseWallet;
 };
 
@@ -139,24 +144,11 @@ const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
   _log('The zkAddress is: ', privateAddress);
 
   _log('Wait for api ready');
-  
-  try {
-    if (!privateWallet.baseWallet.api.isConnected) {
-      await privateWallet.baseWallet.api.connect();
-      if (!privateWallet.baseWallet.api.isConnected) {
-        throw new Error('Network error');
-      }
-    }
-  } catch (ex) {
-    _log('Api error', ex.message);
-    return;
-  }
-
-  // const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
 
   _log('initialWalletSync');
   await privateWallet.initialWalletSync();
 
+  // const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
   // if (isInitialed) {
   //   _log('initialWalletSync');
   //   await privateWallet.initialWalletSync();

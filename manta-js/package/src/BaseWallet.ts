@@ -5,6 +5,7 @@ import type {
   GetStorageStateFromLocal,
   BaseWalletConfig,
   IBaseWallet,
+  PalletName,
 } from './interfaces';
 import { PAY_PARAMETER_NAMES, PAY_PROVING_NAMES } from './constants';
 import mantaConfig from './config.json';
@@ -21,6 +22,8 @@ export default class BaseWallet implements IBaseWallet {
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy = false;
+
+  static onWasmCalledJsErrorCallback: (err: Error, palletName: PalletName) => void;
 
   constructor(
     wasm: any,
