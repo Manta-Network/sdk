@@ -69,4 +69,16 @@ export class MantaUtilities {
       );
       return tx;
   }
+
+  /// Removes `numBytes` many leading bytes from a `hexString` 
+  /// `useQuotes` specifies whether quotation marks should be added
+  static removeLeadingBytesFromHexString(hexString: string, numBytes: number, useQuotes:boolean): string {
+    let ind = hexString.indexOf("0x");
+    let res = hexString.slice(ind + "0x".length + numBytes * 2);
+    res = "\"0x" + res;
+    if(!useQuotes) {
+      res = res.replace(/\"/g, '');
+    }
+    return res;
+  }
 }
