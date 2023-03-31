@@ -13,6 +13,7 @@ import {
   mapPostToTransaction,
   toPrivateBuildUnsigned,
   transferPost,
+  wrapWasmError,
 } from '../utils';
 import PrivateWallet from '../PrivateWallet';
 
@@ -89,7 +90,7 @@ export default class MantaSbtWallet
     } catch (ex) {
       this.walletIsBusy = false;
       console.error('Failed to build multiSbtBuild.', ex);
-      throw ex;
+      throw wrapWasmError(ex);
     }
   }
 

@@ -38,7 +38,9 @@ export default class LedgerApi implements ILedgerApi {
   // Pulls data from the ledger from the `checkpoint`
   async initial_pull(checkpoint: any) {
     try {
-      await this.api.isReady;
+      if (!this.api.isConnected) {
+        throw new Error('Network error');
+      }
       if (this.loggingEnabled) {
         this._log('checkpoint ' + JSON.stringify(checkpoint));
       }
@@ -86,7 +88,9 @@ export default class LedgerApi implements ILedgerApi {
   // Pulls data from the ledger from the `checkpoint`
   async pull(checkpoint: any) {
     try {
-      await this.api.isReady;
+      if (!this.api.isConnected) {
+        throw new Error('Network error');
+      }
       if (this.loggingEnabled) {
         this._log('checkpoint ' + JSON.stringify(checkpoint));
       }

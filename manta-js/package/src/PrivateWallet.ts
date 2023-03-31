@@ -10,6 +10,7 @@ import type {
   Network,
 } from './interfaces';
 import LedgerApi from './ledger-api';
+import { wrapWasmError } from './utils';
 
 export default class PrivateWallet implements IPrivateWallet {
   palletName: PalletName;
@@ -161,7 +162,7 @@ export default class PrivateWallet implements IPrivateWallet {
       return true;
     } catch (ex) {
       this.walletIsBusy = false;
-      throw ex;
+      throw wrapWasmError(ex);
     }
   }
 
@@ -201,7 +202,7 @@ export default class PrivateWallet implements IPrivateWallet {
       return zkAddress;
     } catch (ex) {
       this.walletIsBusy = false;
-      throw ex;
+      throw wrapWasmError(ex);
     }
   }
 
@@ -221,7 +222,7 @@ export default class PrivateWallet implements IPrivateWallet {
     } catch (ex) {
       this.walletIsBusy = false;
       console.error('Failed to fetch zk balance.', ex);
-      throw ex;
+      throw wrapWasmError(ex);
     }
   }
 
@@ -245,7 +246,7 @@ export default class PrivateWallet implements IPrivateWallet {
     } catch (ex) {
       this.walletIsBusy = false;
       console.error('Failed to fetch zk balance.', ex);
-      throw ex;
+      throw wrapWasmError(ex);
     }
   }
 
@@ -320,7 +321,7 @@ export default class PrivateWallet implements IPrivateWallet {
       }
     } catch (ex) {
       this.walletIsBusy = false;
-      throw ex;
+      throw wrapWasmError(ex);
     }
     return true;
   }

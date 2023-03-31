@@ -57,7 +57,9 @@ export async function getAssetMetadata(
   assetId: BN,
   network: Network,
 ): Promise<any> {
-  await api.isReady;
+  if (!this.api.isConnected) {
+    throw new Error('Network error');
+  }
   const data: any = await api.query.assetManager.assetIdMetadata(assetId);
   const json = JSON.stringify(data.toHuman());
   const jsonObj = JSON.parse(json);
@@ -284,4 +286,8 @@ export async function fetchFile(url: string): Promise<Uint8Array | null> {
     console.error(`Fetch ${url}, failed`, ex);
   }
   return null;
+}
+
+export function wrapWasmError(error: Error | string) {
+  return typeof error === 'string' ? new Error(error) : error;
 }

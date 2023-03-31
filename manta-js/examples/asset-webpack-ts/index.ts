@@ -25,10 +25,12 @@ interface PolkadotConfig {
   polkadotSigner: InjectSigner;
   polkadotAddress: string;
 }
+// const apiEndpoint = 'wss://kwaltz.baikal.testnet.dolphin.training';
+// const nativeTokenDecimals = 18;
 
 const loggingEnabled = true;
-const apiEndpoint = 'wss://kwaltz.baikal.testnet.dolphin.training';
-const nativeTokenDecimals = 18;
+const apiEndpoint = 'wss://zenlink.zqhxuyuan.cloud:444';
+const nativeTokenDecimals = 12;
 const provingFilePath =
   'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving';
 const parametersFilePath =
@@ -128,7 +130,6 @@ const initMantaSbtWallet = async (baseWallet: BaseWallet) => {
 };
 
 const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
-  // const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
 
   _log('Initial signer');
   await privateWallet.initialSigner();
@@ -140,11 +141,19 @@ const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
   _log('Wait for api ready');
   
   try {
-    await privateWallet.baseWallet.api.isReadyOrError;
+    if (!privateWallet.baseWallet.api.isConnected) {
+      await privateWallet.baseWallet.api.connect();
+      if (!privateWallet.baseWallet.api.isConnected) {
+        throw new Error('Network error');
+      }
+    }
   } catch (ex) {
     _log('Api error', ex.message);
     return;
   }
+
+  // const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
+
   _log('initialWalletSync');
   await privateWallet.initialWalletSync();
 

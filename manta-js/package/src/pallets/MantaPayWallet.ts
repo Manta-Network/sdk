@@ -19,6 +19,7 @@ import {
   toPublicBuildUnsigned,
   transactionsToBatches,
   transferPost,
+  wrapWasmError,
 } from '../utils';
 import PrivateWallet from '../PrivateWallet';
 
@@ -71,7 +72,7 @@ export default class MantaPayWallet
     } catch (ex) {
       this.walletIsBusy = false;
       console.error('Failed to build toPrivateBuild.', ex);
-      throw ex;
+      throw wrapWasmError(ex);
     }
   }
 
@@ -102,7 +103,7 @@ export default class MantaPayWallet
     } catch (ex) {
       this.walletIsBusy = false;
       console.error('Failed to build privateTransferBuild.', ex);
-      throw ex;
+      throw wrapWasmError(ex);
     }
   }
 
@@ -133,7 +134,7 @@ export default class MantaPayWallet
     } catch (ex) {
       this.walletIsBusy = false;
       console.error('Failed to build toPublicBuild.', ex);
-      throw ex;
+      throw wrapWasmError(ex);
     }
   }
 
