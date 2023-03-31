@@ -19,11 +19,19 @@ const privateWalletConfig = {
 // }
 
 async function main() {
-    await toPrivateOnlySignTest();
-    await toPrivateTest();
-    await privateTransferTest();
-    await toPublicTest();
-    await publicTransferTest();
+    // const id_proof = '{"identifier":{"is_transparent":false,"utxo_commitment_randomness":[218,12,198,205,243,45,111,55,97,232,107,40,237,202,174,102,12,100,161,170,141,2,173,101,117,161,177,116,146,37,81,31]},"asset":{"id":[82,77,144,171,218,215,31,37,190,239,170,153,12,42,235,151,22,238,79,66,34,183,22,37,117,55,167,12,74,225,51,45],"value":1}}';
+    // const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
+    // const proof_json = await identityProofGen(privateWallet, id_proof);
+    // console.log("proof json:" + proof_json);
+
+    // await ethMintSbt();
+    await toSBTPrivateTest(true);
+    // await reserveAndMints();
+    //await toPrivateOnlySignTest();
+    //await toPrivateTest();
+    //await privateTransferTest();
+    //await toPublicTest();
+    //await publicTransferTest();
     await publicTransferOnlySignTest();
     console.log("END");
 }
