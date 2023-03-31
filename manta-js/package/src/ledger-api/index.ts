@@ -13,7 +13,7 @@ import $, {
   currentPathToJson,
 } from './decodeUtils';
 import type { ILedgerApi, PalletName } from '../interfaces';
-import { log } from '../utils';
+import { log, wrapWasmError } from '../utils';
 import { ApiPromise } from '@polkadot/api';
 
 export default class LedgerApi implements ILedgerApi {
@@ -81,7 +81,7 @@ export default class LedgerApi implements ILedgerApi {
       return pull_result;
     } catch (err) {
       console.error(err);
-      throw err;
+      throw wrapWasmError(err);
     }
   }
 
@@ -130,7 +130,7 @@ export default class LedgerApi implements ILedgerApi {
       return pull_result;
     } catch (err) {
       console.error(err);
-      throw err;
+      throw wrapWasmError(err);
     }
   }
 }
