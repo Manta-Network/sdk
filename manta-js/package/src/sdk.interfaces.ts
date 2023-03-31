@@ -23,7 +23,6 @@ export type InitWasmResult = {
 
 export type SignedTransaction = {
   posts: any,
-  transaction_data: any,
   transactions: SubmittableExtrinsic<'promise', any>[],
   txs: SubmittableExtrinsic<'promise', any>[]
 }
@@ -32,7 +31,6 @@ export type PrivateWalletConfig = {
   environment: Environment,
   network: Network,
   loggingEnabled?: boolean,
-  transactionDataEnabled?: boolean,
   maxReceiversPullSize?: number,
   maxSendersPullSize?: number,
   pullCallback?: any,
@@ -48,7 +46,6 @@ export interface IMantaPrivateWallet {
   walletIsBusy: boolean;
   initialSyncIsFinished: boolean;
   loggingEnabled: boolean;
-  transactionDataEnabled: boolean;
 
   convertZkAddressToJson(address: string): any
   getNetworks(): any;

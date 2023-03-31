@@ -12,7 +12,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
   wasmWallet: SBTWallet;
 
   constructor(api: ApiPromise, wasm: any, wasmWallet: SBTWallet, network: Network, wasmApi: any, loggingEnabled: boolean) {
-    super(api, wasm, wasmWallet, network, wasmApi, loggingEnabled, true);
+    super(api, wasm, wasmWallet, network, wasmApi, loggingEnabled);
   }
 
   /// Initializes the SbtMantaPrivateWallet class, for a corresponding environment and network.

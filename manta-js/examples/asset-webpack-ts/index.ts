@@ -2,9 +2,7 @@
 import { MantaPrivateWallet, SbtMantaPrivateWallet, Environment, Network, MantaUtilities } from 'manta.js';
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
-import axios from "axios";
 import { u8aToBn } from '@polkadot/util';
-import { Wallet } from "@ethersproject/wallet";
 
 const privateWalletConfig = {
     environment: Environment.Production,
@@ -13,14 +11,14 @@ const privateWalletConfig = {
 
 async function main() {
     await toSBTPrivateTest();
-    //await toPrivateOnlySignTest();
-    //await toPrivateTest();
-    //await privateTransferOnlySignTest();
-    //await privateTransferTest();
-    //await toPublicOnlySignTest();
-    //await toPublicTest();
-    //await publicTransferTest();
-    //await publicTransferOnlySignTest();
+    await toPrivateOnlySignTest();
+    await toPrivateTest();
+    await privateTransferOnlySignTest();
+    await privateTransferTest();
+    await toPublicOnlySignTest();
+    await toPublicTest();
+    await publicTransferTest();
+    await publicTransferOnlySignTest();
     console.log("END");
 }
 

@@ -32,7 +32,7 @@ Here is a example of mint zkSBT steps:
 
 3. Mint zkSBT by provide start asset id, number of token to mint, and metadata list.
 
-> Notice: due to zkp proof extrinsic size is large than normal transaction, we current support at least 8 zkSBT in one batch.
+> Notice: due to zkp proof extrinsic size is large than normal transaction, we current support at least 5 zkSBT in one batch.
 
 ```js
     const numberOfMints = 2;
@@ -41,7 +41,7 @@ Here is a example of mint zkSBT steps:
         metadata.push(`YOUR METADAT INFO ${i.toString()}`)
     }
 
-    const sbtMint = await privateWallet.buildSbtBatch(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, assetId, numberOfMints, metadata);    
+    const sbtMint = await privateWallet.buildSbtBatch(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, assetId, numberOfMints, metadata);
 
     await sbtMint.batchTx.signAndSend(polkadotConfig.polkadotAddress);
 ```

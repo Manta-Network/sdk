@@ -279,3 +279,50 @@ Then submit transaction.
 ![extrinsic decode](./doc/to_private_submit.png)
 
 You should see your extrinsic show up on polkadot.js explorer. Then you will notice an increase in your private balance.
+
+## zkSBT
+
+zkSBT sdk is extension of manta-pay sdk, and add some custom logic, including:
+- We have a pre-charge steps when reserve asset id of zkSBT.
+- User mint zkSBT by provide metadata, the metadata of zkSBT can be image url or anything, but we have a size limit of metadata(Current is 300 length).
+
+Developer should use sdk to mint zkSBT, because current we need `Signer` to generate `TransferPost` which contains lots of zkp proof information.
+
+### Mint zkSBT
+
+Here is a example of mint zkSBT steps:
+
+1. initial wallet and signer.
+
+> `getPolkadotSignerAndAddress` is the same as manta-pay sdk.
+
+```js
+    const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
+    const polkadotConfig = await getPolkadotSignerAndAddress();
+
+    await privateWallet.initialWalletSync();
+```
+
+2. reserve asest id before mint zkSBT.
+
+```js
+    const reserveSbt = await privateWallet.buildReserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+
+    await reserveSbt.signAndSend(polkadotConfig.polkadotAddress);
+```
+
+3. Mint zkSBT by provide start asset id, number of token to mint, and metadata list.
+
+> Notice: due to zkp proof extrinsic size is large than normal transaction, we current support at least 5 zkSBT in one batch.
+
+```js
+    const numberOfMints = 2;
+    const metadata: string[] = [];
+    for (let i = 0; i < numberOfMints; i++ ) {
+        metadata.push(`YOUR METADAT INFO ${i.toString()}`)
+    }
+
+    const sbtMint = await privateWallet.buildSbtBatch(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, assetId, numberOfMints, metadata);
+
+    await sbtMint.batchTx.signAndSend(polkadotConfig.polkadotAddress);
+```
