@@ -21,10 +21,10 @@
         },
         "Manta": {
             "name": "Manta",
-            "ws": null,
-            "ws_local": null,
-            "parachainId": null,
-            "decimals": null,
+            "ws": "wss://c1.manta.moonsea.systems",
+            "ws_local": "ws://127.0.0.1:9944",
+            "parachainId": 2084,
+            "decimals": 12,
             "subscanUrl": null
         }
     },

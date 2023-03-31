@@ -4,29 +4,15 @@ import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 import axios from "axios";
 import { u8aToBn } from '@polkadot/util';
-import { decodeAddress } from '@polkadot/util-crypto';
 import { Wallet } from "@ethersproject/wallet";
 
 const privateWalletConfig = {
-    environment: Environment.Development,
-    network: Network.Dolphin,
-    loggingEnabled: true
+    environment: Environment.Production,
+    network: Network.Manta,
 }
-// const privateWalletConfig = {
-//     environment: Environment.Production,
-//     network: Network.Dolphin,
-//     loggingEnabled: true
-// }
 
 async function main() {
-    // const id_proof = '{"identifier":{"is_transparent":false,"utxo_commitment_randomness":[218,12,198,205,243,45,111,55,97,232,107,40,237,202,174,102,12,100,161,170,141,2,173,101,117,161,177,116,146,37,81,31]},"asset":{"id":[82,77,144,171,218,215,31,37,190,239,170,153,12,42,235,151,22,238,79,66,34,183,22,37,117,55,167,12,74,225,51,45],"value":1}}';
-    // const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
-    // const proof_json = await identityProofGen(privateWallet, id_proof);
-    // console.log("proof json:" + proof_json);
-
-    // await ethMintSbt();
-    await toSBTPrivateTest(true);
-    // await reserveAndMints();
+    await toSBTPrivateTest();
     //await toPrivateOnlySignTest();
     //await toPrivateTest();
     //await privateTransferOnlySignTest();
@@ -58,11 +44,6 @@ const getPolkadotSignerAndAddress = async () => {
 
 /// Test to publicly transfer 10 KMA.
 const publicTransferTest = async () => {
-    const privateWalletConfig = {
-        environment: Environment.Development,
-        network: Network.Calamari
-    }
-
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
@@ -91,12 +72,6 @@ const publicTransferTest = async () => {
 
 /// Test to publicly transfer 5 zkKMA.
 const publicTransferOnlySignTest = async () => {
-
-    const privateWalletConfig = {
-        environment: Environment.Production,
-        network: Network.Dolphin
-    }
-
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
 
     const destinationAddress = "5FHT5Rt1oeqAytX5KSn4ZZQdqN8oEa5Y81LZ5jadpk41bdoM";
@@ -110,11 +85,6 @@ const publicTransferOnlySignTest = async () => {
 
 /// Test to privately transfer 5 pDOL.
 const privateTransferTest = async () => {
-    const privateWalletConfig = {
-        environment: Environment.Development,
-        network: Network.Calamari
-    }
-
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
@@ -149,11 +119,6 @@ const privateTransferTest = async () => {
 }
 
 const privateTransferOnlySignTest = async () => {
-    const privateWalletConfig = {
-        environment: Environment.Development,
-        network: Network.Calamari
-    }
-
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
@@ -180,12 +145,6 @@ const privateTransferOnlySignTest = async () => {
 /// Test to sign a transaction that converts 10 KMA to zkKMA,
 /// without publishing the transaction.
 const toPrivateOnlySignTest = async () => {
-
-    const privateWalletConfig = {
-        environment: Environment.Development,
-        network: Network.Calamari,
-    }
-
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
@@ -213,13 +172,6 @@ const toPrivateOnlySignTest = async () => {
 /// Test to execute a `ToPrivate` transaction.
 /// Convert 10 KMA to 10 zkKMA.
 const toPrivateTest = async () => {
-
-    const privateWalletConfig = {
-        environment: Environment.Development,
-        network: Network.Calamari,
-        loggingEnabled: true
-    }
-
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
@@ -256,12 +208,6 @@ const toPrivateTest = async () => {
 
 /// Test to execute a `ToPublic` transaction without submitting it.
 const toPublicOnlySignTest = async () => {
-
-    const privateWalletConfig = {
-        environment: Environment.Development,
-        network: Network.Calamari
-    }
-
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     const polkadotConfig = await getPolkadotSignerAndAddress();
 
@@ -288,12 +234,6 @@ const toPublicOnlySignTest = async () => {
 /// Test to execute a `ToPublic` transaction.
 /// Convert 5 zkKMA to 5 KMA.
 const toPublicTest = async () => {
-
-    const privateWalletConfig = {
-        environment: Environment.Development,
-        network: Network.Calamari
-    }
-
     const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
     await privateWallet.api.isReady;
     const polkadotConfig = await getPolkadotSignerAndAddress();
@@ -332,39 +272,8 @@ const toPublicTest = async () => {
 
 }
 
-const reserve_id_test = async() => {
-    const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
-    const polkadotConfig = await getPolkadotSignerAndAddress();
-
-    const privateAddress = await privateWallet.getZkAddress();
-    console.log("The private address is: ", privateAddress);
-
-    const numberOfMints = 1;
-    const metadata: string[] = [];
-    for (let i = 0; i < numberOfMints; i++ ) {
-        metadata.push(`hello ${i.toString()}`)
-    }
-    await privateWallet.initialWalletSync();
-
-    for (let i = 0; i < 44; i++ ) {
-        const reserveSbt = await privateWallet.buildReserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
-        await reserveSbt.signAndSend(polkadotConfig.polkadotAddress);
-
-        await new Promise(r => setTimeout(r, 200));
-    }
-
-    const assetIdRange: any = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
-    if (assetIdRange.isNone) {
-        console.error("no assetId in storage mapped to this account");
-        return
-    }
-    const assetId = assetIdRange.unwrap()[0];
-    console.log("NFT AssetId: ", assetId.toString());
-}
-
-/// Test to execute a `ToPrivate` transaction.
-/// Convert 10 DOL to 10 pDOL.
-const toSBTPrivateTest = async (verify: boolean) => {
+/// Test to mint an sbt.
+const toSBTPrivateTest = async () => {
     const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
     const polkadotConfig = await getPolkadotSignerAndAddress();
     console.log("Public address:" + polkadotConfig.polkadotAddress);
@@ -375,6 +284,7 @@ const toSBTPrivateTest = async (verify: boolean) => {
     const numberOfMints = 2;
     const metadata: string[] = [];
     for (let i = 0; i < numberOfMints; i++ ) {
+        // create metadata of sbt, this can be anything (eg. IPFS hash)
         metadata.push(`hello ${i.toString()}`)
     }
     await privateWallet.initialWalletSync();
@@ -406,8 +316,9 @@ const toSBTPrivateTest = async (verify: boolean) => {
         }
     });
 
+    console.log("Wait for zkp generation!")
     // pause to wait for tx to submit
-    await new Promise(r => setTimeout(r, 5000));
+    await new Promise(r => setTimeout(r, 30000));
 
     const assetIdRange: any = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
     if (assetIdRange.isNone) {
@@ -417,12 +328,8 @@ const toSBTPrivateTest = async (verify: boolean) => {
     const assetId = assetIdRange.unwrap()[0];
 
     const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("Asset:", assetId);
-    console.log("NFT AssetId: ", assetId.toString(), ",BN:" + new BN(assetId));
+    console.log("NFT AssetId: ", assetId.toString());
     console.log("NFT Present: ", initalPrivateBalance.toString());
-
-    // pause to wait for tx to submit
-    await new Promise(r => setTimeout(r, 5000));
 
     const sbtMint = await privateWallet.buildSbtBatch(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, assetId, numberOfMints, metadata);
     const sbtMintGas = await sbtMint.batchTx.paymentInfo(polkadotConfig.polkadotAddress);
@@ -450,263 +357,6 @@ const toSBTPrivateTest = async (verify: boolean) => {
             }
         }
     });
-
-    console.log("transaction_datas:" + JSON.stringify(sbtMint.transactionDatas));
-    sbtMint.transactionDatas.map(async(tx: any) => {
-        const utxo_commitment_randomness = tx[0].ToPrivate[0]["utxo_commitment_randomness"];
-        const asset_id = tx[0].ToPrivate[1]["id"];
-        console.log("  assetId:" + new BN(asset_id, "le") + ", hex:" + toHexString(asset_id));
-        console.log("  randomness:" + toHexString(utxo_commitment_randomness));
-    })
-
-    const addressBytes = SbtMantaPrivateWallet.getAddressBytes(privateAddress);
-    console.log("Private address in json form: " + JSON.stringify(addressBytes));
-
-    const tx_datas = sbtMint.transactionDatas;
-    const requests = await Promise.all(tx_datas.map(async (tx: any, index: number) => {
-        var request: any = {"transaction_data": {"identifier": {},  "asset_info": {}, "zk_address": {"receiving_key": []}}};
-        const identifier = tx[0].ToPrivate[0];
-        const asset_info = tx[0].ToPrivate[1];
-        request.transaction_data.identifier = identifier;
-        request.transaction_data.asset_info = asset_info;
-        request.transaction_data.zk_address.receiving_key = addressBytes;
-        console.log("tx data request[" + index + "]");
-        console.log(JSON.stringify(request))
-        return request;
-    }));
-
-    /// VERIFICATION TO MANTA_AUTH SERVICE.
-    if(verify == true) {
-        await new Promise(r => setTimeout(r, 6000));
-
-        const request = requests[0];
-        const request2 = requests[1];
-
-        // Send data to manta-authentication verifier service to validate.
-        // TODO: failed if loop all request.
-        // requests.forEach(async (request: any) => {
-        console.log("[insert_new_transaction_id]request.....");
-        await axios.post("http://127.0.0.1:5000", request).then(function (response) {
-            console.log("[insert_new_transaction_id]response1:" + JSON.stringify(response.data));
-        });
-
-        await new Promise(r => setTimeout(r, 5000));
-
-        console.log("[request_new_virtual_asset]request.....");
-        await axios.post("http://127.0.0.1:5000/virtual_asset", request).then(async function (response) {
-            console.log("[request_new_virtual_asset]virtual asset response:" + JSON.stringify(response.data));
-            const json_str = JSON.stringify(response.data)
-
-            const virtual_asset = `${json_str}`;
-            const identity_proof_response = await identityProofGen(privateWallet, virtual_asset, polkadotConfig.polkadotAddress);
-            console.log("identity proof format response:");
-            console.log(identity_proof_response);
-
-            var validate_request: any = {"transaction_data": {}, "constructed_transfer_post": {"transfer_post": {}}};
-            validate_request.transaction_data = request.transaction_data;
-            const identity_response = JSON.parse(identity_proof_response)
-            validate_request.constructed_transfer_post.transfer_post = identity_response;
-            console.log("[validate_proof_id]validate request:");
-            console.log(JSON.stringify(validate_request))
-
-            await axios.post("http://127.0.0.1:5000/verify", validate_request).then(async function (response) {
-                console.log("[validate_proof_id]validate response1:" + JSON.stringify(response.data));
-            });
-        });
-
-        await new Promise(r => setTimeout(r, 1000));
-        console.log("Second Transaction Data Request without IdendityProof:");
-        console.log("------------------------------------------------------");
-        await axios.post("http://127.0.0.1:5000", request2).then(function (response) {
-            console.log("[insert_new_transaction_id]response2:" + JSON.stringify(response.data));
-        });
-
-        await new Promise(r => setTimeout(r, 5000));
-
-        var validate_request2: any = {"transaction_data": {}};
-        validate_request2.transaction_data = request2.transaction_data;
-        console.log("[validate_proof_id]validate request2:");
-        console.log(JSON.stringify(validate_request2))
-
-        await axios.post("http://127.0.0.1:5000/verify", validate_request2).then(async function (response) {
-            console.log("[validate_proof_id]validate response2:" + JSON.stringify(response.data));
-        });
-        // });
-    }
-
-    // while (true) {
-    //     await new Promise(r => setTimeout(r, 5000));
-    //     console.log("Syncing with ledger...");
-    //     await privateWallet.walletSync();
-    //     let newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    //     console.log("Private Balance after sync: ", newPrivateBalance.toString());
-    //     console.log("NFT AssetId: ", assetId.toString());
-    //     if (initalPrivateBalance.toString() !== newPrivateBalance.toString()) {
-    //         console.log("Detected balance change after sync!");
-    //         console.log(`Metadata: ${await privateWallet.getSBTMetadata(assetId)}`);
-    //         console.log("Old balance: ", initalPrivateBalance.toString());
-    //         console.log("New balance: ", newPrivateBalance.toString());
-    //         break;
-    //     }
-    // }
-}
-
-const reserveAndMints = async () => {
-    const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
-    const polkadotConfig = await getPolkadotSignerAndAddress();
-    console.log("public address:", polkadotConfig.polkadotAddress);
-
-    const privateAddress = await privateWallet.getZkAddress();
-    console.log("The private address is: ", privateAddress);
-
-    const numberOfMints = 2;
-    const metadata: string[] = [];
-    for (let i = 0; i < numberOfMints; i++ ) {
-        metadata.push(`hello ${i.toString()}`)
-    }
-    await privateWallet.initialWalletSync();
-
-    // reserve 5 assets
-    const reserveSbt = await privateWallet.buildReserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
-    await reserveSbt.signAndSend(polkadotConfig.polkadotAddress);
-
-    // pause to wait for tx to submit
-    await new Promise(r => setTimeout(r, 5000));
-
-    const assetIdRange: any = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
-    if (assetIdRange.isNone) {
-        console.error("no assetId in storage mapped to this account");
-        return
-    }
-    const assetId = assetIdRange.unwrap()[0];
-    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("NFT1 AssetId: ", assetId.toString());
-    console.log("NFT1 Present: ", initalPrivateBalance.toString());
-
-    const sbtMint = await privateWallet.buildSbtBatch(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, assetId, numberOfMints, metadata);
-    await sbtMint.batchTx.signAndSend(polkadotConfig.polkadotAddress);
-    console.log("transaction_datas:" + JSON.stringify(sbtMint.transactionDatas));
-    sbtMint.transactionDatas.map(async(tx: any) => {
-        const utxo_commitment_randomness = tx[0].ToPrivate[0]["utxo_commitment_randomness"];
-        const asset_id = tx[0].ToPrivate[1]["id"];
-        console.log("  assetId:" + new BN(asset_id, "le") + ", hex:" + toHexString(asset_id));
-        console.log("  randomness:" + toHexString(utxo_commitment_randomness));
-    })
-
-    await new Promise(r => setTimeout(r, 5000));
-
-    // second mint
-    const assetIdRange2: any = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
-    if (assetIdRange2.isNone) {
-        console.error("no assetId in storage mapped to this account");
-        return
-    }
-    const assetId2 = assetIdRange2.unwrap()[0];
-    console.log("NFT2 AssetId: ", assetId2.toString());
-    const metadata2: string[] = [];
-    for (let i = 0; i < numberOfMints; i++ ) {
-        metadata2.push(`hello2 ${i.toString()}`)
-    }
-
-    const sbtMint2 = await privateWallet.buildSbtBatch(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, assetId2, numberOfMints, metadata2);
-    await sbtMint2.batchTx.signAndSend(polkadotConfig.polkadotAddress);
-    console.log("transaction_datas:" + JSON.stringify(sbtMint2.transactionDatas));
-    sbtMint2.transactionDatas.map(async(tx: any) => {
-        const utxo_commitment_randomness = tx[0].ToPrivate[0]["utxo_commitment_randomness"];
-        const asset_id = tx[0].ToPrivate[1]["id"];
-        console.log("  assetId:" + new BN(asset_id, "le") + ", hex:" + toHexString(asset_id));
-        console.log("  randomness:" + toHexString(utxo_commitment_randomness));
-    })
-}
-
-
-const identityProofGen = async (privateWallet: any, virtualAsset: string, address: string) => {
-    const identityProof = await privateWallet.getIdentityProof(virtualAsset, address);
-    // console.log("Idnetity Proof: ", identityProof);
-    // console.log("Identity Proof JSON: ", JSON.stringify(identityProof));
-
-    // const identityProofJson = JSON.stringify(identityProof);
-    const authorization_signature = identityProof[0].authorization_signature;
-    const sink_accounts = identityProof[0].sink_accounts;
-    delete identityProof[0].authorization_signature;
-    delete identityProof[0].sink_accounts;
-    var identityProof2: any = {"authorization_signature": "", "body": {}};
-    identityProof2.body = identityProof[0];
-    identityProof2.authorization_signature = authorization_signature;
-    // console.log("add body:" + JSON.stringify(identityProof2));
-
-    const sink = identityProof2.body.sinks[0];
-    const bn = u8aToBn(sink);
-    identityProof2.body.sinks[0] = bn.toString();
-    // console.log(JSON.stringify(identityProof2));
-
-    identityProof2.sink_accounts = sink_accounts;
-
-    const identityProofJson = JSON.stringify(identityProof2);
-    const format_json = identityProofJson.replace('"sinks":["', '"sinks":[').replace('"],"proof"', '],"proof"');
-    return format_json;
-}
-
-const ethMintSbt = async () => {
-    const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
-    const polkadotConfig = await getPolkadotSignerAndAddress();
-
-    const signer = new Wallet("0x0123456789012345678901234567890123456789012345678901234567890123");
-    console.log("eth address: ", signer.address);
-
-    // BAB address
-    const address = {
-        bab: signer.address
-    };
-    const maybeAssetId: any = await privateWallet.api.query.mantaSbt.evmAddressWhitelist(address);
-    if (maybeAssetId.isNone) {
-        console.error("no assetId in storage mapped to this account");
-        return
-    }
-    const assetIdInfo = maybeAssetId.unwrap();
-    if (assetIdInfo.isAlreadyMinted) {
-        console.error("Eth address has already minted sbt");
-        return
-    }
-    const assetId = assetIdInfo.asAvailable;
-
-    await privateWallet.initialWalletSync();
-    const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("NFT present: ", initalPrivateBalance.toString());
-
-    // generate zkp
-    const post = await privateWallet.buildSbtPost(assetId);
-
-    const domain = {
-        name: "Claim Free SBT",
-        version: "1",
-        chainId: privateWallet.api.consts.mantaSbt.chainId.toString(),
-        salt: (await privateWallet.api.rpc.chain.getBlockHash(0)).toHex(),
-    };
-    const types = {
-        Transaction: [{ name: "proof", type: "bytes" }],
-    };
-    // Sign zkp proof
-    const value = {
-        proof: post.proof,
-    };
-    const signature = await signer._signTypedData(domain, types, value);
-
-    const evmTx = privateWallet.api.tx.mantaSbt.mintSbtEth(post, signature, address, "hello eth");
-    privateWallet.api.setSigner(polkadotConfig.polkadotSigner);
-    await evmTx.signAndSend(polkadotConfig.polkadotAddress);
-
-    await new Promise(r => setTimeout(r, 10000));
-
-    await privateWallet.initialWalletSync();
-    const newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("NFT present: ", newPrivateBalance.toString());
 }
 
 main();
-
-function toHexString(byteArray: Uint8Array) {
-    return byteArray.reduce((output, elem) =>
-      (output + ('0' + elem.toString(16)).slice(-2)),
-      '');
-  }
