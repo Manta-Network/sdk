@@ -4,10 +4,7 @@ import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import { base58Decode, decodeAddress } from '@polkadot/util-crypto';
 import { bnToU8a } from '@polkadot/util';
 import type { Address, PalletName, Network } from './interfaces';
-import {
-  NATIVE_TOKEN_ASSET_ID,
-  PRIVATE_ASSET_PREFIX,
-} from './constants';
+import { NATIVE_TOKEN_ASSET_ID, PRIVATE_ASSET_PREFIX } from './constants';
 
 /// Convert a private address to JSON.
 export function convertZkAddressToJson(address: string) {
@@ -66,10 +63,7 @@ export async function getAssetMetadata(
   const jsonObj = JSON.parse(json);
   // Dolphin is equivalent to Calamari on-chain, and only appears differently at UI level
   // so it is necessary to set its symbol and name manually
-  if (
-    network === 'Dolphin' &&
-    assetId.toString() === NATIVE_TOKEN_ASSET_ID
-  ) {
+  if (network === 'Dolphin' && assetId.toString() === NATIVE_TOKEN_ASSET_ID) {
     jsonObj.metadata.symbol = 'DOL';
     jsonObj.metadata.name = 'Dolphin';
   }
@@ -254,4 +248,40 @@ export function log(enabled: boolean, message: string, name: string) {
     return;
   }
   console.log(`[${name}]: ${performance.now().toFixed(4)}, ${message}`);
+}
+
+export async function fetchFiles(
+  filePrefix: string,
+  fileNames: string[],
+): Promise<Uint8Array[] | null> {
+  const fileList = await Promise.all(
+    fileNames.map((name) => fetchFile(`${filePrefix}/${name}`)),
+  );
+  return fileList;
+}
+
+export async function fetchFile(url: string): Promise<Uint8Array | null> {
+  try {
+    const responseData = await fetch(url);
+    const result = await responseData.blob();
+    const reader = new FileReader();
+    return new Promise((resolve) => {
+      try {
+        reader.addEventListener('load', () => {
+          resolve(new Uint8Array(reader.result as ArrayBuffer));
+        });
+        reader.addEventListener('error', () => {
+          resolve(null);
+        });
+        // Read the contents of the specified Blob or File
+        reader.readAsArrayBuffer(result);
+      } catch (ex) {
+        resolve(null);
+      }
+    });
+    // return result;
+  } catch (ex) {
+    console.error(`Fetch ${url}, failed`, ex);
+  }
+  return null;
 }

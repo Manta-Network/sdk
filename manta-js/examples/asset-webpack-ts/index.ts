@@ -27,7 +27,7 @@ interface PolkadotConfig {
 }
 
 const loggingEnabled = true;
-const rpcUrl = 'wss://kwaltz.baikal.testnet.dolphin.training';
+const apiEndpoint = 'wss://kwaltz.baikal.testnet.dolphin.training';
 const nativeTokenDecimals = 18;
 const provingFilePath =
   'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving';
@@ -49,7 +49,7 @@ const transferInAmount = new BN(50).mul(
 const transferOutAmount = transferInAmount.div(new BN(10));
 
 function _log(...message: any[]) {
-  console.log(`[Demo] ${performance.now().toFixed(4)}: ${message.join('')}`);
+  console.log(`[Demo] ${performance.now().toFixed(4)}: ${message.join(' ')}`);
 }
 
 // Get Polkadot JS Signer and Polkadot JS account address.
@@ -82,7 +82,7 @@ const publishTransition = async (
 
 const getBaseWallet = async () => {
   const baseWallet = await BaseWallet.init({
-    rpcUrl,
+    apiEndpoint,
     loggingEnabled,
     provingFilePath,
     parametersFilePath,
@@ -137,6 +137,14 @@ const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
   const privateAddress = await privateWallet.getZkAddress();
   _log('The zkAddress is: ', privateAddress);
 
+  _log('Wait for api ready');
+  
+  try {
+    await privateWallet.baseWallet.api.isReadyOrError;
+  } catch (ex) {
+    _log('Api error', ex.message);
+    return;
+  }
   _log('initialWalletSync');
   await privateWallet.initialWalletSync();
 

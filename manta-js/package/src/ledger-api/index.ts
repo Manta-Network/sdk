@@ -14,13 +14,18 @@ import $, {
 } from './decodeUtils';
 import type { ILedgerApi, PalletName } from '../interfaces';
 import { log } from '../utils';
+import { ApiPromise } from '@polkadot/api';
 
 export default class LedgerApi implements ILedgerApi {
-  api: any;
+  api: ApiPromise;
   palletName: PalletName;
   loggingEnabled: boolean;
 
-  constructor(api: any, palletName: PalletName, loggingEnabled: boolean) {
+  constructor(
+    api: ApiPromise,
+    palletName: PalletName,
+    loggingEnabled: boolean,
+  ) {
     this.api = api;
     this.palletName = palletName;
     this.loggingEnabled = Boolean(loggingEnabled);
@@ -30,13 +35,14 @@ export default class LedgerApi implements ILedgerApi {
     log(this.loggingEnabled, message, 'Ledger Api');
   }
 
-  // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
+  // Pulls data from the ledger from the `checkpoint`
   async initial_pull(checkpoint: any) {
     try {
       await this.api.isReady;
       if (this.loggingEnabled) {
         this._log('checkpoint ' + JSON.stringify(checkpoint));
       }
+      // @ts-ignore
       const result = await this.api.rpc[this.palletName].dense_initial_pull(
         checkpoint,
         MAX_RECEIVERS_PULL_SIZE,
@@ -77,13 +83,14 @@ export default class LedgerApi implements ILedgerApi {
     }
   }
 
-  // Pulls data from the ledger from the `checkpoint` or later, returning the new checkpoint.
+  // Pulls data from the ledger from the `checkpoint`
   async pull(checkpoint: any) {
     try {
       await this.api.isReady;
       if (this.loggingEnabled) {
         this._log('checkpoint ' + JSON.stringify(checkpoint));
       }
+      // @ts-ignore
       const result = await this.api.rpc[this.palletName].dense_pull_ledger_diff(
         checkpoint,
         MAX_RECEIVERS_PULL_SIZE,

@@ -8,10 +8,12 @@ import type {
 } from './interfaces';
 import { PAY_PARAMETER_NAMES, PAY_PROVING_NAMES } from './constants';
 import mantaConfig from './config.json';
-import { log } from './utils';
+import { fetchFiles, log } from './utils';
 
 export default class BaseWallet implements IBaseWallet {
   api: ApiPromise;
+  apiEndpoint: string | string[];
+  apiTimeout: number;
   wasm: any;
   loggingEnabled: boolean;
   fullParameters: any;
@@ -21,21 +23,23 @@ export default class BaseWallet implements IBaseWallet {
   walletIsBusy = false;
 
   constructor(
-    api: ApiPromise,
     wasm: any,
+    apiEndpoint: string | string[],
     fullParameters: any,
     multiProvingContext: any,
     saveStorageStateToLocal: SaveStorageStateToLocal,
     getStorageStateFromLocal: GetStorageStateFromLocal,
     loggingEnabled: boolean,
+    apiTimeout?: number,
   ) {
-    this.api = api;
     this.wasm = wasm;
     this.fullParameters = fullParameters;
     this.multiProvingContext = multiProvingContext;
     this.saveStorageStateToLocal = saveStorageStateToLocal;
     this.getStorageStateFromLocal = getStorageStateFromLocal;
     this.loggingEnabled = loggingEnabled;
+
+    this.updateApi(apiEndpoint, apiTimeout);
   }
 
   protected static log(
@@ -46,85 +50,54 @@ export default class BaseWallet implements IBaseWallet {
     log(loggingEnabled, message, name);
   }
 
-  log(message: string, name: string) {
+  log(message: string, name?: string) {
     BaseWallet.log(this.loggingEnabled, message, name);
   }
 
-  private static async initApi(
-    rpcUrl: string,
-    loggingEnabled: boolean,
-  ): Promise<ApiPromise> {
-    const provider = new WsProvider(rpcUrl);
-    const api = await ApiPromise.create({
-      provider,
+  updateApi(apiEndpoint: string | string[], apiTimeout?: number) {
+    this.log('Initial api');
+
+    this.apiEndpoint = apiEndpoint;
+    this.apiTimeout = apiTimeout || 10 * 1000;
+
+    this.api = new ApiPromise({
+      provider: new WsProvider(this.apiEndpoint, 2500, {}, this.apiTimeout),
       types: mantaConfig.TYPES,
       rpc: mantaConfig.RPC,
     });
-    if (loggingEnabled) {
-      Promise.all([
-        api.rpc.system.chain(),
-        api.rpc.system.name(),
-        api.rpc.system.version(),
-      ]).then(([chain, nodeName, nodeVersion]) => {
-        BaseWallet.log(
-          loggingEnabled,
-          `Wallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`,
-        );
+
+    if (this.loggingEnabled) {
+      this.api.on('connected', () => {
+        Promise.all([
+          this.api.rpc.system.chain(),
+          this.api.rpc.system.name(),
+          this.api.rpc.system.version(),
+        ]).then(([chain, nodeName, nodeVersion]) => {
+          this.log(
+            `Wallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`,
+          );
+        });
       });
     }
-    return api;
+    return this.api;
   }
 
-  private static async fetchFiles(
-    filePrefix: string,
-    fileNames: string[],
-  ): Promise<Uint8Array[] | null> {
-    const fileList = await Promise.all(
-      fileNames.map((name) => BaseWallet.fetchFile(`${filePrefix}/${name}`)),
-    );
-    return fileList;
-  }
-
-  private static async fetchFile(url: string): Promise<Uint8Array | null> {
-    try {
-      const responseData = await fetch(url);
-      const result = await responseData.blob();
-      const reader = new FileReader();
-      return new Promise((resolve) => {
-        try {
-          reader.addEventListener('load', () => {
-            resolve(new Uint8Array(reader.result as ArrayBuffer));
-          });
-          reader.addEventListener('error', () => {
-            resolve(null);
-          });
-          // Read the contents of the specified Blob or File
-          reader.readAsArrayBuffer(result);
-        } catch (ex) {
-          resolve(null);
-        }
-      });
-      // return result;
-    } catch (ex) {
-      console.error(`[BaseWallet]: Fetch ${url}, failed`, ex);
-    }
-    return null;
+  async disconnectApi() {
+    await this.api.disconnect();
+    return true;
   }
 
   static async init(config: BaseWalletConfig) {
     const loggingEnabled = Boolean(config.loggingEnabled);
-    BaseWallet.log(loggingEnabled, 'Initial api');
-
-    const api = await BaseWallet.initApi(config.rpcUrl, loggingEnabled);
     if (loggingEnabled) {
       mantaWasm.init_panic_hook();
     }
     BaseWallet.log(loggingEnabled, 'Start download');
-    const provingFileList = await BaseWallet.fetchFiles(
+    const provingFileList = await fetchFiles(
       config.provingFilePath,
       PAY_PROVING_NAMES,
     );
-    const parameterFileList = await BaseWallet.fetchFiles(
+    const parameterFileList = await fetchFiles(
       config.parametersFilePath,
       PAY_PARAMETER_NAMES,
     );
@@ -149,13 +122,14 @@ export default class BaseWallet implements IBaseWallet {
       ]),
     );
     return new BaseWallet(
-      api,
       mantaWasm,
+      config.apiEndpoint,
       fullParameters,
       multiProvingContext,
       config.saveStorageStateToLocal,
       config.getStorageStateFromLocal,
       loggingEnabled,
+      config.apiTimeout
     );
   }
 }

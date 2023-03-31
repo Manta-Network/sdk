@@ -10,7 +10,7 @@ export type Network = 'Dolphin' | 'Calamari' | 'Manta';
 export type Address = string;
 
 export interface ILedgerApi {
-  api: any;
+  api: ApiPromise;
   palletName: PalletName;
   loggingEnabled: boolean;
 
@@ -41,7 +41,8 @@ export type GetStorageStateFromLocal = (
 ) => Promise<any>;
 
 export type BaseWalletConfig = {
-  rpcUrl: string;
+  apiEndpoint: string | string[];
+  apiTimeout?: number;
   loggingEnabled: boolean;
   provingFilePath: string;
   parametersFilePath: string;
@@ -58,6 +59,8 @@ export type SbtInfo = {
 
 export interface IBaseWallet {
   api: ApiPromise;
+  apiEndpoint: string | string[];
+  apiTimeout: number;
   wasm: any;
   loggingEnabled: boolean;
   fullParameters: any;
@@ -65,7 +68,9 @@ export interface IBaseWallet {
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy: boolean;
-  log(message: string, name: string): void;
+  updateApi(apiEndpoint: string | string[], apiTimeout?: number): ApiPromise;
+  disconnectApi(): Promise<boolean>;
+  log(message: string, name?: string): void;
 }
 
 export interface IPrivateWallet {

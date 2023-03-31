@@ -32,7 +32,6 @@ export default class MantaSbtWallet
     super(CURRENT_PALLET_NAME, network, baseWallet, wasmWallet, ledgerApi);
   }
 
-  /// Initializes the PrivateWallet class, for a corresponding environment and network.
   static init(network: Network, baseWallet: IBaseWallet): MantaSbtWallet {
     const params = PrivateWallet.getInitialParams(
       CURRENT_PALLET_NAME,
