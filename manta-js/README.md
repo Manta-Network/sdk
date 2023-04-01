@@ -9,8 +9,8 @@ This package implements a Javascript SDK for connecting with the Manta Network.
 ```
 "manta.js": "^0.0.7-dev0",
 ```
-3. Check out how how to use the manta-js with the following examples: https://github.com/Manta-Network/sdk/blob/dev-pay-sbt/manta-js/examples/asset-webpack-ts/index.ts#L12-L23. There are examples for both MantaPay and MantaSBT systems.
-   To run them go to the examples directory and use `yarn && yarn upgrade manta-js && yarn serve`
+3. Check out how how to use the manta-js with the following examples: https://github.com/Manta-Network/sdk/blob/dev-pay-sbt/manta-js/examples/asset-webpack-ts/index.ts#L12-L23. There are examples for both MantaPay and MantaSBT systems. Preferrably run them one by one, and to do so change directory to the examples directory and use:
+    `yarn && yarn upgrade manta-js && yarn serve`. 
 
 > If using sdk in a node.js environment please go to [Node Specific](#node-specific)
 
