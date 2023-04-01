@@ -1,5 +1,5 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Red Hat Mono', monospace, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light dark;
@@ -32,7 +32,7 @@ button {
   border-radius: 8px;
   padding: 0.6em 1.2em;
   font-size: 1em;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   color: #fff;
@@ -40,7 +40,12 @@ button {
   background: linear-gradient(88.95deg, #29ccb9 0%, #0091ff 100%);
 }
 
-button:hover,
+button:hover {
+  background: linear-gradient(0deg, rgb(0 0 0 / 10%), rgb(0 0 0 / 10%)),
+    linear-gradient(88.95deg, #29ccb9 0%, #0091ff 100%);
+}
+
+button:active,
 button:disabled {
   background: linear-gradient(0deg, rgb(0 0 0 / 30%), rgb(0 0 0 / 30%)),
     linear-gradient(88.95deg, #29ccb9 0%, #0091ff 100%);
@@ -90,7 +95,7 @@ legend {
 .sign-item input {
   border: solid 1px #999;
   border-radius: 8px;
-  padding: 0.6em 6.6em 0.6em 0.8em;
+  padding: 0.6em 8em 0.6em 0.8em;
   max-width: 80px;
   font-weight: 600;
   text-overflow: ellipsis;
