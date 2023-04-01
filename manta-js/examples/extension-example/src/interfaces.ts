@@ -63,6 +63,17 @@ export type RequestSbtInfo = {
   metadata?: string;
 };
 
+export interface RequestBuildMultiSbtPayload {
+  sbtInfoList: RequestSbtInfo[]
+  network: Network
+}
+
+export interface RequestGetIdentityProofPayload {
+  virtualAsset: string
+  polkadotAddress: string
+  network: Network
+}
+
 export interface InjectedPrivateWallet {
   getWalletState(): Promise<PrivateWalletStateInfo>
   walletSync(): Promise<boolean>
@@ -81,8 +92,9 @@ export interface InjectedPrivateWallet {
     payload: RequestMultiZkBalancePayload,
   ): Promise<string[] | null>
   multiSbtBuild(
-    sbtInfoList: RequestSbtInfo[],
+    payload: RequestBuildMultiSbtPayload,
   ): Promise<ResponseBuildMultiSbt | null>
+  getSbtIdentityProof(payload: RequestGetIdentityProofPayload): Promise<any>
   subscribeWalletState: (
     cb: (state: PrivateWalletStateInfo) => void | Promise<void>,
   ) => Unsubcall

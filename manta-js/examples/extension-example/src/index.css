@@ -69,6 +69,15 @@ legend {
   margin-left: -5px;
 }
 
+.address {
+  background: linear-gradient(88.95deg, #29ccb9 0%, #0091ff 49%, #ff66b7 100%);
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: #fff;
+  margin-right: 10px;
+}
+
 .sign-item {
   margin: 15px 0;
 }
@@ -81,9 +90,10 @@ legend {
 .sign-item input {
   border: solid 1px #999;
   border-radius: 8px;
-  padding: 0.6em 4.2em 0.6em 0.8em;
-  max-width: 30px;
+  padding: 0.6em 6.6em 0.6em 0.8em;
+  max-width: 80px;
   font-weight: 600;
+  text-overflow: ellipsis;
 }
 
 .sign-item .receive {
@@ -107,11 +117,15 @@ legend {
   font-style: normal;
 }
 
+.sign-item button {
+  min-width: 200px;
+}
+
 textarea {
   width: 100%;
   border: solid 1px #999;
-  min-height: 100px;
-  max-height: 300px;
+  min-height: 180px;
+  max-height: 360px;
   border-radius: 8px;
   outline: none;
   padding: 15px;

@@ -35,6 +35,9 @@ export default function App() {
     useState<string>('5');
   const [toPublicAmount, setToPublicAmount] = useState<string>('5');
   const [startAssetId, setStartAssetId] = useState<string>('1');
+  const [virtualAsset, setVirtualAsset] = useState<string>(
+    '{"identifier":{"is_transparent":false,"utxo_commitment_randomness":[218,12,198,205,243,45,111,55,97,232,107,40,237,202,174,102,12,100,161,170,141,2,173,101,117,161,177,116,146,37,81,31]},"asset":{"id":[82,77,144,171,218,215,31,37,190,239,170,153,12,42,235,151,22,238,79,66,34,183,22,37,117,55,167,12,74,225,51,45],"value":1}}',
+  );
   const [result, setResult] = useState<any>();
   const [operating, setOperating] = useState<boolean>(false);
   const [receiveZkAddress, setReceiveZkAddress] = useState<string>(toZkAddress);
@@ -117,7 +120,7 @@ export default function App() {
   );
 
   const sendTransaction = useCallback(
-    async (func: () => Promise<string[] | null>) => {
+    async (func: () => Promise<any>, checkResult = true) => {
       if (!publicAddress) {
         setResult('publicAddress is empty');
         return;
@@ -128,18 +131,23 @@ export default function App() {
         await syncWallet();
         const response = await func();
         console.log(response);
-        if (!response || response.length <= 0) {
+        if (!checkResult) {
           setOperating(false);
-          setResult('Response is empty');
-          return;
+          return response;
+        } else {
+          if (!response || response.length <= 0) {
+            setOperating(false);
+            setResult('Response is empty');
+            return;
+          }
+          setResult('Sign Successful');
+          for (let i = 0; i < response.length; i++) {
+            const tx = api?.tx(response[i]);
+            await tx?.signAndSend(publicAddress, () => {});
+          }
+          const originBalance = await fetchBalance();
+          queryResult(originBalance ?? '0');
         }
-        setResult('Sign Successful');
-        for (let i = 0; i < response.length; i++) {
-          const tx = api?.tx(response[i]);
-          await tx?.signAndSend(publicAddress, () => {});
-        }
-        const originBalance = await fetchBalance();
-        queryResult(originBalance ?? '0');
       } catch (ex) {
         setOperating(false);
         setResult(ex);
@@ -199,21 +207,36 @@ export default function App() {
   }, [toPublicAmount, injected, publicAddress, sendTransaction]);
 
   const multiSbtBuildTransition = useCallback(async () => {
-    await syncWallet();
-    const response = await injected?.privateWallet.multiSbtBuild([
-      {
-        assetId: startAssetId,
-        amount: '1',
-      },
-      {
-        assetId: String(startAssetId + 1),
-        amount: '1',
-      },
-    ]);
-    console.log(response);
+    const response = await sendTransaction(async () => {
+      return injected?.privateWallet.multiSbtBuild({
+        sbtInfoList: [
+          {
+            assetId: startAssetId,
+            amount: '1',
+          },
+          {
+            assetId: String(startAssetId + 1),
+            amount: '1',
+          },
+        ],
+        network,
+      });
+    }, false);
     setResult(response);
-  }, [startAssetId, injected, setResult, syncWallet]);
+  }, [startAssetId, injected, setResult, sendTransaction]);
 
+  const getSbtIdentityProof = useCallback(async () => {
+    const response = await sendTransaction(async () => {
+      return injected?.privateWallet.getSbtIdentityProof({
+        virtualAsset,
+        polkadotAddress: publicAddress!,
+        network,
+      });
+    }, false);
+    setResult(response);
+  }, [virtualAsset, publicAddress, injected, setResult, sendTransaction]);
+
+  // sub state && unSub state
   useEffect(() => {
     if (!injected || !injected.privateWallet) {
       return;
@@ -221,6 +244,7 @@ export default function App() {
     return injected.privateWallet.subscribeWalletState(setStateInfo);
   }, [injected, setStateInfo]);
 
+  // loop balance
   useEffect(() => {
     const timerId = setInterval(async () => {
       if (stateInfo?.isWalletBusy || !stateInfo?.isWalletReady) {
@@ -235,6 +259,7 @@ export default function App() {
     };
   }, [fetchBalance, setBalance, stateInfo]);
 
+  // auto connect wallet
   useEffect(() => {
     if (localStorage.getItem('connected') !== '1' || isConnecting) {
       return;
@@ -260,15 +285,22 @@ export default function App() {
               <fieldset>
                 <legend>Address</legend>
                 <p>
-                  Public Address: <strong>{publicAddress}</strong>
+                  <strong className="address">{publicAddress}</strong>(Public
+                  Address)
                 </p>
                 <p>
-                  zKAddress: <strong>{zkAddress}</strong>
+                  <strong className="address">{zkAddress}</strong>(zKAddress)
                 </p>
               </fieldset>
               <fieldset>
                 <legend>Wallet State</legend>
-                <pre>{JSON.stringify(stateInfo, null, 2)}</pre>
+                {stateInfo &&
+                  Object.keys(stateInfo).map((key: string) => (
+                    <p key={key}>
+                      {key}: {/* @ts-ignore */}
+                      <strong>{String(stateInfo[key])}</strong>
+                    </p>
+                  ))}
               </fieldset>
               <fieldset>
                 <legend>Balance</legend>
@@ -360,6 +392,24 @@ export default function App() {
                     onClick={multiSbtBuildTransition}
                   >
                     MultiSbtBuild
+                  </button>
+                </p>
+                <p className="sign-item">
+                  <span className="input">
+                    <input
+                      value={virtualAsset}
+                      onChange={(e) => {
+                        setVirtualAsset(e.target.value);
+                      }}
+                    />
+                    <i>VirtualAsset</i>
+                  </span>
+                  <button
+                    type="button"
+                    disabled={operating}
+                    onClick={getSbtIdentityProof}
+                  >
+                    GetSbtIdentityProof
                   </button>
                 </p>
               </fieldset>
