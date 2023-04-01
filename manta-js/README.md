@@ -154,7 +154,7 @@ await privateWallet.walletSync();
 const newPrivateBalance = await mantaSdk.getPrivateBalance(assetId);
 ```
 
-### Private Transfer
+### Private Transfer (fungible token)
 
 This example transfers 10 private private zkMANTA to another address.
 
@@ -180,7 +180,7 @@ await privateWallet.walletSync();
 const newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
 ```
 
-### To Public
+### To Public (fungible token)
 
 This example converts 5 private zkMANTA to 5 public MANTA.
 
