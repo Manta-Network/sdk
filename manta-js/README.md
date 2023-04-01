@@ -126,7 +126,7 @@ Below is an example of how to transact using fungible tokens, there are four mai
 
 > This example assumes the `polkadotAddress` already has associated public funds.
 
-### To Private
+### To Private (fungible token)
 
 This example converts 10 public MANTA tokens to 10 zkMANTA tokens.
 
