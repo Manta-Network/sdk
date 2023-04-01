@@ -2,15 +2,15 @@
 
 This package implements a Javascript SDK for connecting with the Manta Network.
 
-## Installation
+## How to Setup
 
-```sh
-yarn install manta.js
-```
-Import in your package.json as such:
+1. Download and run latest Manta Signer, following its prompts - https://github.com/Manta-Network/manta-signer/releases/tag/v1.2.1
+3. Import manta-js in your project's package.json as such:
 ```
 "manta.js": "^0.0.7-dev0",
 ```
+3. Check out how how to use the manta-js with the following examples: https://github.com/Manta-Network/sdk/blob/dev-pay-sbt/manta-js/examples/asset-webpack-ts/index.ts#L12-L23. There are examples for both MantaPay and MantaSBT systems.
+   To run them go to the examples directory and use `yarn && yarn upgrade manta-js && yarn serve`
 
 > If using sdk in a node.js environment please go to [Node Specific](#node-specific)
 
