@@ -86,6 +86,7 @@ export default class PrivateWallet implements IPrivateWallet {
 
   dropAuthorizationContext() {
     this.wasmWallet.drop_authorization_context(this.getWasmNetWork());
+    this.isBindAuthorizationContext = false;
     return true;
   }
 

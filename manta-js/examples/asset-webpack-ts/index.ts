@@ -28,7 +28,8 @@ interface PolkadotConfig {
 // const apiEndpoint = 'wss://kwaltz.baikal.testnet.dolphin.training';
 // const nativeTokenDecimals = 18;
 
-const apiEndpoint = 'wss://ws.calamari.systems';
+// const apiEndpoint = 'wss://ws.calamari.systems';
+const apiEndpoint = 'wss://zenlink.zqhxuyuan.cloud:444';
 const nativeTokenDecimals = 12;
 
 const loggingEnabled = true;
@@ -135,7 +136,6 @@ const initMantaSbtWallet = async (baseWallet: BaseWallet) => {
 };
 
 const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
-
   _log('Initial signer');
   await privateWallet.initialSigner();
   _log('Load user mnemonic');
@@ -258,6 +258,15 @@ const multiSbtBuildOnlySignTest = async (
   _log(`Hex batchedTx: ${transaction.batchedTx.toHex()}`);
 };
 
+const getIdentityProof = async (privateWallet: MantaSbtWallet) => {
+  const proof = await privateWallet.getIdentityProof(
+    '{"identifier":{"is_transparent":false,"utxo_commitment_randomness":[218,12,198,205,243,45,111,55,97,232,107,40,237,202,174,102,12,100,161,170,141,2,173,101,117,161,177,116,146,37,81,31]},"asset":{"id":[82,77,144,171,218,215,31,37,190,239,170,153,12,42,235,151,22,238,79,66,34,183,22,37,117,55,167,12,74,225,51,45],"value":1}}',
+    polkadotConfig.polkadotAddress,
+  );
+  _log(`getIdentityProof result: `);
+  console.log(proof);
+};
+
 const relaunch = async (privateWallet: interfaces.IPrivateWallet) => {
   await privateWallet.resetState();
   await delIdbData(
@@ -308,6 +317,9 @@ window.actions = {
       pallets.mantaSbt as MantaSbtWallet,
       sbtInfoList,
     );
+  },
+  async getIdentityProof() {
+    await getIdentityProof(pallets.mantaSbt as MantaSbtWallet);
   },
   async relaunch() {
     await relaunch(pallets.mantaPay);

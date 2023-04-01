@@ -116,5 +116,5 @@ export interface IMantaSbtWallet extends IPrivateWallet {
   multiSbtBuild(
     sbtInfoList: SbtInfo[],
   ): Promise<SignedMultiSbtTransaction | null>;
-  getIdentityProof(asset: string, zkAddress: Address): Promise<string>;
+  getIdentityProof(virtualAsset: string, polkadotAddress: Address,): Promise<any>;
 }

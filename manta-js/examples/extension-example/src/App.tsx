@@ -4,11 +4,16 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Injected, InjectedWeb3, PrivateWalletStateInfo } from './interfaces';
 
-const rpcUrl = 'wss://kwaltz.baikal.testnet.dolphin.training';
+// const rpcUrl = 'wss://kwaltz.baikal.testnet.dolphin.training';
 // const rpcUrl = "wss://ws.calamari.seabird.systems";
+// const decimals = 18
+// const network = 'Dolphin';
+
+const rpcUrl = 'wss://zenlink.zqhxuyuan.cloud:444';
+const decimals = 12;
+const network = 'Calamari';
+
 const assetId = '1';
-const network = 'Dolphin';
-const decimals = 18;
 const toZkAddress = '3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX';
 
 const injectedWeb3 = window.injectedWeb3
@@ -108,7 +113,7 @@ export default function App() {
       };
       func();
     },
-    [injected, setResult, fetchBalance, setOperating, syncWallet],
+    [setResult, fetchBalance, setOperating, syncWallet],
   );
 
   const sendTransaction = useCallback(
@@ -141,7 +146,7 @@ export default function App() {
         console.error(ex);
       }
     },
-    [injected, publicAddress, api, setResult, fetchBalance, setOperating],
+    [publicAddress, api, setResult, fetchBalance, setOperating, syncWallet],
   );
 
   const toPrivateTransaction = useCallback(async () => {
@@ -194,6 +199,7 @@ export default function App() {
   }, [toPublicAmount, injected, publicAddress, sendTransaction]);
 
   const multiSbtBuildTransition = useCallback(async () => {
+    await syncWallet();
     const response = await injected?.privateWallet.multiSbtBuild([
       {
         assetId: startAssetId,
@@ -206,7 +212,7 @@ export default function App() {
     ]);
     console.log(response);
     setResult(response);
-  }, [startAssetId, injected, setResult]);
+  }, [startAssetId, injected, setResult, syncWallet]);
 
   useEffect(() => {
     if (!injected || !injected.privateWallet) {

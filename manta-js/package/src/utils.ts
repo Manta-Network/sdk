@@ -57,7 +57,7 @@ export async function getAssetMetadata(
   assetId: BN,
   network: Network,
 ): Promise<any> {
-  await this.api.isReady;
+  await api.isReady;
   const data: any = await api.query.assetManager.assetIdMetadata(assetId);
   const json = JSON.stringify(data.toHuman());
   const jsonObj = JSON.parse(json);
@@ -198,47 +198,41 @@ export function convertSenderPost(x: any) {
   delete x.nullifier;
 }
 
-// replace all Uint8Array type to Array
-// replace all bigint type to string
-export function formatPostData(post: any): any {
-  const walk = function (data: any, keys: string[]) {
-    for (const key of keys) {
-      if (data[key] instanceof Uint8Array) {
-        data[key] = Array.from(data[key]);
-      } else if (typeof data[key] === 'bigint') {
-        data[key] = data[key].toString();
-      } else if (data[key]) {
-        const tKeys = Object.keys(data[key]);
-        if (tKeys.length > 0) {
-          walk(data[key], tKeys);
-        }
+export function formatWasmJson(data: any): any {
+  return JSON.parse(
+    JSON.stringify(data, (_, value) => {
+      if (typeof value === 'bigint') {
+        return value.toString();
+      } else if (value instanceof Uint8Array) {
+        return Array.from(value);
       }
-    }
-  };
-  walk(post, Object.keys(post));
-  return post;
+      return value;
+    }),
+  );
 }
 
 /// NOTE: `post` from manta-rs sign result should match runtime side data structure type.
 export function transferPost(post: any): any {
-  const json = JSON.parse(JSON.stringify(formatPostData(post)));
+  const json = formatWasmJson(post);
 
   // transfer authorization_signature format
-  if (json.authorization_signature != null) {
+  if (json.authorization_signature && json.authorization_signature.signature) {
     const scala = json.authorization_signature.signature.scalar;
     const nonce = json.authorization_signature.signature.nonce_point;
     json.authorization_signature.signature = [scala, nonce];
   }
 
   // transfer receiver_posts to match runtime side
-  json.receiver_posts.map((x: any) => {
-    convertReceiverPost(x);
-  });
+  json.receiver_posts &&
+    json.receiver_posts.map((x: any) => {
+      convertReceiverPost(x);
+    });
 
   // transfer sender_posts to match runtime side
-  json.sender_posts.map((x: any) => {
-    convertSenderPost(x);
-  });
+  json.sender_posts &&
+    json.sender_posts.map((x: any) => {
+      convertSenderPost(x);
+    });
 
   return json;
 }

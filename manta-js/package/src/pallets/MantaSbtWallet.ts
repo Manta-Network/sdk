@@ -8,14 +8,17 @@ import type {
   Network,
   IMantaSbtWallet,
   SbtInfo,
+  Address,
 } from '.././interfaces';
 import {
+  formatWasmJson,
   mapPostToTransaction,
   toPrivateBuildUnsigned,
   transferPost,
   wrapWasmError,
 } from '../utils';
 import PrivateWallet from '../PrivateWallet';
+import { decodeAddress } from '@polkadot/util-crypto';
 
 const CURRENT_PALLET_NAME: PalletName = 'mantaSBT';
 
@@ -85,7 +88,7 @@ export default class MantaSbtWallet
       this.walletIsBusy = false;
       return {
         batchedTx,
-        transactionDatas,
+        transactionDatas: formatWasmJson(transactionDatas),
       };
     } catch (ex) {
       this.walletIsBusy = false;
@@ -94,8 +97,34 @@ export default class MantaSbtWallet
     }
   }
 
-  async getIdentityProof(asset: string, zkAddress: string): Promise<string> {
-    this.log(`asset: ${asset}, zkAddress: ${zkAddress}`);
-    throw new Error('Method not implemented.');
+  async getIdentityProof(
+    virtualAsset: string,
+    polkadotAddress: Address,
+  ): Promise<any> {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      const identityJson = `[[${virtualAsset}, ${`[${decodeAddress(
+        polkadotAddress,
+      )}]`}]]`;
+      const identityRequest =
+        this.wasm.IdentityRequest.from_string(identityJson);
+      this.log('IdentityProof Start');
+      const identityProof = await this.wasmWallet.identity_proof(
+        identityRequest,
+        this.getWasmNetWork(),
+      );
+      this.log('IdentityProof End');
+      this.walletIsBusy = false;
+      return (
+        (identityProof &&
+          identityProof.map((item: any) => transferPost(item))) ||
+        null
+      );
+    } catch (ex) {
+      this.walletIsBusy = false;
+      console.error('Failed to getIdentityProof', ex);
+      throw wrapWasmError(ex);
+    }
   }
 }
