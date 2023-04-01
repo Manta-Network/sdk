@@ -9,11 +9,11 @@ This package implements a Javascript SDK for connecting with the Manta Network.
 ```
 "manta.js": "^0.0.7-dev0",
 ```
-3. Check out how how to use the manta-js with the following examples: https://github.com/Manta-Network/sdk/blob/dev-pay-sbt/manta-js/examples/asset-webpack-ts/index.ts#L12-L23. There are examples for both MantaPay and MantaSBT systems. Preferrably run them one by one, and to do so change directory to the examples directory and use:
+3. The README below provides code-snippets how to use the manta-js for both MantaPay and MantaSBT systems. Those snippets are also implemented in the example project: https://github.com/Manta-Network/sdk/blob/dev-pay-sbt/manta-js/examples/asset-webpack-ts/index.ts#L12-L23. Run these examples, preferrably one by one, in their directory with the following command:
 ```
 yarn && yarn upgrade manta-js && yarn serve
 ```
-4. To verify on-chain state through a browser front-end, you can connect to the following Manta end-point: https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fc1.manta.moonsea.systems#/explorer, or c2 or c3.
+4. To verify results and on-chain state through a browser front-end, you can connect to the following Manta end-point: https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fc1.manta.moonsea.systems#/explorer, or c2 or c3.
 
 > If using sdk in a node.js environment please go to [Node Specific](#node-specific)
 
