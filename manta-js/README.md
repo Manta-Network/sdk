@@ -7,6 +7,10 @@ This package implements a Javascript SDK for connecting with the Manta Network.
 ```sh
 yarn install manta.js
 ```
+Import in your package.json as such:
+```
+"manta.js": "^0.0.7-dev0",
+```
 
 > If using sdk in a node.js environment please go to [Node Specific](#node-specific)
 
