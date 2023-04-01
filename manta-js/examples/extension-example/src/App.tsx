@@ -133,7 +133,7 @@ export default function App() {
         console.log(response);
         if (!checkResult) {
           setOperating(false);
-          return response;
+          setResult(response);
         } else {
           if (!response || response.length <= 0) {
             setOperating(false);
@@ -207,7 +207,7 @@ export default function App() {
   }, [toPublicAmount, injected, publicAddress, sendTransaction]);
 
   const multiSbtBuildTransition = useCallback(async () => {
-    const response = await sendTransaction(async () => {
+    sendTransaction(async () => {
       return injected?.privateWallet.multiSbtBuild({
         sbtInfoList: [
           {
@@ -222,19 +222,17 @@ export default function App() {
         network,
       });
     }, false);
-    setResult(response);
-  }, [startAssetId, injected, setResult, sendTransaction]);
+  }, [startAssetId, injected, sendTransaction]);
 
   const getSbtIdentityProof = useCallback(async () => {
-    const response = await sendTransaction(async () => {
+    await sendTransaction(async () => {
       return injected?.privateWallet.getSbtIdentityProof({
         virtualAsset,
         polkadotAddress: publicAddress!,
         network,
       });
     }, false);
-    setResult(response);
-  }, [virtualAsset, publicAddress, injected, setResult, sendTransaction]);
+  }, [virtualAsset, publicAddress, injected, sendTransaction]);
 
   // sub state && unSub state
   useEffect(() => {
