@@ -4,7 +4,6 @@ import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 import axios from "axios";
 import { u8aToBn } from '@polkadot/util';
-import { decodeAddress } from '@polkadot/util-crypto';
 import { Wallet } from "@ethersproject/wallet";
 
 const privateWalletConfig = {
@@ -24,7 +23,7 @@ async function main() {
     // const proof_json = await identityProofGen(privateWallet, id_proof);
     // console.log("proof json:" + proof_json);
 
-    // await ethMintSbt();
+    await ethMintSbt();
     await toSBTPrivateTest(true);
     // await reserveAndMints();
     //await toPrivateOnlySignTest();
@@ -658,7 +657,7 @@ const ethMintSbt = async () => {
     const address = {
         bab: signer.address
     };
-    const maybeAssetId: any = await privateWallet.api.query.mantaSbt.evmAddressWhitelist(address);
+    const maybeAssetId: any = await privateWallet.api.query.mantaSbt.evmAddressAllowlist(address);
     if (maybeAssetId.isNone) {
         console.error("no assetId in storage mapped to this account");
         return
