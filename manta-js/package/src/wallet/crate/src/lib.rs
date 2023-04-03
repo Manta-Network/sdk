@@ -1108,6 +1108,22 @@ impl Signer {
         ))
     }
 
+    /// Returns the [`AuthorizationContext`] corresponding to `self`.
+    #[inline]
+    pub fn authorization_context(&self) -> JsValue {
+        into_js(self.as_ref().authorization_context())
+    }
+
+    /// Tries to load `authorization_context_option` to `self`.
+    #[inline]
+    pub fn try_load_authorization_context(
+        &mut self,
+        authorization_context_option: JsValue,
+    ) -> bool {
+        self.as_mut()
+            .try_load_authorization_context(from_js(authorization_context_option))
+    }
+
     /// Loads `accounts` to `self`.
     #[inline]
     pub fn load_accounts(&mut self, accounts: AccountTable) {
@@ -1284,6 +1300,32 @@ impl Wallet {
     #[inline]
     pub fn set_network(&self, ledger: PolkadotJsLedger, signer: Signer, network: Network) {
         self.0.borrow_mut()[usize::from(network.0)] = Some(WalletType::new(ledger, signer.0));
+    }
+
+    /// Returns the [`AuthorizationContext`] corresponding to `self` in `network`.
+    #[inline]
+    pub fn authorization_context(&self, network: Network) -> JsValue {
+        into_js(
+            self.0.borrow()[usize::from(network.0)]
+                .as_ref()
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+                .signer()
+                .authorization_context(),
+        )
+    }
+
+    /// Tries to load `authorization_context_option` to `self` in `network`.
+    #[inline]
+    pub fn try_load_authorization_context(
+        &mut self,
+        authorization_context_option: JsValue,
+        network: Network,
+    ) -> bool {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .try_load_authorization_context(from_js(authorization_context_option))
     }
 
     /// Loads `accounts` to `self` in `network`
@@ -1622,7 +1664,9 @@ impl Wallet {
                     this.sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
                         .await
                         .map(|response| {
-                            let posts = response.0.clone()
+                            let posts = response
+                                .0
+                                .clone()
                                 .into_iter()
                                 .map(|x| TransferPost::from(x.0))
                                 .collect::<Vec<_>>();
@@ -1634,7 +1678,6 @@ impl Wallet {
             network,
         )
     }
-
 
     /// Resets a [`Signer`] to its initial state.
     #[inline]
