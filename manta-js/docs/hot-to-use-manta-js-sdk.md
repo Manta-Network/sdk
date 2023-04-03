@@ -1,1 +1,2 @@
-## How to use manta.js SDK
+# How to use manta.js SDK
+

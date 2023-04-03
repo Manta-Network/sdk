@@ -21,28 +21,14 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-interface PolkadotConfig {
-  polkadotSigner: InjectSigner;
-  polkadotAddress: string;
-}
+
 // const apiEndpoint = 'wss://kwaltz.baikal.testnet.dolphin.training';
 // const nativeTokenDecimals = 18;
 
-// const apiEndpoint = 'wss://ws.calamari.systems';
 const apiEndpoint = 'wss://zenlink.zqhxuyuan.cloud:444';
 const nativeTokenDecimals = 12;
 
-const loggingEnabled = true;
-const provingFilePath =
-  'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving';
-const parametersFilePath =
-  'https://raw.githubusercontent.com/Manta-Network/manta-rs/main/manta-parameters/data/pay/parameters';
-
-const currentNetwork = 'Dolphin';
-let currentSeedPhrase =
-  'spike napkin obscure diamond slice style excess table process story excuse absurd';
-
-let polkadotConfig: PolkadotConfig = null;
+const currentNetwork: interfaces.Network = 'Dolphin';
 
 const assetId = new BN('1');
 // toPrivate Amount (50 DOL)
@@ -51,6 +37,23 @@ const transferInAmount = new BN(50).mul(
 );
 // privateTransfer && toPublic Amount (5 DOL)
 const transferOutAmount = transferInAmount.div(new BN(10));
+
+let currentSeedPhrase =
+  'spike napkin obscure diamond slice style excess table process story excuse absurd';
+
+const loggingEnabled = true;
+
+const provingFilePath =
+  'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving';
+const parametersFilePath =
+  'https://raw.githubusercontent.com/Manta-Network/manta-rs/main/manta-parameters/data/pay/parameters';
+
+interface PolkadotConfig {
+  polkadotSigner: InjectSigner;
+  polkadotAddress: string;
+}
+
+let polkadotConfig: PolkadotConfig = null;
 
 function _log(...message: any[]) {
   console.log(`[Demo] ${performance.now().toFixed(4)}: ${message.join(' ')}`);

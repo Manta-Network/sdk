@@ -1,6 +1,7 @@
 # How to use Manta Wallet in dApp
 
 This doc mainly introduces the private-related content in Manta Wallet; some other content of Wallet Extension is similar to other Polkadot wallets, so this doc will not introduce too much.
+> Note: For private transactions, it is no longer necessary to import manta.js on the dApp side
 
 ## Examples
 

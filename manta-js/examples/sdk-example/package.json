@@ -5,11 +5,7 @@
   "main": "./index.ts",
   "scripts": {
     "start": "yarn --cwd ../../package && yarn --cwd ../../package build-browser && yarn add file:../../package && yarn serve",
-    "serve": "webpack serve",
-    "build": "webpack --mode=production --define-process-env-node-env=production",
-    "build:dev": "webpack --mode=development",
-    "build:prod": "webpack --mode=production --define-process-env-node-env=production",
-    "watch": "webpack --watch"
+    "serve": "webpack serve"
   },
   "dependencies": {
     "@polkadot/extension-dapp": "^0.45.3",
