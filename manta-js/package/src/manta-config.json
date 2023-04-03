@@ -5,7 +5,7 @@
     "NETWORKS": {
         "Dolphin": {
             "name": "Dolphin",
-            "ws": "wss://ws.calamari.seabird.systems",
+            "ws": "wss://kwaltz.baikal.testnet.dolphin.training",
             "ws_local": "ws://127.0.0.1:9944",
             "parachainId": 2084,
             "decimals": 12,
@@ -21,10 +21,10 @@
         },
         "Manta": {
             "name": "Manta",
-            "ws": null,
-            "ws_local": null,
-            "parachainId": null,
-            "decimals": null,
+            "ws": "wss://c1.manta.moonsea.systems",
+            "ws_local": "ws://127.0.0.1:9944",
+            "parachainId": 2084,
+            "decimals": 12,
             "subscanUrl": null
         }
     },
@@ -34,6 +34,25 @@
         "mantaPay": {
             "dense_pull_ledger_diff": {
                 "description": "pull from mantaPay",
+                "params": [{
+                        "name": "checkpoint",
+                        "type": "Checkpoint"
+                    },
+                    {
+                        "name": "max_receiver",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "max_sender",
+                        "type": "u64"
+                    }
+                ],
+                "type": "DensePullResponse"
+            }
+        },
+        "mantaSBT": {
+            "dense_pull_ledger_diff": {
+                "description": "pull from mantaSBT",
                 "params": [{
                         "name": "checkpoint",
                         "type": "Checkpoint"

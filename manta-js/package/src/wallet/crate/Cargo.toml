@@ -39,6 +39,6 @@ manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", tag = "v
 manta-pay = { git = "https://github.com/manta-network/manta-rs.git", tag = "v0.5.12", default-features = true, features = ["arkworks","groth16", "http", "scale", "serde"] }
 manta-util = { git = "https://github.com/manta-network/manta-rs.git", tag = "v0.5.12", default-features = false, features = ["serde", "reqwest"] }
 scale-codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive", "max-encoded-len"] }
-serde_json = { version = "1.0.89", default-features = false, features = ["alloc", "arbitrary_precision"] }
+serde_json = { version = "1.0.91", default-features = false, features = ["alloc", "arbitrary_precision"] }
 wasm-bindgen = { version = "0.2.83", default-features = false, features = ["serde-serialize", "std"] }
 wasm-bindgen-futures = { version = "0.4.33", default-features = false }

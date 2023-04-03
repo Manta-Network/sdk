@@ -1,5 +1,5 @@
 import { ApiPromise } from '@polkadot/api';
-import { Wallet } from './wallet/crate/pkg';
+import { SBTWallet, Wallet } from './wallet/crate/pkg';
 import { Environment, Network } from './privateWallet';
 import BN from 'bn.js';
 import { SubmittableExtrinsic, Signer } from '@polkadot/api/types';
@@ -17,7 +17,7 @@ export type InitApiResult = {
 
 export type InitWasmResult = {
   wasm: any,
-  wasmWallet: Wallet,
+  wasmWallet: Wallet | SBTWallet,
   wasmApi: any
 }
 
@@ -60,4 +60,5 @@ export interface IMantaPrivateWallet {
   privateTransferBuild(assetId: BN, amount: BN, zkAddress: Address, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
   toPublicSend(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<void>;
   toPublicBuild(assetId: BN, amount: BN, polkadotSigner:Signer, polkadotAddress:Address): Promise<SignedTransaction | null>;
+  transactionData(transferPosts:any): Promise<any>;
 }

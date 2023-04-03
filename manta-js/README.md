@@ -2,11 +2,18 @@
 
 This package implements a Javascript SDK for connecting with the Manta Network.
 
-## Installation
+## Quick Setup
 
-```sh
-yarn install manta.js
+1. Download and run latest Manta Signer, following its prompts - https://github.com/Manta-Network/manta-signer/releases/tag/v1.2.1
+3. Import manta-js in your project's package.json as such:
 ```
+"manta.js": "^0.0.7-dev0",
+```
+3. The README below provides code-snippets how to use the manta-js for both MantaPay and MantaSBT systems. Those snippets are also implemented in the example project: https://github.com/Manta-Network/sdk/blob/dev-pay-sbt/manta-js/examples/asset-webpack-ts/index.ts#L12-L23. Some of these examples may require you to have the polkadot-js browser extension installed with accounts already imported in it. Run these examples, preferrably one by one, in their directory with the following command:
+```
+yarn && yarn upgrade manta-js && yarn serve
+```
+4. To verify results and on-chain state through a browser front-end, you can connect to the following Manta end-point: https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fc1.manta.moonsea.systems#/explorer, or c2 or c3.
 
 > If using sdk in a node.js environment please go to [Node Specific](#node-specific)
 
@@ -63,11 +70,11 @@ To switch between environments and networks, a new `MantaPrivateWallet` instance
 import { MantaPrivateWallet, Environment, Network } from 'manta.js';
 
 const prodEnvironment = sdk.Environment.Production;
-const dolphinNetwork = sdk.Network.Dolphin;
+const mantaNetwork = sdk.Network.Manta;
 
 const privateWalletConfig: PrivateWalletConfig = {
     environment: prodEnvironment,
-    network: dolphinNetwork,
+    network: mantaNetwork,
 };
 
 const privateWallet = await MantaPrivateWallet.init(privateWalletConfig);
@@ -122,12 +129,12 @@ Below is an example of how to transact using fungible tokens, there are four mai
 
 > This example assumes the `polkadotAddress` already has associated public funds.
 
-### To Private
+### To Private (fungible token)
 
-This example converts 10 public DOL tokens to 10 private DOL tokens.
+This example converts 10 public MANTA tokens to 10 zkMANTA tokens.
 
 ```javascript
-// DOL token
+// MANTA token
 const assetId = new BN("1");
 const amount = new BN("10000000000000000000");
 
@@ -137,25 +144,25 @@ await privateWallet.initialWalletSync();
 // Get zk address
 const zkAddress = await privateWallet.getZkAddress();
 
-// Get private balance of DOL for given zk address
+// Get private balance of MANTA for given zk address
 const privateBalance = await privateWallet.getPrivateBalance(assetId);
 
-// Privatize 10 DOL to 10 pDOL
+// Privatize 10 MANTA to 10 zkMANTA
 await privateWallet.toPrivateSend(assetId, amount, polkadotSigner, polkadotAddress);
 
 // Sync to get latest data after the transaction and check that it was successful.
 await privateWallet.walletSync();
 
-// The private balance of pDOL should be incremented by 10 units.
+// The private balance of zkMANTA should be incremented by 10 units.
 const newPrivateBalance = await mantaSdk.getPrivateBalance(assetId);
 ```
 
-### Private Transfer
+### Private Transfer (fungible token)
 
-This example transfers 10 private private pDOL to another address.
+This example transfers 10 private private zkMANTA to another address.
 
 ```javascript
-// DOL token
+// MANTA token
 const assetId = new BN("1");
 const amount = new BN("10000000000000000000");
 
@@ -165,23 +172,23 @@ await privateWallet.initialWalletSync();
 // Get zk address
 const zkAddress = await privateWallet.getZkAddress();
 
-// Private Transfer of 10 pDOL to another zk address
+// Private Transfer of 10 zkMANTA to another zk address
 const exampleZkAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
 await privateWallet.privateTransferSend(assetId, amount, exampleZkAddress, polkadotSigner, polkadotAddress);
 
 // Sync to get latest data after transaction and check that it was successful.
 await privateWallet.walletSync();
 
-// The private balance of pDOL should decrease by 10 units.
+// The private balance of zkMANTA should decrease by 10 units.
 const newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
 ```
 
-### To Public
+### To Public (fungible token)
 
-This example converts 5 private pDOL to 5 public DOL.
+This example converts 5 private zkMANTA to 5 public MANTA.
 
 ```javascript
-// DOL token
+// MANTA token
 const assetId = new BN("1");
 const amount = new BN("5000000000000000000");
 
@@ -191,16 +198,16 @@ await privateWallet.initialWalletSync();
 // Get zk address
 const zkAddress = await privateWallet.getZkAddress();
 
-// Get private balance of DOL for given zk address
+// Get private balance of MANTA for given zk address
 const privateBalance = await privateWallet.getPrivateBalance(assetId);
 
-// Convert 5 pDOL back to DOL
+// Convert 5 zkMANTA back to MANTA
 await privateWallet.toPublicSend(assetId, amount, polkadotSigner, polkadotAddress);
 
 // Sync to get latest data after transaction and check that it was successful.
 await privateWallet.walletSync();
 
-// The private balance of pDOL should decrease by 5 units.
+// The private balance of zkMANTA should decrease by 5 units.
 const newPrivateBalance = await privateWallet.getPrivateBalance(assetId);
 ```
 
@@ -214,18 +221,18 @@ import { MantaUtilities } from "manta.js";
 // Get signer version, signer must be running.
 const signerVersion = await MantaUtilities.getSignerVersion();
 
-// DOL token
+// MANTA token
 const assetId = new BN("1");
 
-// Get public balance of DOL for `polkadotAddress`.
+// Get public balance of MANTA for `polkadotAddress`.
 const oldPublicBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
 
-// Public transfer of 5 DOL to `destinationAddress`.
+// Public transfer of 5 MANTA to `destinationAddress`.
 const destinationAddress = "dmyhNmYL13N7ZKcVYqBQhvrk5kSfrKZUmrjX9vAaM4846bWKR";
 const amount = new BN("5000000000000000000");
 await MantaUtilities.publicTransfer(privateWallet.api, assetId, amount, destinationAddress, polkadotAddress, polkadotSigner);
 
-// Public balance should now be 5 DOL less that `oldPublicBalance`.
+// Public balance should now be 5 MANTA less that `oldPublicBalance`.
 const newPublicBalance = await MantaUtilities.getPublicBalance(privateWallet.api, assetId, polkadotAddress);
 ```
 
@@ -233,14 +240,14 @@ const newPublicBalance = await MantaUtilities.getPublicBalance(privateWallet.api
 
 In some cases you may not want to send transaction to the ledger through manta.js, thus you can get sign result after manta-signer has signed the transaction and send the transaction yourself. This is done by using the `toPrivateBuild`, `privateTransferBuild`, `publicTransferBuild` functions.
 
-This example returns the signed transaction of `toPrivate` for 10 DOL.
+This example returns the signed transaction of `toPrivate` for 10 MANTA.
 
 ```javascript
 const assetId = new BN("1");
 const amount = new BN("10000000000000000000");
 
-const env = sdk.Environment.Development;
-const net = sdk.Network.Dolphin;
+const env = sdk.Environment.Production;
+const net = sdk.Network.Manta;
 const privateWallet = await sdk.init(env,net);
 
 const zkAddress = await privateWallet.getZkAddress();
@@ -279,3 +286,50 @@ Then submit transaction.
 ![extrinsic decode](./doc/to_private_submit.png)
 
 You should see your extrinsic show up on polkadot.js explorer. Then you will notice an increase in your private balance.
+
+## zkSBT
+
+zkSBT sdk is extension of manta-pay sdk, and add some custom logic, including:
+- We have a pre-charge steps when reserve asset id of zkSBT.
+- User mint zkSBT by provide metadata, the metadata of zkSBT can be image url or anything, but we have a size limit of metadata(Current is 300 length).
+
+Developer should use sdk to mint zkSBT, because current we need `Signer` to generate `TransferPost` which contains lots of zkp proof information.
+
+### Mint zkSBT
+
+Here is a example of mint zkSBT steps:
+
+1. initial wallet and signer.
+
+> `getPolkadotSignerAndAddress` is the same as manta-pay sdk.
+
+```js
+    const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
+    const polkadotConfig = await getPolkadotSignerAndAddress();
+
+    await privateWallet.initialWalletSync();
+```
+
+2. reserve asest id before mint zkSBT.
+
+```js
+    const reserveSbt = await privateWallet.buildReserveSbt(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
+
+    await reserveSbt.signAndSend(polkadotConfig.polkadotAddress);
+```
+
+3. Mint zkSBT by provide start asset id, number of token to mint, and metadata list.
+
+> Notice: due to zkp proof extrinsic size is large than normal transaction, we current support at least 5 zkSBT in one batch.
+
+```js
+    const numberOfMints = 2;
+    const metadata: string[] = [];
+    for (let i = 0; i < numberOfMints; i++ ) {
+        metadata.push(`YOUR METADAT INFO ${i.toString()}`)
+    }
+
+    const sbtMint = await privateWallet.buildSbtBatch(polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress, assetId, numberOfMints, metadata);
+
+    await sbtMint.batchTx.signAndSend(polkadotConfig.polkadotAddress);
+```
