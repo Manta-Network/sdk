@@ -7,7 +7,7 @@ This doc mainly introduces the private-related content in Manta Wallet; some oth
 
   - [`extension-example`](../examples/extension-example). Temporary online website: https://2076b1.csb.app
 
-## Initialize (`privateWallet`)
+## Initialize
 
 There are two ways to use Manta Wallet.
 
