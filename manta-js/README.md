@@ -268,14 +268,14 @@ Then you can use the signResult to submit transaction by your self. Here is an e
 
 Copy the transaction to polkadot.js `Extrinsic` decode:
 
-![extrinsic decode](./doc/to_private_decode.png)
+![extrinsic decode](./docs/images/to_private_decode.png)
 
 Switch to `Submission`:
 
-![extrinsic decode](./doc/to_private_extrinsic.png)
+![extrinsic decode](./docs/images/to_private_extrinsic.png)
 
 Then submit transaction.
 
-![extrinsic decode](./doc/to_private_submit.png)
+![extrinsic decode](./docs/images/to_private_submit.png)
 
 You should see your extrinsic show up on polkadot.js explorer. Then you will notice an increase in your private balance.

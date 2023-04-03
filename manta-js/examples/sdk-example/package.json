@@ -1,7 +1,7 @@
 {
-  "name": "asset-webpack-ts",
+  "name": "sdk-example",
   "version": "1.0.0",
-  "description": "manta api example",
+  "description": "manta sdk example",
   "main": "./index.ts",
   "scripts": {
     "start": "yarn --cwd ../../package && yarn --cwd ../../package build-browser && yarn add file:../../package && yarn serve",
