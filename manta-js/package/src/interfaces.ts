@@ -92,7 +92,7 @@ export interface IPrivateWallet {
   walletSync(): Promise<boolean>;
   getZkAddress(): Promise<Address>;
   getZkBalance(assetId: BN): Promise<BN | null>;
-  getMultiZkBalance(assetId: BN[]): Promise<BN[] | null>;
+  getMultiZkBalance(assetIds: BN[]): Promise<BN[] | null>;
   resetState(): Promise<boolean>;
 }
 

@@ -142,8 +142,8 @@ const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
   await privateWallet.initialSigner();
   _log('Load user mnemonic');
   await privateWallet.loadUserSeedPhrase(currentSeedPhrase);
-  const privateAddress = await privateWallet.getZkAddress();
-  _log('The zkAddress is: ', privateAddress);
+  const zkAddress = await privateWallet.getZkAddress();
+  _log('The zkAddress is: ', zkAddress);
 
   _log('Wait for api ready');
 

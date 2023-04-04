@@ -13,7 +13,7 @@ yarn start # Will rebuild the sdk and run example
 
 1. Update the config in the [index.ts](./index.ts) file, If you need to change.
 ``` typescript
-const apiEndpoint = 'wss://zenlink.zqhxuyuan.cloud:444';
+const apiEndpoint = 'wss://ws.calamari.systems';
 const nativeTokenDecimals = 12;
 
 const currentNetwork: interfaces.Network = 'Dolphin';
