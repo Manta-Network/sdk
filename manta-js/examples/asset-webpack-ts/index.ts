@@ -24,7 +24,7 @@ async function main() {
     // console.log("proof json:" + proof_json);
 
     await ethMintSbt();
-    await toSBTPrivateTest(true);
+    // await toSBTPrivateTest(true);
     // await reserveAndMints();
     //await toPrivateOnlySignTest();
     //await toPrivateTest();
@@ -649,8 +649,9 @@ const identityProofGen = async (privateWallet: any, virtualAsset: string, addres
 const ethMintSbt = async () => {
     const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
     const polkadotConfig = await getPolkadotSignerAndAddress();
+    console.log("public:" + polkadotConfig.polkadotAddress);
 
-    const signer = new Wallet("0x0123456789012345678901234567890123456789012345678901234567890123");
+    const signer = new Wallet("522bd73700711e4a0080dd31dbabbe6e0a0c025007528d2440fa997803aae265");
     console.log("eth address: ", signer.address);
 
     // BAB address
@@ -668,10 +669,17 @@ const ethMintSbt = async () => {
         return
     }
     const assetId = assetIdInfo.asAvailable;
+    // const assetId = new BN(2);
+    console.log("assetId:" + assetId);
 
     await privateWallet.initialWalletSync();
     const initalPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("NFT present: ", initalPrivateBalance.toString());
+
+    const chain_info = await privateWallet.api.query.mantaSbt.mintChainInfos("bab");
+    const json_chain = JSON.parse(JSON.stringify(chain_info));
+    const chain_id = json_chain.chainId;
+    console.log("chainId:" + chain_id);
 
     // generate zkp
     const post = await privateWallet.buildSbtPost(assetId);
@@ -679,7 +687,7 @@ const ethMintSbt = async () => {
     const domain = {
         name: "Claim Free SBT",
         version: "1",
-        chainId: privateWallet.api.consts.mantaSbt.chainId.toString(),
+        chainId: chain_id,
         salt: (await privateWallet.api.rpc.chain.getBlockHash(0)).toHex(),
     };
     const types = {
@@ -691,7 +699,7 @@ const ethMintSbt = async () => {
     };
     const signature = await signer._signTypedData(domain, types, value);
 
-    const evmTx = privateWallet.api.tx.mantaSbt.mintSbtEth(post, signature, address, "hello eth");
+    const evmTx = privateWallet.api.tx.mantaSbt.mintSbtEth(post, signature, address, null, null, "hello eth");
     privateWallet.api.setSigner(polkadotConfig.polkadotSigner);
     await evmTx.signAndSend(polkadotConfig.polkadotAddress);
 
