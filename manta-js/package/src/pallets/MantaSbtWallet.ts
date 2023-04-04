@@ -1,7 +1,6 @@
 import BN from 'bn.js';
 import type { Wallet as WasmWallet } from '../wallet/crate/pkg/manta_wasm_wallet';
 import type {
-  SignedMultiSbtTransaction,
   IBaseWallet,
   ILedgerApi,
   PalletName,
@@ -9,10 +8,10 @@ import type {
   IMantaSbtWallet,
   SbtInfo,
   Address,
+  SignedMultiSbtPost,
 } from '.././interfaces';
 import {
   formatWasmJson,
-  mapPostToTransaction,
   toPrivateBuildUnsigned,
   transferPost,
   wrapWasmError,
@@ -49,14 +48,14 @@ export default class MantaSbtWallet
     );
   }
 
-  async multiSbtBuild(
+  async multiSbtPostBuild(
     sbtInfoList: SbtInfo[],
-  ): Promise<SignedMultiSbtTransaction | null> {
+  ): Promise<SignedMultiSbtPost | null> {
     try {
       await this.waitForWallet();
       this.walletIsBusy = true;
       const defaultAmount = new BN('1');
-      const transactions = [];
+      const posts = [];
       const transactionDatas = [];
       for (let i = 0; i < sbtInfoList.length; i += 1) {
         const sbtInfo = sbtInfoList[i];
@@ -70,25 +69,13 @@ export default class MantaSbtWallet
           null,
           this.getWasmNetWork(),
         );
-        const posts = postsTxs[0];
-        for (let j = 0; j < posts.length; j++) {
-          const convertedPost = transferPost(posts[j]);
-          const transaction = await mapPostToTransaction(
-            this.palletName,
-            this.api,
-            convertedPost,
-            sbtInfo.metadata,
-            sbtInfo.signature,
-          );
-          transactions.push(transaction);
-        }
+        posts.push(postsTxs[0].map((post: any) => transferPost(post)));
         transactionDatas.push(postsTxs[1]);
       }
-      const batchedTx = await this.api.tx.utility.batch(transactions);
       this.walletIsBusy = false;
       return {
-        batchedTx,
         transactionDatas: formatWasmJson(transactionDatas),
+        posts,
       };
     } catch (ex) {
       this.walletIsBusy = false;

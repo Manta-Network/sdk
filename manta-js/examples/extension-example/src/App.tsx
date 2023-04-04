@@ -208,16 +208,10 @@ export default function App() {
 
   const multiSbtBuildTransition = useCallback(async () => {
     sendTransaction(async () => {
-      return injected?.privateWallet.multiSbtBuild({
+      return injected?.privateWallet.multiSbtPostBuild({
         sbtInfoList: [
-          {
-            assetId: startAssetId,
-            amount: '1',
-          },
-          {
-            assetId: String(startAssetId + 1),
-            amount: '1',
-          },
+          { assetId: startAssetId, amount: '1' },
+          { assetId: String(startAssetId + 1), amount: '1' },
         ],
         network,
       });

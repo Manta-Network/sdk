@@ -1,5 +1,4 @@
 import type { Unsubcall } from '@polkadot/extension-inject/types'
-import type { HexString } from '@polkadot/util/types'
 import type { Injected as PolkadotInjected } from '@polkadot/extension-inject/types'
 
 declare global {
@@ -51,19 +50,17 @@ export interface RequestTransferTransactionPayload
   toZkAddress: string
 }
 
-export interface ResponseBuildMultiSbt {
-  transactionDatas: any
-  batchedTx: HexString
+export interface ResponseBuildMultiSbtPost {
+  transactionDatas: any[];
+  posts: any[];
 }
 
 export type RequestSbtInfo = {
   assetId: string;
   amount?: string;
-  signature?: string;
-  metadata?: string;
 };
 
-export interface RequestBuildMultiSbtPayload {
+export interface RequestBuildMultiSbtPostPayload {
   sbtInfoList: RequestSbtInfo[]
   network: Network
 }
@@ -91,9 +88,9 @@ export interface InjectedPrivateWallet {
   getMultiZkSbtBalance(
     payload: RequestMultiZkBalancePayload,
   ): Promise<string[] | null>
-  multiSbtBuild(
-    payload: RequestBuildMultiSbtPayload,
-  ): Promise<ResponseBuildMultiSbt | null>
+  multiSbtPostBuild(
+    payload: RequestBuildMultiSbtPostPayload,
+  ): Promise<ResponseBuildMultiSbtPost | null>
   getSbtIdentityProof(payload: RequestGetIdentityProofPayload): Promise<any>
   subscribeWalletState: (
     cb: (state: PrivateWalletStateInfo) => void | Promise<void>,

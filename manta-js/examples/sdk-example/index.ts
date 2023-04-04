@@ -21,7 +21,6 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-
 // const apiEndpoint = 'wss://kwaltz.baikal.testnet.dolphin.training';
 // const nativeTokenDecimals = 18;
 
@@ -251,14 +250,13 @@ const toPublicTest = async (privateWallet: MantaPayWallet) => {
 };
 
 /// Test to execute a `MultiSbtBuild` transaction.
-const multiSbtBuildOnlySignTest = async (
+const multiSbtPostBuildOnlySignTest = async (
   privateWallet: MantaSbtWallet,
   sbtInfoList: interfaces.SbtInfo[],
 ) => {
   await privateWallet.walletSync();
-  const transaction = await privateWallet.multiSbtBuild(sbtInfoList);
-  console.log(transaction);
-  _log(`Hex batchedTx: ${transaction.batchedTx.toHex()}`);
+  const result = await privateWallet.multiSbtPostBuild(sbtInfoList);
+  console.log(result);
 };
 
 const getIdentityProof = async (privateWallet: MantaSbtWallet) => {
@@ -302,21 +300,15 @@ window.actions = {
   async toPrivateOnlySignTest() {
     await toPrivateOnlySignTest(pallets.mantaPay as MantaPayWallet);
   },
-  async multiSbtBuildOnlySignTest(startAssetId: string) {
+  async multiSbtPostBuildOnlySignTest(startAssetId: string) {
     if (!startAssetId) {
       throw new Error('startAssetId is required');
     }
     const sbtInfoList: interfaces.SbtInfo[] = [
-      {
-        assetId: new BN(startAssetId),
-        metadata: 'test1',
-      },
-      {
-        assetId: new BN(startAssetId).add(new BN(1)),
-        metadata: 'test2',
-      },
+      { assetId: new BN(startAssetId) },
+      { assetId: new BN(startAssetId).add(new BN(1)) },
     ];
-    await multiSbtBuildOnlySignTest(
+    await multiSbtPostBuildOnlySignTest(
       pallets.mantaSbt as MantaSbtWallet,
       sbtInfoList,
     );

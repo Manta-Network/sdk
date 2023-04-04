@@ -18,8 +18,6 @@ export async function mapPostToTransaction(
   palletName: PalletName,
   api: ApiPromise,
   post: any,
-  metadata?: string,
-  signature?: string,
 ): Promise<SubmittableExtrinsic<'promise', any>> {
   if (palletName === 'mantaPay') {
     const sources = post.sources.length;
@@ -44,8 +42,8 @@ export async function mapPostToTransaction(
       );
     }
   } else if (palletName === 'mantaSBT') {
-    // TODO: update toPrivate to new function
-    const mint_tx = await api.tx.mantaSbt.toPrivate(post, metadata);
+    // This method is temporarily unavailable
+    const mint_tx = await api.tx.mantaSbt.toPrivate(post, null);
     return mint_tx;
   }
 }

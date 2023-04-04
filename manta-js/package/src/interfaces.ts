@@ -26,9 +26,9 @@ export type SignedTransaction = {
   txs: SubmittableExtrinsic<'promise', any>[];
 };
 
-export type SignedMultiSbtTransaction = {
+export type SignedMultiSbtPost = {
   transactionDatas: any[];
-  batchedTx: SubmittableExtrinsic<'promise', any>;
+  posts: any[];
 };
 
 export type SaveStorageStateToLocal = (
@@ -54,8 +54,6 @@ export type BaseWalletConfig = {
 export type SbtInfo = {
   assetId: BN;
   amount?: BN;
-  signature?: string;
-  metadata?: string;
 }
 
 export interface IBaseWallet {
@@ -113,8 +111,8 @@ export interface IMantaPayWallet extends IPrivateWallet {
 }
 
 export interface IMantaSbtWallet extends IPrivateWallet {
-  multiSbtBuild(
+  multiSbtPostBuild(
     sbtInfoList: SbtInfo[],
-  ): Promise<SignedMultiSbtTransaction | null>;
+  ): Promise<SignedMultiSbtPost | null>;
   getIdentityProof(virtualAsset: string, polkadotAddress: Address,): Promise<any>;
 }
