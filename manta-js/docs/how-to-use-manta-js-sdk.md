@@ -237,7 +237,7 @@ await mantaSbtWallet.getMultiZkBalance(assetIds: BN[]);
 ``` typescript
 await mantaPayWallet.getZkAddress();
 ```
-### 9. Switch network
+### 10. Switch network
 ``` typescript
 // mantaPay
 await mantaPayWallet.setNetwork('Calamari');
