@@ -206,7 +206,7 @@ export default function App() {
     });
   }, [toPublicAmount, injected, publicAddress, sendTransaction]);
 
-  const multiSbtBuildTransition = useCallback(async () => {
+  const multiSbtPostBuildTransition = useCallback(async () => {
     sendTransaction(async () => {
       return injected?.privateWallet.multiSbtPostBuild({
         sbtInfoList: [
@@ -381,9 +381,9 @@ export default function App() {
                   <button
                     type="button"
                     disabled={operating}
-                    onClick={multiSbtBuildTransition}
+                    onClick={multiSbtPostBuildTransition}
                   >
-                    MultiSbtBuild
+                    MultiSbtPostBuild
                   </button>
                 </p>
                 <p className="sign-item">
