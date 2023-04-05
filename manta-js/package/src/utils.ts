@@ -42,10 +42,6 @@ export async function mapPostToTransaction(
       );
     }
   }
-  // else if (palletName === 'mantaSBT') {
-  //   const mint_tx = await api.tx.mantaSbt.toPrivate(post, null);
-  //   return mint_tx;
-  // }
 }
 
 /// Returns the metadata for an asset with a given `assetId` for the currently

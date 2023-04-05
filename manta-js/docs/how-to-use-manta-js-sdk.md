@@ -185,8 +185,6 @@ mantaPayWallet.dropUserSeedPhrase();
 mantaPayWallet.loadAuthorizationContext(seedPhrase: string);
 await mantaPayWallet.walletSync();
 await mantaPayWallet.getZkAddress();
-
-// mantaPayWallet.dropAuthorizationContext();
 ```
 
 ### 5. Initialize the synchronization wallet

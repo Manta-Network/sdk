@@ -7,7 +7,7 @@
 yarn
 yarn start # Will rebuild the sdk and run example
 ```
-> This example supports any polkadot extension wallet
+> This example supports any polkadot extension wallet, such as polkadot.js, SubWallet, Talisman, MantaWallet.
 
 ## How to test the SDK
 
