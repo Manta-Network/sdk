@@ -41,11 +41,11 @@ export async function mapPostToTransaction(
           ` ${receivers} receivers and ${sinks} sinks`,
       );
     }
-  } else if (palletName === 'mantaSBT') {
-    // This method is temporarily unavailable
-    const mint_tx = await api.tx.mantaSbt.toPrivate(post, null);
-    return mint_tx;
   }
+  // else if (palletName === 'mantaSBT') {
+  //   const mint_tx = await api.tx.mantaSbt.toPrivate(post, null);
+  //   return mint_tx;
+  // }
 }
 
 /// Returns the metadata for an asset with a given `assetId` for the currently
@@ -215,9 +215,9 @@ export function transferPost(post: any): any {
 
   // transfer authorization_signature format
   if (json.authorization_signature && json.authorization_signature.signature) {
-    const scala = json.authorization_signature.signature.scalar;
+    const scalar = json.authorization_signature.signature.scalar;
     const nonce = json.authorization_signature.signature.nonce_point;
-    json.authorization_signature.signature = [scala, nonce];
+    json.authorization_signature.signature = [scalar, nonce];
   }
 
   // transfer receiver_posts to match runtime side
