@@ -21,9 +21,6 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-// const apiEndpoint = 'wss://kwaltz.baikal.testnet.dolphin.training';
-// const nativeTokenDecimals = 18;
-
 const apiEndpoint = 'wss://zenlink.zqhxuyuan.cloud:444';
 const nativeTokenDecimals = 12;
 

@@ -4,11 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Injected, InjectedWeb3, PrivateWalletStateInfo } from './interfaces';
 
-// const rpcUrl = 'wss://kwaltz.baikal.testnet.dolphin.training';
-// const rpcUrl = "wss://ws.calamari.seabird.systems";
-// const decimals = 18
-// const network = 'Dolphin';
-
 const rpcUrl = 'wss://zenlink.zqhxuyuan.cloud:444';
 const decimals = 12;
 const network = 'Calamari';
