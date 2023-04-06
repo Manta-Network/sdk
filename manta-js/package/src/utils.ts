@@ -277,21 +277,3 @@ export async function fetchFile(url: string): Promise<Uint8Array | null> {
 export function wrapWasmError(error: Error | string) {
   return typeof error === 'string' ? new Error(error) : error;
 }
-
-export function formatSbtTransactionData(data: any) {
-  const posts: any = [];
-  const datas: any = [];
-  data.forEach((item: any) => {
-    const itemBody = item[0].body;
-    delete item[0].body;
-    posts.push({
-      ...item[0],
-      ...itemBody,
-      sources: itemBody.sources.map((source: any) =>
-        Array.from(bnToU8a(source, { bitLength: 128 })),
-      ),
-    });
-    datas.push(item[1]);
-  });
-  return [posts, datas];
-}

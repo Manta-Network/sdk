@@ -253,11 +253,6 @@ impl_js_compatible!(
 );
 impl_js_compatible!(SyncError, signer::SyncError, "Synchronization Error");
 impl_js_compatible!(SyncResult, signer::SyncResult, "Synchronization Result");
-impl_js_compatible!(
-    SignWithTransactionDataResponse,
-    signer::SignWithTransactionDataResponse,
-    "Sign With Transaction Data Response"
-);
 impl_js_compatible!(FullParameters, config::FullParameters, "Full Parameters");
 impl_js_compatible!(
     SignWithTransactionDataResult,
@@ -1601,7 +1596,13 @@ impl Wallet {
                 Box::pin(async {
                     this.sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
                         .await
-                        .map(SignWithTransactionDataResponse::from)
+                        .map(|response| {
+                            response
+                                .0
+                                .into_iter()
+                                .map(|x| (TransferPost::from(x.0), x.1))
+                                .collect::<Vec<_>>()
+                        })
                 })
             },
             network,
