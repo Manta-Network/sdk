@@ -1108,6 +1108,22 @@ impl Signer {
         ))
     }
 
+    /// Returns the [`AuthorizationContext`] corresponding to `self`.
+    #[inline]
+    pub fn authorization_context(&self) -> JsValue {
+        into_js(self.as_ref().authorization_context())
+    }
+
+    /// Tries to load `authorization_context_option` to `self`.
+    #[inline]
+    pub fn try_load_authorization_context(
+        &mut self,
+        authorization_context_option: JsValue,
+    ) -> bool {
+        self.as_mut()
+            .try_load_authorization_context(from_js(authorization_context_option))
+    }
+
     /// Loads `accounts` to `self`.
     #[inline]
     pub fn load_accounts(&mut self, accounts: AccountTable) {
@@ -1157,6 +1173,18 @@ impl Signer {
     #[inline]
     pub fn sync(&mut self, request: SyncRequest) -> SyncResult {
         self.as_mut().sync(request.into()).into()
+    }
+
+    /// Updates the internal ledger state, returning the new asset distribution.
+    ///
+    /// # Note
+    ///
+    /// This method updates the checkpoint and assetmap, but it does not update
+    /// the [`UtxoAccumulator`]. Therefore, it should
+    /// only be used for non-spendable assets such as SBTs.
+    #[inline]
+    pub fn sbt_sync(&mut self, request: SyncRequest) -> SyncResult {
+        self.as_mut().sbt_sync(request.into()).into()
     }
 
     /// Performs the initial synchronization of a new signer with the ledger data.
@@ -1284,6 +1312,32 @@ impl Wallet {
     #[inline]
     pub fn set_network(&self, ledger: PolkadotJsLedger, signer: Signer, network: Network) {
         self.0.borrow_mut()[usize::from(network.0)] = Some(WalletType::new(ledger, signer.0));
+    }
+
+    /// Returns the [`AuthorizationContext`] corresponding to `self` in `network`.
+    #[inline]
+    pub fn authorization_context(&self, network: Network) -> JsValue {
+        into_js(
+            self.0.borrow()[usize::from(network.0)]
+                .as_ref()
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+                .signer()
+                .authorization_context(),
+        )
+    }
+
+    /// Tries to load `authorization_context_option` to `self` in `network`.
+    #[inline]
+    pub fn try_load_authorization_context(
+        &mut self,
+        authorization_context_option: JsValue,
+        network: Network,
+    ) -> bool {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .try_load_authorization_context(from_js(authorization_context_option))
     }
 
     /// Loads `accounts` to `self` in `network`
@@ -1471,6 +1525,35 @@ impl Wallet {
         self.with_async(|this| Box::pin(this.sync()), network)
     }
 
+    /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
+    /// continuously calling [`sbt_sync_partial`] until all the ledger data has
+    /// arrived at and has been synchronized with the wallet.
+    ///
+    /// # Failure Conditions
+    ///
+    /// This method returns an element of type [`Error`] on failure, which can result from any
+    /// number of synchronization issues between the wallet, the ledger, and the signer. See the
+    /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
+    /// how to resolve them.
+    ///
+    /// # Note
+    ///
+    /// In general, this method does not update the [`Utxo`] accumulator, thus making the new assets
+    /// effectively non-spendable. Therefore, this method should only be used when the pallet does not
+    /// allow [`PrivateTransfer`]s or [`ToPublic`] transactions, for example in the case of
+    /// Soul-Bound Tokens (SBTs).
+    ///
+    /// [`sbt_sync_partial`]: Self::sbt_sync_partial
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
+    /// [`Utxo`]: utxo::Utxo
+    /// [`PrivateTransfer`]: canonical::PrivateTransfer
+    /// [`ToPublic`]: canonical::ToPublic
+    #[inline]
+    pub fn sbt_sync(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(this.sbt_sync()), network)
+    }
+
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
     /// a [`ControlFlow`] for matching against to determine if the wallet requires more
     /// synchronization.
@@ -1487,6 +1570,34 @@ impl Wallet {
     #[inline]
     pub fn sync_partial(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(this.sync_partial()), network)
+    }
+
+    /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
+    /// a [`ControlFlow`] for matching against to determine if the wallet requires more
+    /// synchronization.
+    ///
+    /// # Failure Conditions
+    ///
+    /// This method returns an element of type [`Error`] on failure, which can result from any
+    /// number of synchronization issues between the wallet, the ledger, and the signer. See the
+    /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
+    /// how to resolve them.
+    ///
+    /// # Note
+    ///
+    /// In general, this method does not update the [`Utxo`] accumulator, thus making the new assets
+    /// effectively non-spendable. Therefore, this method should only be used when the pallet does not
+    /// allow [`PrivateTransfer`]s or [`ToPublic`] transactions, for example in the case of
+    /// Soul-Bound Tokens (SBTs).
+    ///
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
+    /// [`Utxo`]: utxo::Utxo
+    /// [`PrivateTransfer`]: canonical::PrivateTransfer
+    /// [`ToPublic`]: canonical::ToPublic
+    #[inline]
+    pub fn sbt_sync_partial(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(this.sbt_sync_partial()), network)
     }
 
     /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for context. This
