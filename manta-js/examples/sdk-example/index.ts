@@ -246,7 +246,7 @@ const toPublicTest = async (privateWallet: MantaPayWallet) => {
   await queryTransferResult(privateWallet, initialPrivateBalance);
 };
 
-/// Test to execute a `MultiSbtBuild` transaction.
+/// Test to execute a `MultiSbtPostBuild` transaction.
 const multiSbtPostBuildOnlySignTest = async (
   privateWallet: MantaSbtWallet,
   sbtInfoList: interfaces.SbtInfo[],

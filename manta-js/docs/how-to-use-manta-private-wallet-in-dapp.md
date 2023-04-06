@@ -148,19 +148,13 @@ const balance = await privateWallet.getZkSbtBalance({ network, assetId });
 const balance = await privateWallet.getMultiZkSbtBalance({ network, assetIds });
 ```
 
-### build multiSBT transaction
+### build multiSBT posts
 ``` typescript
-// sync wallet is required before build
-await privateWallet.walletSync();
-
 const sbtInfoList = [
   { assetId: '1', amount: '1' },
   { assetId: '2', amount: '1' },
 ];
-const { batchedTx, transactionDatas } = await privateWallet.multiSbtBuild({ sbtInfoList, network });
-
-// signAndSend the transaction
-await api.tx(txHexList).signAndSend(publicAddress, () => {})
+const { posts, transactionDatas } = await privateWallet.multiSbtPostBuild({ sbtInfoList, network });
 ```
 
 ### get identity proof

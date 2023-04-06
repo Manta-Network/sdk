@@ -79,7 +79,7 @@ export default class MantaSbtWallet
       };
     } catch (ex) {
       this.walletIsBusy = false;
-      console.error('Failed to build multiSbtBuild.', ex);
+      console.error('Failed to build multiSbtPostBuild.', ex);
       throw wrapWasmError(ex);
     }
   }

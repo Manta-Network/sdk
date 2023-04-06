@@ -37,7 +37,7 @@ yarn start # chrome will automatically open localhost:8080
 ```
 3. Open the chrome devtools，When you see `Initial successful`, it means that the wallet of mantaPay and mantaSBT have been synchronized successfully. Then you can execute the following code to test
 ``` typescript
-// Under the window.actions object, the following methods are injected for testing
+// Under the `window.actions` object, The following methods will be automatically injected into `window.actions`
 // This code is at the bottom of the index.ts file
 window.actions = {
   getPallets() {
@@ -55,21 +55,15 @@ window.actions = {
   async toPrivateOnlySignTest() {
     await toPrivateOnlySignTest(pallets.mantaPay as MantaPayWallet);
   },
-  async multiSbtBuildOnlySignTest(startAssetId: string) {
+  async multiSbtPostBuildOnlySignTest(startAssetId: string) {
     if (!startAssetId) {
       throw new Error('startAssetId is required');
     }
     const sbtInfoList: interfaces.SbtInfo[] = [
-      {
-        assetId: new BN(startAssetId),
-        metadata: 'test1',
-      },
-      {
-        assetId: new BN(startAssetId).add(new BN(1)),
-        metadata: 'test2',
-      },
+      { assetId: new BN(startAssetId) },
+      { assetId: new BN(startAssetId).add(new BN(1)) },
     ];
-    await multiSbtBuildOnlySignTest(
+    await multiSbtPostBuildOnlySignTest(
       pallets.mantaSbt as MantaSbtWallet,
       sbtInfoList,
     );
