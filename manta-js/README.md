@@ -16,6 +16,9 @@
 ## How to build
 
 ``` sh
+# If wasm-pack is not installed, please install wasm-pack first, https://rustwasm.github.io/wasm-pack/installer/
+curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
 cd ./package
 yarn
 yarn build-browser
