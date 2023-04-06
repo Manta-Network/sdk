@@ -38,7 +38,7 @@ let currentSeedPhrase =
   'spike napkin obscure diamond slice style excess table process story excuse absurd';
 
 // If you need to test a new account without any Ledger data, please update it to true
-const newAccountFeatureEnabled = true;
+const newAccountFeatureEnabled = false;
 
 const loggingEnabled = true;
 
