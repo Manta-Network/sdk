@@ -186,7 +186,7 @@ const queryTransferResult = async (
 
 /// Test to execute a `PrivateBuild` transaction.
 /// without publishing the transaction.
-const toPrivateOnlySignTest = async (privateWallet: MantaPayWallet) => {
+const toPrivateBuild = async (privateWallet: MantaPayWallet) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
@@ -204,7 +204,7 @@ const toPrivateOnlySignTest = async (privateWallet: MantaPayWallet) => {
 };
 
 /// Test to execute a `ToPrivate` transaction.
-const toPrivateTest = async (privateWallet: MantaPayWallet) => {
+const toPrivateSend = async (privateWallet: MantaPayWallet) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
@@ -217,7 +217,7 @@ const toPrivateTest = async (privateWallet: MantaPayWallet) => {
 };
 
 /// Test to execute a `PrivateTransfer` transaction.
-const privateTransferTest = async (privateWallet: MantaPayWallet) => {
+const privateTransferSend = async (privateWallet: MantaPayWallet) => {
   const toPrivateTestAddress = '2JZCtGNR1iz6dR613g9p2VGHAAmXQK8xYJ117DLzs4s4';
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
@@ -232,7 +232,7 @@ const privateTransferTest = async (privateWallet: MantaPayWallet) => {
 };
 
 /// Test to execute a `ToPublic` transaction.
-const toPublicTest = async (privateWallet: MantaPayWallet) => {
+const toPublicSend = async (privateWallet: MantaPayWallet) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
@@ -247,7 +247,7 @@ const toPublicTest = async (privateWallet: MantaPayWallet) => {
 };
 
 /// Test to execute a `MultiSbtPostBuild` transaction.
-const multiSbtPostBuildOnlySignTest = async (
+const multiSbtPostBuild = async (
   privateWallet: MantaSbtWallet,
   sbtInfoList: interfaces.SbtInfo[],
 ) => {
@@ -285,19 +285,19 @@ window.actions = {
   getPallets() {
     return pallets;
   },
-  async toPrivateTest() {
-    await toPrivateTest(pallets.mantaPay as MantaPayWallet);
+  async toPrivateBuild() {
+    await toPrivateBuild(pallets.mantaPay as MantaPayWallet);
   },
-  async toPublicTest() {
-    await toPublicTest(pallets.mantaPay as MantaPayWallet);
+  async toPrivateSend() {
+    await toPrivateSend(pallets.mantaPay as MantaPayWallet);
   },
-  async privateTransferTest() {
-    await privateTransferTest(pallets.mantaPay as MantaPayWallet);
+  async toPublicSend() {
+    await toPublicSend(pallets.mantaPay as MantaPayWallet);
   },
-  async toPrivateOnlySignTest() {
-    await toPrivateOnlySignTest(pallets.mantaPay as MantaPayWallet);
+  async privateTransferSend() {
+    await privateTransferSend(pallets.mantaPay as MantaPayWallet);
   },
-  async multiSbtPostBuildOnlySignTest(startAssetId: string) {
+  async multiSbtPostBuild(startAssetId: string) {
     if (!startAssetId) {
       throw new Error('startAssetId is required');
     }
@@ -305,7 +305,7 @@ window.actions = {
       { assetId: new BN(startAssetId) },
       { assetId: new BN(startAssetId).add(new BN(1)) },
     ];
-    await multiSbtPostBuildOnlySignTest(
+    await multiSbtPostBuild(
       pallets.mantaSbt as MantaSbtWallet,
       sbtInfoList,
     );
