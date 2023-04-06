@@ -1175,6 +1175,18 @@ impl Signer {
         self.as_mut().sync(request.into()).into()
     }
 
+    /// Updates the internal ledger state, returning the new asset distribution.
+    ///
+    /// # Note
+    ///
+    /// This method updates the checkpoint and assetmap, but it does not update
+    /// the [`UtxoAccumulator`]. Therefore, it should
+    /// only be used for non-spendable assets such as SBTs.
+    #[inline]
+    pub fn sbt_sync(&mut self, request: SyncRequest) -> SyncResult {
+        self.as_mut().sbt_sync(request.into()).into()
+    }
+
     /// Performs the initial synchronization of a new signer with the ledger data.
     ///
     /// # Implementation Note
@@ -1228,18 +1240,18 @@ impl Signer {
     /// [`Identifier`]. Returns `None` if `post` has an invalid shape, or if `self` doesn't own the
     /// underlying assets in `post`.
     #[inline]
-    pub fn transaction_data(&self, post: TransferPost) -> Option<TransactionData> {
-        self.0.transaction_data(post.into()).map(Into::into)
+    pub fn transaction_data(&mut self, post: TransferPost) -> Option<TransactionData> {
+        self.as_mut().transaction_data(post.into()).map(Into::into)
     }
 
     /// Returns a vector with the [`TransactionData`] of each well-formed [`TransferPost`] owned by
     /// `self`.
     #[inline]
     pub fn batched_transaction_data(
-        &self,
+        &mut self,
         posts: TransactionDataRequest,
     ) -> TransactionDataResponse {
-        self.as_ref().batched_transaction_data(posts.0 .0).into()
+        self.as_mut().batched_transaction_data(posts.0 .0).into()
     }
 
     /// Signs `transaction` and returns the generated [`TransferPost`]s, as
@@ -1513,6 +1525,35 @@ impl Wallet {
         self.with_async(|this| Box::pin(this.sync()), network)
     }
 
+    /// Pulls data from the ledger, synchronizing the wallet and balance state. This method loops
+    /// continuously calling [`sbt_sync_partial`] until all the ledger data has
+    /// arrived at and has been synchronized with the wallet.
+    ///
+    /// # Failure Conditions
+    ///
+    /// This method returns an element of type [`Error`] on failure, which can result from any
+    /// number of synchronization issues between the wallet, the ledger, and the signer. See the
+    /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
+    /// how to resolve them.
+    ///
+    /// # Note
+    ///
+    /// In general, this method does not update the [`Utxo`] accumulator, thus making the new assets
+    /// effectively non-spendable. Therefore, this method should only be used when the pallet does not
+    /// allow [`PrivateTransfer`]s or [`ToPublic`] transactions, for example in the case of
+    /// Soul-Bound Tokens (SBTs).
+    ///
+    /// [`sbt_sync_partial`]: Self::sbt_sync_partial
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
+    /// [`Utxo`]: utxo::Utxo
+    /// [`PrivateTransfer`]: canonical::PrivateTransfer
+    /// [`ToPublic`]: canonical::ToPublic
+    #[inline]
+    pub fn sbt_sync(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(this.sbt_sync()), network)
+    }
+
     /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
     /// a [`ControlFlow`] for matching against to determine if the wallet requires more
     /// synchronization.
@@ -1529,6 +1570,34 @@ impl Wallet {
     #[inline]
     pub fn sync_partial(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(this.sync_partial()), network)
+    }
+
+    /// Pulls data from the ledger, synchronizing the wallet and balance state. This method returns
+    /// a [`ControlFlow`] for matching against to determine if the wallet requires more
+    /// synchronization.
+    ///
+    /// # Failure Conditions
+    ///
+    /// This method returns an element of type [`Error`] on failure, which can result from any
+    /// number of synchronization issues between the wallet, the ledger, and the signer. See the
+    /// [`InconsistencyError`] type for more information on the kinds of errors that can occur and
+    /// how to resolve them.
+    ///
+    /// # Note
+    ///
+    /// In general, this method does not update the [`Utxo`] accumulator, thus making the new assets
+    /// effectively non-spendable. Therefore, this method should only be used when the pallet does not
+    /// allow [`PrivateTransfer`]s or [`ToPublic`] transactions, for example in the case of
+    /// Soul-Bound Tokens (SBTs).
+    ///
+    /// [`Error`]: manta-accounting::wallet::Error
+    /// [`InconsistencyError`]: manta-accounting::wallet::InconsistencyError
+    /// [`Utxo`]: utxo::Utxo
+    /// [`PrivateTransfer`]: canonical::PrivateTransfer
+    /// [`ToPublic`]: canonical::ToPublic
+    #[inline]
+    pub fn sbt_sync_partial(&self, network: Network) -> Promise {
+        self.with_async(|this| Box::pin(this.sbt_sync_partial()), network)
     }
 
     /// Signs the `transaction` using the signer connection, sending `metadata` and `network` for context. This
