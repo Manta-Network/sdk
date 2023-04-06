@@ -37,6 +37,9 @@ const transferOutAmount = transferInAmount.div(new BN(10));
 let currentSeedPhrase =
   'spike napkin obscure diamond slice style excess table process story excuse absurd';
 
+// If you need to test a new account without any Ledger data, please update it to true
+const newAccountFeatureEnabled = true;
+
 const loggingEnabled = true;
 
 const provingFilePath =
@@ -144,17 +147,14 @@ const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
 
   _log('Wait for api ready');
 
-  _log('initialWalletSync');
-  await privateWallet.initialWalletSync();
-
-  // const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
-  // if (isInitialed) {
-  //   _log('initialWalletSync');
-  //   await privateWallet.initialWalletSync();
-  // } else {
-  //   _log('initialNewAccountWalletSync');
-  //   await privateWallet.initialNewAccountWalletSync();
-  // }
+  const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
+  if (!isInitialed && newAccountFeatureEnabled) {
+    _log('initialNewAccountWalletSync');
+    await privateWallet.initialNewAccountWalletSync();
+  } else {
+    _log('initialWalletSync');
+    await privateWallet.initialWalletSync();
+  }
 };
 
 const queryTransferResult = async (
