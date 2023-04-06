@@ -37,7 +37,7 @@ yarn start # chrome will automatically open localhost:8080
 ```
 3. Open the chrome devtools，When you see `Initial successful`, it means that the wallet of mantaPay and mantaSBT have been synchronized successfully. Then you can execute the following code to test
 ``` typescript
-// Under the `window.actions` object, The following methods will be automatically injected into `window.actions`
+// The following methods will be automatically injected into `window.actions`
 // This code is at the bottom of the index.ts file
 window.actions = {
   getPallets() {
