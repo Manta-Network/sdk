@@ -1608,35 +1608,6 @@ impl Wallet {
         )
     }
 
-    /// Combine SBT `sign` and `transaction_data` in one call.
-    #[inline]
-    pub fn sign_with_sbt_transaction_data(
-        &self,
-        transaction: Transaction,
-        metadata: Option<AssetMetadata>,
-        network: Network,
-    ) -> Promise {
-        self.with_async(
-            |this| {
-                Box::pin(async {
-                    this.sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
-                        .await
-                        .map(|response| {
-                            let posts = response
-                                .0
-                                .clone()
-                                .into_iter()
-                                .map(|x| TransferPost::from(x.0))
-                                .collect::<Vec<_>>();
-                            let txs = response.0.into_iter().map(|x| x.1).collect::<Vec<_>>();
-                            (posts, txs)
-                        })
-                })
-            },
-            network,
-        )
-    }
-
     /// Resets a [`Signer`] to its initial state.
     #[inline]
     pub fn reset_state(&self, network: Network) -> Promise {

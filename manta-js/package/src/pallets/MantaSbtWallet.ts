@@ -11,6 +11,7 @@ import type {
   SignedMultiSbtPost,
 } from '.././interfaces';
 import {
+  formatSbtTransactionData,
   formatWasmJson,
   toPrivateBuildUnsigned,
   transferPost,
@@ -64,11 +65,12 @@ export default class MantaSbtWallet
           sbtInfo.assetId,
           sbtInfo.amount ?? defaultAmount,
         );
-        const postsTxs = await this.wasmWallet.sign_with_sbt_transaction_data(
+        const data = await this.wasmWallet.sign_with_transaction_data(
           transactionUnsigned,
           null,
           this.getWasmNetWork(),
         );
+        const postsTxs = formatSbtTransactionData(data);
         posts.push(postsTxs[0].map((post: any) => transferPost(post)));
         transactionDatas.push(postsTxs[1]);
       }
