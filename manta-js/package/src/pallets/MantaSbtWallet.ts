@@ -64,13 +64,19 @@ export default class MantaSbtWallet
           sbtInfo.assetId,
           sbtInfo.amount ?? defaultAmount,
         );
-        const postsTxs = await this.wasmWallet.sign_with_transaction_data(
+        const result = await this.wasmWallet.sign_with_transaction_data(
           transactionUnsigned,
           null,
           this.getWasmNetWork(),
         );
-        posts.push(postsTxs[0].map((post: any) => transferPost(post)));
-        transactionDatas.push(postsTxs[1]);
+        const itemPosts: any = [];
+        const itemDatas: any = [];
+        result.forEach((item: any) => {
+          itemPosts.push(transferPost(item[0]));
+          itemDatas.push(item[1]);
+        });
+        posts.push(itemPosts);
+        transactionDatas.push(itemDatas);
       }
       this.walletIsBusy = false;
       return {

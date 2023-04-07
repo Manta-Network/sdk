@@ -54,7 +54,7 @@
         "type": "DensePullResponse"
       },
       "dense_initial_pull": {
-        "description": "pull initial data from mantaPay",
+        "description": "pull initial data from mantaSBT",
         "params": [
           {
             "name": "checkpoint",
