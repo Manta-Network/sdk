@@ -7,6 +7,6 @@ To interface Polkadot-JS with the Manta Wallet API we implement the following tw
 /// receiver data and the latest checkpoint.
 async fn pull(checkpoint: Checkpoint) -> (Checkpoint, Vec<SenderData>, Vec<ReceiverData>)
 
-/// Pushes a batch of transfers to the ledger.
-async fn push(post: Vec<TransferPost>);
+/// Pulls data from the ledger starting at `checkpoint`, this is for new account
+async fn initial_pull(checkpoint: Checkpoint) -> (any)
 ```

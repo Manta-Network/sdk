@@ -253,11 +253,6 @@ impl_js_compatible!(
 );
 impl_js_compatible!(SyncError, signer::SyncError, "Synchronization Error");
 impl_js_compatible!(SyncResult, signer::SyncResult, "Synchronization Result");
-impl_js_compatible!(
-    SignWithTransactionDataResponse,
-    signer::SignWithTransactionDataResponse,
-    "Sign With Transaction Data Response"
-);
 impl_js_compatible!(FullParameters, config::FullParameters, "Full Parameters");
 impl_js_compatible!(
     SignWithTransactionDataResult,
@@ -1212,18 +1207,18 @@ impl Signer {
     /// [`Identifier`]. Returns `None` if `post` has an invalid shape, or if `self` doesn't own the
     /// underlying assets in `post`.
     #[inline]
-    pub fn transaction_data(&self, post: TransferPost) -> Option<TransactionData> {
-        self.0.transaction_data(post.into()).map(Into::into)
+    pub fn transaction_data(&mut self, post: TransferPost) -> Option<TransactionData> {
+        self.as_mut().transaction_data(post.into()).map(Into::into)
     }
 
     /// Returns a vector with the [`TransactionData`] of each well-formed [`TransferPost`] owned by
     /// `self`.
     #[inline]
     pub fn batched_transaction_data(
-        &self,
+        &mut self,
         posts: TransactionDataRequest,
     ) -> TransactionDataResponse {
-        self.as_ref().batched_transaction_data(posts.0 .0).into()
+        self.as_mut().batched_transaction_data(posts.0 .0).into()
     }
 
     /// Signs `transaction` and returns the generated [`TransferPost`]s, as
@@ -1601,7 +1596,13 @@ impl Wallet {
                 Box::pin(async {
                     this.sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
                         .await
-                        .map(SignWithTransactionDataResponse::from)
+                        .map(|response| {
+                            response
+                                .0
+                                .into_iter()
+                                .map(|(post, data)| (TransferPost::from(post), data))
+                                .collect::<Vec<_>>()
+                        })
                 })
             },
             network,

@@ -1,5 +1,8 @@
-import { MantaPrivateWallet, Network, Environment } from './privateWallet';
-import { MantaUtilities } from './utils';
-import * as interfaces from './sdk.interfaces';
+import type * as interfaces from './interfaces';
 
-export { MantaPrivateWallet, Network, Environment, MantaUtilities, interfaces};
+import BaseWallet from './BaseWallet';
+import PrivateWallet from './PrivateWallet';
+
+export * from './pallets';
+export { BaseWallet, PrivateWallet };
+export type { interfaces };
