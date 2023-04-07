@@ -1597,11 +1597,14 @@ impl Wallet {
                     this.sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
                         .await
                         .map(|response| {
-                            response
+                            let posts = response
                                 .0
+                                .clone()
                                 .into_iter()
-                                .map(|x| (TransferPost::from(x.0), x.1))
-                                .collect::<Vec<_>>()
+                                .map(|x| TransferPost::from(x.0))
+                                .collect::<Vec<_>>();
+                            let txs = response.0.into_iter().map(|x| x.1).collect::<Vec<_>>();
+                            (posts, txs)
                         })
                 })
             },
