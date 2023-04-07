@@ -84,12 +84,6 @@ export default class PrivateWallet implements IPrivateWallet {
     };
   }
 
-  dropAuthorizationContext() {
-    this.wasmWallet.drop_authorization_context(this.getWasmNetWork());
-    this.isBindAuthorizationContext = false;
-    return true;
-  }
-
   dropUserSeedPhrase() {
     this.wasmWallet.drop_accounts(this.getWasmNetWork());
     return true;
@@ -104,17 +98,27 @@ export default class PrivateWallet implements IPrivateWallet {
     return true;
   }
 
-  loadAuthorizationContext(seedPhrase: string) {
-    const wasmSeedPhrase = this.wasm.mnemonic_from_phrase(seedPhrase);
-    const authorizationContext = this.wasm.authorization_context_from_mnemonic(
-      wasmSeedPhrase,
-      this.baseWallet.fullParameters,
-    );
-    this.wasmWallet.load_authorization_context(
-      authorizationContext,
+  getAuthorizationContext() {
+    if (!this.isBindAuthorizationContext) {
+      return null;
+    }
+    return this.wasmWallet.authorization_context(this.getWasmNetWork());
+  }
+
+  loadAuthorizationContext(authContext: any) {
+    const result = this.wasmWallet.try_load_authorization_context(
+      authContext,
       this.getWasmNetWork(),
     );
-    this.isBindAuthorizationContext = true;
+    if (result) {
+      this.isBindAuthorizationContext = true;
+    }
+    return result;
+  }
+
+  dropAuthorizationContext() {
+    this.wasmWallet.drop_authorization_context(this.getWasmNetWork());
+    this.isBindAuthorizationContext = false;
     return true;
   }
 
@@ -217,19 +221,15 @@ export default class PrivateWallet implements IPrivateWallet {
 
   /// Returns the zk balance of the currently connected zkAddress for the currently
   /// connected network.
-  async getZkBalance(assetId: BN): Promise<BN | null> {
+  getZkBalance(assetId: BN): BN {
     try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
-      const balanceString = await this.wasmWallet.balance(
+      const balanceString = this.wasmWallet.balance(
         assetId.toString(),
         this.getWasmNetWork(),
       );
       const balance = new BN(balanceString);
-      this.walletIsBusy = false;
       return balance;
     } catch (ex) {
-      this.walletIsBusy = false;
       console.error('Failed to fetch zk balance.', ex);
       throw wrapWasmError(ex);
     }
@@ -237,23 +237,17 @@ export default class PrivateWallet implements IPrivateWallet {
 
   /// Returns the multi zk balance of the currently connected zkAddress for the currently
   /// connected network.
-  async getMultiZkBalance(assetIds: BN[]): Promise<BN[] | null> {
+  getMultiZkBalance(assetIds: BN[]): BN[] {
     try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
-      const balances = await Promise.all(
-        assetIds.map(async (assetId) => {
-          const balanceString = await this.wasmWallet.balance(
-            assetId.toString(),
-            this.getWasmNetWork(),
-          );
-          return new BN(balanceString);
-        }),
-      );
-      this.walletIsBusy = false;
+      const balances = assetIds.map((assetId) => {
+        const balanceString = this.wasmWallet.balance(
+          assetId.toString(),
+          this.getWasmNetWork(),
+        );
+        return new BN(balanceString);
+      });
       return balances;
     } catch (ex) {
-      this.walletIsBusy = false;
       console.error('Failed to fetch zk balance.', ex);
       throw wrapWasmError(ex);
     }
@@ -340,7 +334,10 @@ export default class PrivateWallet implements IPrivateWallet {
     continue: boolean;
   }> {
     try {
-      const result = await this.wasmWallet.sync_partial(this.getWasmNetWork());
+      const syncType =
+        this.palletName === 'mantaSBT' ? 'sbt_sync_partial' : 'sync_partial';
+      console.log(syncType);
+      const result = await this.wasmWallet[syncType](this.getWasmNetWork());
       await this.saveStateToLocal();
       return {
         success: true,

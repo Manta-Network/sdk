@@ -56,15 +56,16 @@ export interface IPrivateWallet {
   initialSigner(): Promise<boolean>;
   setNetwork(network: Network): Promise<boolean>;
   loadUserSeedPhrase(seedPhrase: string): boolean;
-  loadAuthorizationContext(seedPhrase: string): boolean;
+  loadAuthorizationContext(authContext: string): boolean;
+  getAuthorizationContext(): any;
   dropAuthorizationContext(): boolean;
   dropUserSeedPhrase(): boolean;
   initialWalletSync(): Promise<boolean>;
   initialNewAccountWalletSync(): Promise<boolean>;
   walletSync(): Promise<boolean>;
   getZkAddress(): Promise<Address>;
-  getZkBalance(assetId: BN): Promise<BN | null>;
-  getMultiZkBalance(assetIds: BN[]): Promise<BN[] | null>;
+  getZkBalance(assetId: BN): BN;
+  getMultiZkBalance(assetIds: BN[]): BN[];
   resetState(): Promise<boolean>;
 }
 ```
@@ -175,14 +176,21 @@ await mantaSbtWallet.initialSigner();
 ``` typescript
 // Step 1: load user seed phrase
 mantaPayWallet.loadUserSeedPhrase('User Seed Phrase');
-// Step 2: Execute signed transaction
+// Step 2: execute signed transaction
 await mantaPayWallet.privateTransferBuild(assetId: BN, amount: BN)
 // Step 3: remove user seed phrase
 mantaPayWallet.dropUserSeedPhrase();
 ```
 - For wallet synchronization and account related, authorization_context needs to be loaded, which can always exist after initialization and does not need to be deleted
 ``` typescript
-mantaPayWallet.loadAuthorizationContext(seedPhrase: string);
+// When you execute loadUserSeedPhrase first, the AuthorizationContext will auto updated
+
+// Step 1: cache the AuthorizationContext through getAuthorizationContext
+const authContext = mantaPayWallet.getAuthorizationContext();
+// step 2: load the authorization from cache
+const success = mantaPayWallet.loadAuthorizationContext(authContext);
+
+// is `loadAuthorizationContext` success, you can execute following functions
 await mantaPayWallet.walletSync();
 await mantaPayWallet.getZkAddress();
 ```
@@ -224,12 +232,12 @@ await mantaPayWallet.walletSync();
 ### 8. Query balance
 ``` typescript
 // mantaPay
-await mantaPayWallet.getZkBalance(assetId: BN);
-await mantaPayWallet.getMultiZkBalance(assetIds: BN[]);
+mantaPayWallet.getZkBalance(assetId: BN);
+mantaPayWallet.getMultiZkBalance(assetIds: BN[]);
 
 // mantaSBT
-await mantaSbtWallet.getZkBalance(assetId: BN);
-await mantaSbtWallet.getMultiZkBalance(assetIds: BN[]);
+mantaSbtWallet.getZkBalance(assetId: BN);
+mantaSbtWallet.getMultiZkBalance(assetIds: BN[]);
 ```
 ### 9. Get zkAddress
 ``` typescript

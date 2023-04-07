@@ -84,15 +84,16 @@ export interface IPrivateWallet {
   initialSigner(): Promise<boolean>;
   setNetwork(network: Network): Promise<boolean>;
   loadUserSeedPhrase(seedPhrase: string): boolean;
-  loadAuthorizationContext(seedPhrase: string): boolean;
+  loadAuthorizationContext(authContext: string): boolean;
+  getAuthorizationContext(): any;
   dropAuthorizationContext(): boolean;
   dropUserSeedPhrase(): boolean;
   initialWalletSync(): Promise<boolean>;
   initialNewAccountWalletSync(): Promise<boolean>;
   walletSync(): Promise<boolean>;
   getZkAddress(): Promise<Address>;
-  getZkBalance(assetId: BN): Promise<BN | null>;
-  getMultiZkBalance(assetIds: BN[]): Promise<BN[] | null>;
+  getZkBalance(assetId: BN): BN;
+  getMultiZkBalance(assetIds: BN[]): BN[];
   resetState(): Promise<boolean>;
 }
 
