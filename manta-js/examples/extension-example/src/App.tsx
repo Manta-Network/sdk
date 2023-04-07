@@ -72,7 +72,7 @@ export default function App() {
       assetId,
     });
     if (!balance) {
-      return '0';
+      return null;
     }
     return new BigNumber(balance)
       .div(new BigNumber(10).pow(decimals))
@@ -83,12 +83,21 @@ export default function App() {
     const accountInfo = await api?.query.system.account(publicAddress);
     const result = accountInfo as { data?: { free?: any } };
     const balanceString = result?.data?.free?.toString();
+    if (!balanceString) {
+      return null;
+    }
     return balanceString
       ? new BigNumber(balanceString)
           .div(new BigNumber(10).pow(decimals))
           .toFixed()
       : '0';
   }, [api, publicAddress]);
+
+  const updateBalance = useCallback(async () => {
+    const result = await Promise.all([fetchBalance(), fetchPublicBalance()]);
+    setBalance(result[0] ?? '-');
+    setPublicBalance(result[1] ?? '-');
+  }, [fetchBalance, fetchPublicBalance, setBalance, setPublicBalance]);
 
   const queryResult = useCallback(
     async (originBalance: string) => {
@@ -99,10 +108,12 @@ export default function App() {
         const newBalance = await fetchBalance();
         if (originBalance !== newBalance) {
           setResult('Transaction successful');
+          updateBalance();
           setOperating(false);
         } else if (times > 12) {
           setResult('Timeout');
           setOperating(false);
+          updateBalance();
         } else {
           setResult(`Querying... times: ${times}/${maxTimes}`);
           times += 1;
@@ -111,7 +122,7 @@ export default function App() {
       };
       func();
     },
-    [setResult, fetchBalance, setOperating, syncWallet],
+    [setResult, fetchBalance, setOperating, syncWallet, updateBalance],
   );
 
   const sendTransaction = useCallback(
@@ -233,18 +244,11 @@ export default function App() {
 
   // loop balance
   useEffect(() => {
-    const timerId = setInterval(async () => {
-      if (stateInfo?.isWalletBusy || !stateInfo?.isWalletReady) {
-        return;
-      }
-      const result = await Promise.all([fetchBalance(), fetchPublicBalance()]);
-      setBalance(result[0] ?? '0');
-      setPublicBalance(result[1] ?? '0');
-    }, 2000);
-    return () => {
-      clearInterval(timerId);
-    };
-  }, [fetchBalance, setBalance, stateInfo]);
+    if (stateInfo?.isWalletBusy || !stateInfo?.isWalletReady) {
+      return;
+    }
+    updateBalance();
+  }, [stateInfo?.isWalletReady, updateBalance]);
 
   // auto connect wallet
   useEffect(() => {

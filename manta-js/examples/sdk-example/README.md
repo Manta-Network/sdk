@@ -43,19 +43,19 @@ window.actions = {
   getPallets() {
     return pallets;
   },
-  async toPrivateTest() {
-    await toPrivateTest(pallets.mantaPay as MantaPayWallet);
+  async toPrivateBuild() {
+    await toPrivateBuild(pallets.mantaPay as MantaPayWallet);
   },
-  async toPublicTest() {
-    await toPublicTest(pallets.mantaPay as MantaPayWallet);
+  async toPrivateSend() {
+    await toPrivateSend(pallets.mantaPay as MantaPayWallet);
   },
-  async privateTransferTest() {
-    await privateTransferTest(pallets.mantaPay as MantaPayWallet);
+  async toPublicSend() {
+    await toPublicSend(pallets.mantaPay as MantaPayWallet);
   },
-  async toPrivateOnlySignTest() {
-    await toPrivateOnlySignTest(pallets.mantaPay as MantaPayWallet);
+  async privateTransferSend() {
+    await privateTransferSend(pallets.mantaPay as MantaPayWallet);
   },
-  async multiSbtPostBuildOnlySignTest(startAssetId: string) {
+  async multiSbtPostBuild(startAssetId: string) {
     if (!startAssetId) {
       throw new Error('startAssetId is required');
     }
@@ -63,7 +63,7 @@ window.actions = {
       { assetId: new BN(startAssetId) },
       { assetId: new BN(startAssetId).add(new BN(1)) },
     ];
-    await multiSbtPostBuildOnlySignTest(
+    await multiSbtPostBuild(
       pallets.mantaSbt as MantaSbtWallet,
       sbtInfoList,
     );
@@ -80,11 +80,11 @@ window.actions = {
 // Now you can execute the corresponding method to test
 
 // test toPrivate
-window.actions.toPrivateTest();
+window.actions.toPrivateSend();
 
 // test privateTransfer
-window.actions.privateTransferTest();
+window.actions.privateTransferSend();
 
 // test toPublic
-window.actions.toPublicTest();
+window.actions.toPublicSend();
 ```

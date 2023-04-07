@@ -253,11 +253,6 @@ impl_js_compatible!(
 );
 impl_js_compatible!(SyncError, signer::SyncError, "Synchronization Error");
 impl_js_compatible!(SyncResult, signer::SyncResult, "Synchronization Result");
-impl_js_compatible!(
-    SignWithTransactionDataResponse,
-    signer::SignWithTransactionDataResponse,
-    "Sign With Transaction Data Response"
-);
 impl_js_compatible!(FullParameters, config::FullParameters, "Full Parameters");
 impl_js_compatible!(
     SignWithTransactionDataResult,
@@ -1712,35 +1707,12 @@ impl Wallet {
                 Box::pin(async {
                     this.sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
                         .await
-                        .map(SignWithTransactionDataResponse::from)
-                })
-            },
-            network,
-        )
-    }
-
-    /// Combine SBT `sign` and `transaction_data` in one call.
-    #[inline]
-    pub fn sign_with_sbt_transaction_data(
-        &self,
-        transaction: Transaction,
-        metadata: Option<AssetMetadata>,
-        network: Network,
-    ) -> Promise {
-        self.with_async(
-            |this| {
-                Box::pin(async {
-                    this.sign_with_transaction_data(transaction.into(), metadata.map(Into::into))
-                        .await
                         .map(|response| {
-                            let posts = response
+                            response
                                 .0
-                                .clone()
                                 .into_iter()
-                                .map(|x| TransferPost::from(x.0))
-                                .collect::<Vec<_>>();
-                            let txs = response.0.into_iter().map(|x| x.1).collect::<Vec<_>>();
-                            (posts, txs)
+                                .map(|(post, data)| (TransferPost::from(post), data))
+                                .collect::<Vec<_>>()
                         })
                 })
             },
