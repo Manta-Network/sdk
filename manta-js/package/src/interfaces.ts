@@ -58,7 +58,7 @@ export type SbtInfo = {
 
 export type AuthContextType = {
   proof_authorization_key: Uint8Array,
-  receiving_key: Uint8Array,
+  receiving_key?: Uint8Array,
   viewing_key: Uint8Array,
 }
 
