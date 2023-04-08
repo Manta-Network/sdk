@@ -8,6 +8,7 @@ import type {
   ILedgerApi,
   PalletName,
   Network,
+  AuthContextType,
 } from './interfaces';
 import LedgerApi from './ledger-api';
 import { wrapWasmError } from './utils';
@@ -102,10 +103,12 @@ export default class PrivateWallet implements IPrivateWallet {
     if (!this.isBindAuthorizationContext) {
       return null;
     }
-    return this.wasmWallet.authorization_context(this.getWasmNetWork());
+    return this.wasmWallet.authorization_context(
+      this.getWasmNetWork(),
+    ) as AuthContextType;
   }
 
-  loadAuthorizationContext(authContext: any) {
+  loadAuthorizationContext(authContext: AuthContextType) {
     const result = this.wasmWallet.try_load_authorization_context(
       authContext,
       this.getWasmNetWork(),
@@ -336,7 +339,6 @@ export default class PrivateWallet implements IPrivateWallet {
     try {
       const syncType =
         this.palletName === 'mantaSBT' ? 'sbt_sync_partial' : 'sync_partial';
-      console.log(syncType);
       const result = await this.wasmWallet[syncType](this.getWasmNetWork());
       await this.saveStateToLocal();
       return {

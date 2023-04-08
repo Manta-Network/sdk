@@ -56,6 +56,12 @@ export type SbtInfo = {
   amount?: BN;
 }
 
+export type AuthContextType = {
+  proof_authorization_key: Uint8Array,
+  receiving_key: Uint8Array,
+  viewing_key: Uint8Array,
+}
+
 export interface IBaseWallet {
   api: ApiPromise;
   apiEndpoint: string | string[];
@@ -84,8 +90,8 @@ export interface IPrivateWallet {
   initialSigner(): Promise<boolean>;
   setNetwork(network: Network): Promise<boolean>;
   loadUserSeedPhrase(seedPhrase: string): boolean;
-  loadAuthorizationContext(authContext: string): boolean;
-  getAuthorizationContext(): any;
+  loadAuthorizationContext(authContext: AuthContextType): boolean;
+  getAuthorizationContext(): AuthContextType | null;
   dropAuthorizationContext(): boolean;
   dropUserSeedPhrase(): boolean;
   initialWalletSync(): Promise<boolean>;

@@ -56,8 +56,8 @@ export interface IPrivateWallet {
   initialSigner(): Promise<boolean>;
   setNetwork(network: Network): Promise<boolean>;
   loadUserSeedPhrase(seedPhrase: string): boolean;
-  loadAuthorizationContext(authContext: string): boolean;
-  getAuthorizationContext(): any;
+  loadAuthorizationContext(authContext: AuthContextType): boolean;
+  getAuthorizationContext(): AuthContextType | null;
   dropAuthorizationContext(): boolean;
   dropUserSeedPhrase(): boolean;
   initialWalletSync(): Promise<boolean>;
