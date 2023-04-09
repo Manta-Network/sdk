@@ -21,17 +21,17 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-const apiEndpoint = 'wss://zenlink.zqhxuyuan.cloud:444';
+const apiEndpoint = 'wss://c1.calamari.seabird.systems';
 const nativeTokenDecimals = 12;
 
-const currentNetwork: interfaces.Network = 'Dolphin';
+const currentNetwork: interfaces.Network = 'Calamari';
 
 const assetId = new BN('1');
-// toPrivate Amount (50 DOL)
+// toPrivate Amount (50 KMA)
 const transferInAmount = new BN(50).mul(
   new BN(10).pow(new BN(nativeTokenDecimals)),
 );
-// privateTransfer && toPublic Amount (5 DOL)
+// privateTransfer && toPublic Amount (5 KMA)
 const transferOutAmount = transferInAmount.div(new BN(10));
 
 let currentSeedPhrase =
