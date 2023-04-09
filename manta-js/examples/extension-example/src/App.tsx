@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Injected, InjectedWeb3, PrivateWalletStateInfo } from './interfaces';
 
-const rpcUrl = 'wss://zenlink.zqhxuyuan.cloud:444';
+const rpcUrl = 'wss://c1.calamari.seabird.systems';
 const decimals = 12;
 const network = 'Calamari';
 
