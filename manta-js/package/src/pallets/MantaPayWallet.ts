@@ -19,7 +19,6 @@ import {
   toPublicBuildUnsigned,
   transactionsToBatches,
   transferPost,
-  wrapWasmError,
 } from '../utils';
 import PrivateWallet from '../PrivateWallet';
 
@@ -58,22 +57,21 @@ export default class MantaPayWallet
     assetId: BN,
     amount: BN,
   ): Promise<SignedTransaction | null> {
-    try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
-      const transaction = await toPrivateBuildUnsigned(
-        this.wasm,
-        assetId,
-        amount,
-      );
-      const signResult = await this.signTransaction(null, transaction);
-      this.walletIsBusy = false;
-      return signResult;
-    } catch (ex) {
-      this.walletIsBusy = false;
-      console.error('Failed to build toPrivateBuild.', ex);
-      throw wrapWasmError(ex);
-    }
+    const result = await this.wrapWalletIsBusy(
+      async () => {
+        const transaction = await toPrivateBuildUnsigned(
+          this.wasm,
+          assetId,
+          amount,
+        );
+        const signResult = await this.signTransaction(null, transaction);
+        return signResult;
+      },
+      (ex: Error) => {
+        console.error('Failed to build toPrivateBuild.', ex);
+      },
+    );
+    return result;
   }
 
   /// Builds a "Private Transfer" transaction for any fungible token.
@@ -83,28 +81,27 @@ export default class MantaPayWallet
     amount: BN,
     toZkAddress: Address,
   ): Promise<SignedTransaction | null> {
-    try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
-      const transaction = await privateTransferBuildUnsigned(
-        this.wasm,
-        this.api,
-        assetId,
-        amount,
-        toZkAddress,
-        this.network,
-      );
-      const signResult = await this.signTransaction(
-        transaction.assetMetadataJson,
-        transaction.transaction,
-      );
-      this.walletIsBusy = false;
-      return signResult;
-    } catch (ex) {
-      this.walletIsBusy = false;
-      console.error('Failed to build privateTransferBuild.', ex);
-      throw wrapWasmError(ex);
-    }
+    const result = await this.wrapWalletIsBusy(
+      async () => {
+        const transaction = await privateTransferBuildUnsigned(
+          this.wasm,
+          this.api,
+          assetId,
+          amount,
+          toZkAddress,
+          this.network,
+        );
+        const signResult = await this.signTransaction(
+          transaction.assetMetadataJson,
+          transaction.transaction,
+        );
+        return signResult;
+      },
+      (ex: Error) => {
+        console.error('Failed to build privateTransferBuild.', ex);
+      },
+    );
+    return result;
   }
 
   /// Builds and signs a "To Public" transaction for any fungible token.
@@ -114,28 +111,27 @@ export default class MantaPayWallet
     amount: BN,
     polkadotAddress: Address,
   ): Promise<SignedTransaction | null> {
-    try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
-      const transaction = await toPublicBuildUnsigned(
-        this.wasm,
-        this.api,
-        assetId,
-        amount,
-        polkadotAddress,
-        this.network,
-      );
-      const signResult = await this.signTransaction(
-        transaction.assetMetadataJson,
-        transaction.transaction,
-      );
-      this.walletIsBusy = false;
-      return signResult;
-    } catch (ex) {
-      this.walletIsBusy = false;
-      console.error('Failed to build toPublicBuild.', ex);
-      throw wrapWasmError(ex);
-    }
+    const result = await this.wrapWalletIsBusy(
+      async () => {
+        const transaction = await toPublicBuildUnsigned(
+          this.wasm,
+          this.api,
+          assetId,
+          amount,
+          polkadotAddress,
+          this.network,
+        );
+        const signResult = await this.signTransaction(
+          transaction.assetMetadataJson,
+          transaction.transaction,
+        );
+        return signResult;
+      },
+      (ex: Error) => {
+        console.error('Failed to build toPublicBuild.', ex);
+      },
+    );
+    return result;
   }
 
   /// Signs the a given transaction returning posts, transactions and batches.

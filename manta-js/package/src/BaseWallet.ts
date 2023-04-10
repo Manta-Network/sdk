@@ -61,7 +61,7 @@ export default class BaseWallet implements IBaseWallet {
     this.log('Initial api');
 
     this.apiEndpoint = apiEndpoint;
-    this.apiTimeout = apiTimeout || 10 * 1000;
+    this.apiTimeout = apiTimeout || 60 * 1000;
 
     this.api = new ApiPromise({
       provider: new WsProvider(this.apiEndpoint, 2500, {}, this.apiTimeout),
