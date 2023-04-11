@@ -1,10 +1,10 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import BigNumber from 'bignumber.js';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Injected, InjectedWeb3, PrivateWalletStateInfo } from './interfaces';
 
-const rpcUrl = 'wss://zenlink.zqhxuyuan.cloud:444';
+const rpcUrl = 'wss://c1.calamari.seabird.systems';
 const decimals = 12;
 const network = 'Calamari';
 
@@ -234,6 +234,15 @@ export default function App() {
     }, false);
   }, [virtualAsset, publicAddress, injected, sendTransaction]);
 
+  const formattedResult = useMemo(() => {
+    if (result instanceof Error) {
+      return result.message || 'Empty error message';
+    } else if (typeof result === 'string') {
+      return result;
+    }
+    return JSON.stringify(result, null, 2);
+  }, [result]);
+
   // sub state && unSub state
   useEffect(() => {
     if (!injected || !injected.privateWallet) {
@@ -406,10 +415,7 @@ export default function App() {
               </fieldset>
               <fieldset>
                 <legend>Result</legend>
-                <textarea
-                  readOnly
-                  value={JSON.stringify(result, null, 2)}
-                ></textarea>
+                <textarea readOnly value={formattedResult}></textarea>
                 <p style={{ fontSize: 12 }}>
                   Open Chrome Dev Console to see more information
                 </p>

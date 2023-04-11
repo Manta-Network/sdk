@@ -55,16 +55,17 @@ export interface IPrivateWallet {
 
   initialSigner(): Promise<boolean>;
   setNetwork(network: Network): Promise<boolean>;
-  loadUserSeedPhrase(seedPhrase: string): boolean;
-  loadAuthorizationContext(seedPhrase: string): boolean;
-  dropAuthorizationContext(): boolean;
-  dropUserSeedPhrase(): boolean;
+  loadUserSeedPhrase(seedPhrase: string): Promise<boolean>;
+  loadAuthorizationContext(authContext: AuthContextType): Promise<boolean>;
+  getAuthorizationContext(): Promise<AuthContextType | null>;
+  dropAuthorizationContext(): Promise<boolean>;
+  dropUserSeedPhrase(): Promise<boolean>;
   initialWalletSync(): Promise<boolean>;
   initialNewAccountWalletSync(): Promise<boolean>;
   walletSync(): Promise<boolean>;
   getZkAddress(): Promise<Address>;
-  getZkBalance(assetId: BN): Promise<BN | null>;
-  getMultiZkBalance(assetIds: BN[]): Promise<BN[] | null>;
+  getZkBalance(assetId: BN): Promise<BN>;
+  getMultiZkBalance(assetIds: BN[]): Promise<BN[]>;
   resetState(): Promise<boolean>;
 }
 ```
@@ -174,15 +175,22 @@ await mantaSbtWallet.initialSigner();
 - Related to the signature transaction, the user's seed phrase needs to be loaded
 ``` typescript
 // Step 1: load user seed phrase
-mantaPayWallet.loadUserSeedPhrase('User Seed Phrase');
-// Step 2: Execute signed transaction
+await mantaPayWallet.loadUserSeedPhrase('User Seed Phrase');
+// Step 2: execute signed transaction
 await mantaPayWallet.privateTransferBuild(assetId: BN, amount: BN)
 // Step 3: remove user seed phrase
-mantaPayWallet.dropUserSeedPhrase();
+await mantaPayWallet.dropUserSeedPhrase();
 ```
 - For wallet synchronization and account related, authorization_context needs to be loaded, which can always exist after initialization and does not need to be deleted
 ``` typescript
-mantaPayWallet.loadAuthorizationContext(seedPhrase: string);
+// When you execute loadUserSeedPhrase first, the AuthorizationContext will auto updated
+
+// Step 1: cache the AuthorizationContext through getAuthorizationContext
+const authContext = await mantaPayWallet.getAuthorizationContext();
+// step 2: load the authorization from cache
+const success = await mantaPayWallet.loadAuthorizationContext(authContext);
+
+// is `loadAuthorizationContext` success, you can execute following functions
 await mantaPayWallet.walletSync();
 await mantaPayWallet.getZkAddress();
 ```

@@ -8,6 +8,7 @@ import type {
   ILedgerApi,
   PalletName,
   Network,
+  AuthContextType,
 } from './interfaces';
 import LedgerApi from './ledger-api';
 import { wrapWasmError } from './utils';
@@ -84,38 +85,59 @@ export default class PrivateWallet implements IPrivateWallet {
     };
   }
 
-  dropAuthorizationContext() {
-    this.wasmWallet.drop_authorization_context(this.getWasmNetWork());
-    this.isBindAuthorizationContext = false;
-    return true;
+  async dropUserSeedPhrase() {
+    const result = await this.wrapWalletIsBusy(async () => {
+      this.wasmWallet.drop_accounts(this.getWasmNetWork());
+      return true;
+    });
+    return result;
   }
 
-  dropUserSeedPhrase() {
-    this.wasmWallet.drop_accounts(this.getWasmNetWork());
-    return true;
+  async loadUserSeedPhrase(seedPhrase: string) {
+    const result = await this.wrapWalletIsBusy(async () => {
+      const wasmSeedPhrase = this.wasm.mnemonic_from_phrase(seedPhrase);
+      const accountTable = this.wasm.accounts_from_mnemonic(wasmSeedPhrase);
+      this.wasmWallet.load_accounts(accountTable, this.getWasmNetWork());
+      this.wasmWallet.update_authorization_context(this.getWasmNetWork());
+      this.isBindAuthorizationContext = true;
+      return true;
+    });
+    return result;
   }
 
-  loadUserSeedPhrase(seedPhrase: string) {
-    const wasmSeedPhrase = this.wasm.mnemonic_from_phrase(seedPhrase);
-    const accountTable = this.wasm.accounts_from_mnemonic(wasmSeedPhrase);
-    this.wasmWallet.load_accounts(accountTable, this.getWasmNetWork());
-    this.wasmWallet.update_authorization_context(this.getWasmNetWork());
-    this.isBindAuthorizationContext = true;
-    return true;
+  async getAuthorizationContext() {
+    if (!this.isBindAuthorizationContext) {
+      return null;
+    }
+    const result = await this.wrapWalletIsBusy(async () => {
+      return this.wasmWallet.authorization_context(
+        this.getWasmNetWork(),
+      ) as AuthContextType;
+    });
+    return result;
   }
 
-  loadAuthorizationContext(seedPhrase: string) {
-    const wasmSeedPhrase = this.wasm.mnemonic_from_phrase(seedPhrase);
-    const authorizationContext = this.wasm.authorization_context_from_mnemonic(
-      wasmSeedPhrase,
-      this.baseWallet.fullParameters,
-    );
-    this.wasmWallet.load_authorization_context(
-      authorizationContext,
-      this.getWasmNetWork(),
-    );
-    this.isBindAuthorizationContext = true;
-    return true;
+  async loadAuthorizationContext(authContext: AuthContextType) {
+    const result = await this.wrapWalletIsBusy(async () => {
+      const success = this.wasmWallet.try_load_authorization_context(
+        authContext,
+        this.getWasmNetWork(),
+      );
+      if (success) {
+        this.isBindAuthorizationContext = true;
+      }
+      return success;
+    });
+    return result;
+  }
+
+  async dropAuthorizationContext() {
+    const result = await this.wrapWalletIsBusy(async () => {
+      this.wasmWallet.drop_authorization_context(this.getWasmNetWork());
+      this.isBindAuthorizationContext = false;
+      return true;
+    });
+    return result;
   }
 
   async initialSigner() {
@@ -125,28 +147,35 @@ export default class PrivateWallet implements IPrivateWallet {
 
   /// After initial PrivateWallet, need to call setNetwork
   async setNetwork(network: Network) {
-    this.network = network;
-    const storageData = await this.baseWallet.getStorageStateFromLocal(
-      this.palletName,
-      this.network,
-    );
+    const result = await this.wrapWalletIsBusy(async () => {
+      this.network = network;
+      const storageData = await this.baseWallet.getStorageStateFromLocal(
+        this.palletName,
+        this.network,
+      );
 
-    this.log('Start initial signer');
+      this.log('Start initial signer');
 
-    const wasmSigner = new this.wasm.Signer(
-      this.baseWallet.fullParameters,
-      this.baseWallet.multiProvingContext,
-      storageData,
-    );
+      const wasmSigner = new this.wasm.Signer(
+        this.baseWallet.fullParameters,
+        this.baseWallet.multiProvingContext,
+        storageData,
+      );
 
-    this.log('Initial signer successful');
+      this.log('Initial signer successful');
 
-    const wasmLedger = new this.baseWallet.wasm.PolkadotJsLedger(
-      this.ledgerApi,
-    );
+      const wasmLedger = new this.baseWallet.wasm.PolkadotJsLedger(
+        this.ledgerApi,
+      );
 
-    this.wasmWallet.set_network(wasmLedger, wasmSigner, this.getWasmNetWork());
-    return true;
+      this.wasmWallet.set_network(
+        wasmLedger,
+        wasmSigner,
+        this.getWasmNetWork(),
+      );
+      return true;
+    });
+    return result;
   }
 
   /// This method is optimized based on initialWalletSync
@@ -159,20 +188,15 @@ export default class PrivateWallet implements IPrivateWallet {
     if (!this.isBindAuthorizationContext) {
       throw new Error('No ViewingKey');
     }
-    try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
+    const result = await this.wrapWalletIsBusy(async () => {
       this.log('Start initial new account');
       await this.wasmWallet.initial_sync(this.getWasmNetWork());
       this.log('Initial new account completed');
       await this.saveStateToLocal();
-      this.walletIsBusy = false;
       this.initialSyncIsFinished = true;
       return true;
-    } catch (ex) {
-      this.walletIsBusy = false;
-      throw wrapWasmError(ex);
-    }
+    });
+    return result;
   }
 
   /// Performs full wallet recovery. Restarts `self` with an empty state and
@@ -201,75 +225,59 @@ export default class PrivateWallet implements IPrivateWallet {
 
   /// Returns the ZkAddress (Zk Address) of the currently connected manta-signer instance.
   async getZkAddress(): Promise<Address> {
-    try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
+    const result = await this.wrapWalletIsBusy(async () => {
       const zkAddressRaw = await this.wasmWallet.address(this.getWasmNetWork());
       const zkAddressBytes = [...zkAddressRaw.receiving_key];
-      const zkAddress = base58Encode(zkAddressBytes);
-      this.walletIsBusy = false;
-      return zkAddress;
-    } catch (ex) {
-      this.walletIsBusy = false;
-      throw wrapWasmError(ex);
-    }
+      return base58Encode(zkAddressBytes);
+    });
+    return result;
   }
 
   /// Returns the zk balance of the currently connected zkAddress for the currently
   /// connected network.
-  async getZkBalance(assetId: BN): Promise<BN | null> {
-    try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
-      const balanceString = await this.wasmWallet.balance(
+  async getZkBalance(assetId: BN): Promise<BN> {
+    const result = await this.wrapWalletIsBusy(async () => {
+      const balanceString = this.wasmWallet.balance(
         assetId.toString(),
         this.getWasmNetWork(),
       );
-      const balance = new BN(balanceString);
-      this.walletIsBusy = false;
-      return balance;
-    } catch (ex) {
-      this.walletIsBusy = false;
-      console.error('Failed to fetch zk balance.', ex);
-      throw wrapWasmError(ex);
-    }
+      return new BN(balanceString);
+    });
+    return result;
   }
 
   /// Returns the multi zk balance of the currently connected zkAddress for the currently
   /// connected network.
-  async getMultiZkBalance(assetIds: BN[]): Promise<BN[] | null> {
-    try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
-      const balances = await Promise.all(
-        assetIds.map(async (assetId) => {
-          const balanceString = await this.wasmWallet.balance(
-            assetId.toString(),
-            this.getWasmNetWork(),
-          );
-          return new BN(balanceString);
-        }),
-      );
-      this.walletIsBusy = false;
-      return balances;
-    } catch (ex) {
-      this.walletIsBusy = false;
-      console.error('Failed to fetch zk balance.', ex);
-      throw wrapWasmError(ex);
-    }
+  async getMultiZkBalance(assetIds: BN[]): Promise<BN[]> {
+    const result = await this.wrapWalletIsBusy(async () => {
+      return assetIds.map((assetId) => {
+        const balanceString = this.wasmWallet.balance(
+          assetId.toString(),
+          this.getWasmNetWork(),
+        );
+        return new BN(balanceString);
+      });
+    });
+    return result;
   }
 
   /// reset instance state
   async resetState() {
-    this.initialSyncIsFinished = false;
-    this.isBindAuthorizationContext = false;
-    const wasmSigner = new this.wasm.Signer(
-      this.baseWallet.fullParameters,
-      this.baseWallet.multiProvingContext,
-      null,
-    );
-    const wasmLedger = new this.wasm.PolkadotJsLedger(this.ledgerApi);
-    this.wasmWallet.set_network(wasmLedger, wasmSigner, this.getWasmNetWork());
+    await this.wrapWalletIsBusy(async () => {
+      this.initialSyncIsFinished = false;
+      this.isBindAuthorizationContext = false;
+      const wasmSigner = new this.wasm.Signer(
+        this.baseWallet.fullParameters,
+        this.baseWallet.multiProvingContext,
+        null,
+      );
+      const wasmLedger = new this.wasm.PolkadotJsLedger(this.ledgerApi);
+      this.wasmWallet.set_network(
+        wasmLedger,
+        wasmSigner,
+        this.getWasmNetWork(),
+      );
+    });
     this.dropUserSeedPhrase();
     this.dropAuthorizationContext();
     return true;
@@ -293,7 +301,27 @@ export default class PrivateWallet implements IPrivateWallet {
   // calling methods it is necessary to wait for a pending call to finish.
   protected async waitForWallet(): Promise<void> {
     while (this.walletIsBusy === true) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+  }
+
+  protected async wrapWalletIsBusy<T>(
+    func: () => Promise<T>,
+    errorFunc?: (ex: Error) => void,
+  ) {
+    try {
+      await this.waitForWallet();
+      this.walletIsBusy = true;
+      const result = await func();
+      this.walletIsBusy = false;
+      return result;
+    } catch (ex) {
+      this.walletIsBusy = false;
+      const wrapError = wrapWasmError(ex);
+      if (typeof errorFunc === 'function') {
+        errorFunc(wrapError);
+      }
+      throw wrapError;
     }
   }
 
@@ -301,9 +329,7 @@ export default class PrivateWallet implements IPrivateWallet {
     if (!this.isBindAuthorizationContext) {
       throw new Error('No ViewingKey');
     }
-    try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
+    const result = await this.wrapWalletIsBusy(async () => {
       if (isInitial) {
         await this.wasmWallet.reset_state(this.getWasmNetWork());
       }
@@ -324,15 +350,12 @@ export default class PrivateWallet implements IPrivateWallet {
           throw new Error('Sync partial failed');
         }
       } while (syncResult && syncResult.continue);
-      this.walletIsBusy = false;
       if (isInitial) {
         this.initialSyncIsFinished = true;
       }
-    } catch (ex) {
-      this.walletIsBusy = false;
-      throw wrapWasmError(ex);
-    }
-    return true;
+      return true;
+    });
+    return result;
   }
 
   private async syncPartialWallet(): Promise<{
@@ -340,7 +363,9 @@ export default class PrivateWallet implements IPrivateWallet {
     continue: boolean;
   }> {
     try {
-      const result = await this.wasmWallet.sync_partial(this.getWasmNetWork());
+      const syncType =
+        this.palletName === 'mantaSBT' ? 'sbt_sync_partial' : 'sync_partial';
+      const result = await this.wasmWallet[syncType](this.getWasmNetWork());
       await this.saveStateToLocal();
       return {
         success: true,

@@ -56,6 +56,10 @@ export type SbtInfo = {
   amount?: BN;
 }
 
+export type AuthContextType = {
+  proof_authorization_key: Uint8Array,
+}
+
 export interface IBaseWallet {
   api: ApiPromise;
   apiEndpoint: string | string[];
@@ -83,16 +87,17 @@ export interface IPrivateWallet {
 
   initialSigner(): Promise<boolean>;
   setNetwork(network: Network): Promise<boolean>;
-  loadUserSeedPhrase(seedPhrase: string): boolean;
-  loadAuthorizationContext(seedPhrase: string): boolean;
-  dropAuthorizationContext(): boolean;
-  dropUserSeedPhrase(): boolean;
+  loadUserSeedPhrase(seedPhrase: string): Promise<boolean>;
+  loadAuthorizationContext(authContext: AuthContextType): Promise<boolean>;
+  getAuthorizationContext(): Promise<AuthContextType | null>;
+  dropAuthorizationContext(): Promise<boolean>;
+  dropUserSeedPhrase(): Promise<boolean>;
   initialWalletSync(): Promise<boolean>;
   initialNewAccountWalletSync(): Promise<boolean>;
   walletSync(): Promise<boolean>;
   getZkAddress(): Promise<Address>;
-  getZkBalance(assetId: BN): Promise<BN | null>;
-  getMultiZkBalance(assetIds: BN[]): Promise<BN[] | null>;
+  getZkBalance(assetId: BN): Promise<BN>;
+  getMultiZkBalance(assetIds: BN[]): Promise<BN[]>;
   resetState(): Promise<boolean>;
 }
 
