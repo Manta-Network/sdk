@@ -1144,12 +1144,6 @@ impl Signer {
         self.as_mut().drop_authorization_context()
     }
 
-    /// Updates `self.state.authorization_context` from `self.state.accounts`, if possible.
-    #[inline]
-    pub fn update_authorization_context(&mut self) -> bool {
-        self.as_mut().update_authorization_context()
-    }
-
     /// Tries to update `self` from `storage_state`.
     #[inline]
     pub fn set_storage(&mut self, storage_state: JsValue) -> bool {
@@ -1384,16 +1378,6 @@ impl Wallet {
             .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
             .signer_mut()
             .drop_authorization_context()
-    }
-
-    /// Updates the [`AuthorizationContext`] from the [`AccountTable`] in `network`, if possible.
-    #[inline]
-    pub fn update_authorization_context(&self, network: Network) -> bool {
-        self.0.borrow_mut()[usize::from(network.0)]
-            .as_mut()
-            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
-            .signer_mut()
-            .update_authorization_context()
     }
 
     /// Saves `self` as a [`StorageStateOption`] in `network`.
