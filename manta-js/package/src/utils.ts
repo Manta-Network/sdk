@@ -251,27 +251,13 @@ export async function fetchFiles(
 export async function fetchFile(url: string): Promise<Uint8Array | null> {
   try {
     const responseData = await fetch(url);
-    const result = await responseData.blob();
-    const reader = new FileReader();
-    return new Promise((resolve) => {
-      try {
-        reader.addEventListener('load', () => {
-          resolve(new Uint8Array(reader.result as ArrayBuffer));
-        });
-        reader.addEventListener('error', () => {
-          resolve(null);
-        });
-        // Read the contents of the specified Blob or File
-        reader.readAsArrayBuffer(result);
-      } catch (ex) {
-        resolve(null);
-      }
-    });
-    // return result;
+    const arrayBuffer = await responseData.arrayBuffer();
+    const result = new Uint8Array(arrayBuffer);
+    return result;
   } catch (ex) {
     console.error(`Fetch ${url}, failed`, ex);
+    throw ex;
   }
-  return null;
 }
 
 export function wrapWasmError(error: Error | string) {
