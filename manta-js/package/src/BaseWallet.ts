@@ -7,11 +7,20 @@ import type {
   IBaseWallet,
   PalletName,
 } from './interfaces';
-import { PAY_PARAMETER_NAMES, PAY_PROVING_NAMES } from './constants';
+import {
+  CHECK_WALLET_BUSY_TIMEOUT,
+  EVENT_NAME_WALLET_BUSY,
+  PAY_PARAMETER_NAMES,
+  PAY_PROVING_NAMES,
+} from './constants';
 import mantaConfig from './config.json';
-import { fetchFiles, log } from './utils';
+import { fetchFiles, getUUID, log, wrapWasmError } from './utils';
+import SafeEventEmitter from '@metamask/safe-event-emitter';
 
-export default class BaseWallet implements IBaseWallet {
+export default class BaseWallet
+  extends SafeEventEmitter
+  implements IBaseWallet
+{
   api: ApiPromise;
   apiEndpoint: string | string[];
   apiTimeout: number;
@@ -22,8 +31,12 @@ export default class BaseWallet implements IBaseWallet {
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy = false;
+  currentSubEventKey = '';
 
-  static onWasmCalledJsErrorCallback: (err: Error, palletName: PalletName) => void;
+  static onWasmCalledJsErrorCallback: (
+    err: Error,
+    palletName: PalletName,
+  ) => void;
 
   constructor(
     wasm: any,
@@ -35,6 +48,8 @@ export default class BaseWallet implements IBaseWallet {
     loggingEnabled: boolean,
     apiTimeout?: number,
   ) {
+    super();
+
     this.wasm = wasm;
     this.fullParameters = fullParameters;
     this.multiProvingContext = multiProvingContext;
@@ -132,7 +147,73 @@ export default class BaseWallet implements IBaseWallet {
       config.saveStorageStateToLocal,
       config.getStorageStateFromLocal,
       loggingEnabled,
-      config.apiTimeout
+      config.apiTimeout,
     );
+  }
+
+  private get currentEventKey() {
+    return `${EVENT_NAME_WALLET_BUSY}_${this.currentSubEventKey}`;
+  }
+
+  private async waitStateCompleteOrTimeout(
+    action: () => boolean,
+    subKey: string,
+    timeout = CHECK_WALLET_BUSY_TIMEOUT,
+  ) {
+    return new Promise((resolve) => {
+      if (action()) {
+        console.log('start resolver');
+        resolve(true);
+      } else {
+        let timerId = 0;
+        const listener = () => {
+          console.log('resolve');
+          clearTimeout(timerId);
+          resolve(true);
+        };
+        this.once(subKey, listener);
+        timerId = Number(
+          setTimeout(() => {
+            this.removeListener(subKey, listener);
+            resolve(false);
+          }, timeout * 1000),
+        );
+      }
+    });
+  }
+
+  // WASM wallet doesn't allow you to call two methods at once, so before
+  // calling methods it is necessary to wait for a pending call to finish.
+  protected async waitForWallet(): Promise<void> {
+    const result = await this.waitStateCompleteOrTimeout(() => {
+      return !this.walletIsBusy;
+    }, this.currentEventKey);
+
+    if (!result) {
+      throw new Error('Check wallet busy timeout');
+    }
+  }
+
+  async wrapWalletIsBusy<T>(
+    func: () => Promise<T>,
+    errorFunc?: (ex: Error) => void,
+  ) {
+    try {
+      await this.waitForWallet();
+      this.currentSubEventKey = getUUID();
+      this.walletIsBusy = true;
+      const result = await func();
+      this.walletIsBusy = false;
+      this.emit(this.currentEventKey);
+      return result;
+    } catch (ex) {
+      this.walletIsBusy = false;
+      this.emit(this.currentEventKey);
+      const wrapError = wrapWasmError(ex);
+      if (typeof errorFunc === 'function') {
+        errorFunc(wrapError);
+      }
+      throw wrapError;
+    }
   }
 }

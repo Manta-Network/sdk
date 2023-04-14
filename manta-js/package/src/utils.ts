@@ -277,3 +277,8 @@ export async function fetchFile(url: string): Promise<Uint8Array | null> {
 export function wrapWasmError(error: Error | string) {
   return typeof error === 'string' ? new Error(error) : error;
 }
+
+
+export function getUUID(): string {
+  return `${Date.now()}${String(Math.random()).slice(-15)}`;
+}

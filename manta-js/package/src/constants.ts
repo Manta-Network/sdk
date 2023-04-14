@@ -7,6 +7,11 @@ export const DEFAULT_PULL_SIZE = 4096;
 export const MAX_RECEIVERS_PULL_SIZE = DEFAULT_PULL_SIZE;
 export const MAX_SENDERS_PULL_SIZE = DEFAULT_PULL_SIZE;
 
+export const EVENT_NAME_WALLET_BUSY = 'EVENT_NAME_WALLET_BUSY';
+
+// 30 Seconds
+export const CHECK_WALLET_BUSY_TIMEOUT = 30;
+
 export const PAY_PARAMETER_NAMES = [
   'address-partition-function.dat',
   'group-generator.dat',
