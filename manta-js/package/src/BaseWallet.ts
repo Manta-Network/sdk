@@ -1,4 +1,4 @@
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise, HttpProvider, WsProvider } from '@polkadot/api';
 import * as mantaWasm from './wallet/crate/pkg/manta_wasm_wallet';
 import type {
   SaveStorageStateToLocal,
@@ -23,7 +23,10 @@ export default class BaseWallet implements IBaseWallet {
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy = false;
 
-  static onWasmCalledJsErrorCallback: (err: Error, palletName: PalletName) => void;
+  static onWasmCalledJsErrorCallback: (
+    err: Error,
+    palletName: PalletName,
+  ) => void;
 
   constructor(
     wasm: any,
@@ -57,6 +60,21 @@ export default class BaseWallet implements IBaseWallet {
     BaseWallet.log(this.loggingEnabled, message, name);
   }
 
+  private getApiProvider(apiEndpoint: string | string[], apiTimeout: number) {
+    const isArray = apiEndpoint instanceof Array;
+    const httpProvider = (isArray ? apiEndpoint[0] : apiEndpoint).startsWith(
+      'http',
+    );
+    if (httpProvider) {
+      const endPoint = isArray
+        ? apiEndpoint[(Math.random() * apiEndpoint.length) | 0]
+        : apiEndpoint;
+      return new HttpProvider(endPoint);
+    } else {
+      return new WsProvider(this.apiEndpoint, 2500, {}, apiTimeout);
+    }
+  }
+
   updateApi(apiEndpoint: string | string[], apiTimeout?: number) {
     this.log('Initial api');
 
@@ -64,7 +82,7 @@ export default class BaseWallet implements IBaseWallet {
     this.apiTimeout = apiTimeout || 60 * 1000;
 
     this.api = new ApiPromise({
-      provider: new WsProvider(this.apiEndpoint, 2500, {}, this.apiTimeout),
+      provider: this.getApiProvider(apiEndpoint, apiTimeout),
       types: mantaConfig.TYPES,
       rpc: mantaConfig.RPC,
     });
@@ -132,7 +150,7 @@ export default class BaseWallet implements IBaseWallet {
       config.saveStorageStateToLocal,
       config.getStorageStateFromLocal,
       loggingEnabled,
-      config.apiTimeout
+      config.apiTimeout,
     );
   }
 }

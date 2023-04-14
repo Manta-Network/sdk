@@ -21,7 +21,13 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-const apiEndpoint = 'wss://c1.calamari.seabird.systems';
+const apiEndpoint = [
+  'https://a1.calamari.systems/rpc',
+  'https://a2.calamari.systems/rpc',
+  'https://a3.calamari.systems/rpc',
+  'https://a4.calamari.systems/rpc',
+];
+ // 'wss://c1.calamari.seabird.systems';
 const nativeTokenDecimals = 12;
 
 const currentNetwork: interfaces.Network = 'Calamari';
@@ -147,7 +153,9 @@ const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
 
   _log('Wait for api ready');
 
-  const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
+  const isInitialed = await getIdbData(
+    `storage_state_${privateWallet.palletName}_${currentNetwork}`,
+  );
   if (!isInitialed && newAccountFeatureEnabled) {
     _log('initialNewAccountWalletSync');
     await privateWallet.initialNewAccountWalletSync();
@@ -305,10 +313,7 @@ window.actions = {
       { assetId: new BN(startAssetId) },
       { assetId: new BN(startAssetId).add(new BN(1)) },
     ];
-    await multiSbtPostBuild(
-      pallets.mantaSbt as MantaSbtWallet,
-      sbtInfoList,
-    );
+    await multiSbtPostBuild(pallets.mantaSbt as MantaSbtWallet, sbtInfoList);
   },
   async getIdentityProof() {
     await getIdentityProof(pallets.mantaSbt as MantaSbtWallet);
