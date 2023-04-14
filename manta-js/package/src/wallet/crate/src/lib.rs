@@ -1260,6 +1260,13 @@ impl Signer {
             .sign_with_transaction_data(transaction.into())
             .into()
     }
+
+    /// Prunes the [`UtxoAccumulator`], deleting any data which
+    /// cannot be used to [`sign`](Self::sign) or [`sync`](Self::sync).
+    #[inline]
+    pub fn prune(&mut self) {
+        self.as_mut().prune()
+    }
 }
 
 /// Wallet Error
@@ -1754,6 +1761,17 @@ impl Wallet {
     #[inline]
     pub fn initial_sync(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(this.initial_sync()), network)
+    }
+
+    /// Prunes the [`UtxoAccumulator`] in `network`, deleting any data which
+    /// cannot be used to [`sign`](Self::sign) or [`sync`](Self::sync).
+    #[inline]
+    pub fn prune(&mut self, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .prune()
     }
 }
 
