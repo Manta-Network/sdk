@@ -22,6 +22,7 @@ export default class BaseWallet implements IBaseWallet {
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy = false;
+  isHttpProvider = false;
 
   static onWasmCalledJsErrorCallback: (
     err: Error,
@@ -62,10 +63,10 @@ export default class BaseWallet implements IBaseWallet {
 
   private getApiProvider(apiEndpoint: string | string[], apiTimeout: number) {
     const isArray = apiEndpoint instanceof Array;
-    const httpProvider = (isArray ? apiEndpoint[0] : apiEndpoint).startsWith(
+    this.isHttpProvider = (isArray ? apiEndpoint[0] : apiEndpoint).startsWith(
       'http',
     );
-    if (httpProvider) {
+    if (this.isHttpProvider) {
       const endPoint = isArray
         ? apiEndpoint[(Math.random() * apiEndpoint.length) | 0]
         : apiEndpoint;
@@ -88,17 +89,22 @@ export default class BaseWallet implements IBaseWallet {
     });
 
     if (this.loggingEnabled) {
-      this.api.on('connected', () => {
+      const queryChainInfo = () => {
         Promise.all([
           this.api.rpc.system.chain(),
           this.api.rpc.system.name(),
           this.api.rpc.system.version(),
         ]).then(([chain, nodeName, nodeVersion]) => {
           this.log(
-            `Wallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`,
+            `Wallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}, isHttpProvider: ${this.isHttpProvider}`,
           );
         });
-      });
+      };
+      if (this.isHttpProvider) {
+        this.api.isReady.then(queryChainInfo);
+      } else {
+        this.api.on('connected', queryChainInfo);
+      }
     }
     return this.api;
   }
