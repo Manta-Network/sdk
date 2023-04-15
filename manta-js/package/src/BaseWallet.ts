@@ -88,24 +88,37 @@ export default class BaseWallet implements IBaseWallet {
       rpc: mantaConfig.RPC,
     });
 
-    if (this.loggingEnabled) {
-      const queryChainInfo = () => {
-        Promise.all([
-          this.api.rpc.system.chain(),
-          this.api.rpc.system.name(),
-          this.api.rpc.system.version(),
-        ]).then(([chain, nodeName, nodeVersion]) => {
-          this.log(
-            `Wallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}, isHttpProvider: ${this.isHttpProvider}`,
-          );
-        });
-      };
-      if (this.isHttpProvider) {
-        this.api.isReady.then(queryChainInfo);
-      } else {
-        this.api.on('connected', queryChainInfo);
-      }
+    return this.api;
+  }
+
+  // @ts-ignore
+  async isApiReady() {
+    if (!this.isHttpProvider) {
+      return this.api.isReady;
     }
+
+    // see detail https://github.com/polkadot-js/api/blob/master/packages/api/src/base/Init.ts#L413
+    // HttpProvider has no retry logic, so it is necessary to resend the meta information request
+    // to ensure that the api initialization is successful
+
+    // At present, this solution is only a temporary solution,
+    // and this problem will be solved by submitting pr to polkadot/api later
+
+    // @ts-ignore
+    if (this.api._isReady) {
+      return this.api;
+    }
+
+    // @ts-ignore
+    const metaData = await this.api._loadMeta();
+    if (!metaData) {
+      throw new Error('Metadata initialization failed');
+    }
+    // @ts-ignore
+    this.api._isReady = true;
+
+    // @ts-ignore
+    this.api.emit('ready', this.api);
     return this.api;
   }
 

@@ -83,6 +83,7 @@ export default class MantaPayWallet
   ): Promise<SignedTransaction | null> {
     const result = await this.wrapWalletIsBusy(
       async () => {
+        await this.baseWallet.isApiReady();
         const transaction = await privateTransferBuildUnsigned(
           this.wasm,
           this.api,
@@ -113,6 +114,7 @@ export default class MantaPayWallet
   ): Promise<SignedTransaction | null> {
     const result = await this.wrapWalletIsBusy(
       async () => {
+        await this.baseWallet.isApiReady();
         const transaction = await toPublicBuildUnsigned(
           this.wasm,
           this.api,

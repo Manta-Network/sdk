@@ -51,7 +51,6 @@ export async function getAssetMetadata(
   assetId: BN,
   network: Network,
 ): Promise<any> {
-  await api.isReady;
   const data: any = await api.query.assetManager.assetIdMetadata(assetId);
   const json = JSON.stringify(data.toHuman());
   const jsonObj = JSON.parse(json);
