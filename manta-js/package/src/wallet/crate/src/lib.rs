@@ -669,12 +669,9 @@ impl ledger::Read<SyncData<config::Config>> for PolkadotJsLedger {
         Box::pin(async {
             let pull_result = self.0.pull(borrow_js(checkpoint)).await;
             let from_js_result = from_js_result::<RawPullResponse>(pull_result);
-            if from_js_result.is_err() {
-                Err(LedgerError{})
-            } else {
-                let pull_response = from_js_result.unwrap().try_into().expect("Conversion is not allowed to fail.");
-                Ok(pull_response)
-            }
+            let resp = from_js_result.map_err(|_e| LedgerError{})?;
+            let pull_response = resp.try_into().expect("Conversion is not allowed to fail.");
+            Ok(pull_response)
         })
     }
 }

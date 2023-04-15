@@ -131,18 +131,6 @@ const getBaseWallet = async () => {
   return baseWallet;
 };
 
-const initMantaPayWallet = async (baseWallet: BaseWallet) => {
-  const wallet = MantaPayWallet.init(currentNetwork, baseWallet);
-  await initWalletData(wallet);
-  return wallet;
-};
-
-const initMantaSbtWallet = async (baseWallet: BaseWallet) => {
-  const wallet = MantaSbtWallet.init(currentNetwork, baseWallet);
-  await initWalletData(wallet);
-  return wallet;
-};
-
 const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
   _log('Initial signer');
   await privateWallet.initialSigner();
@@ -334,13 +322,18 @@ async function main() {
   baseWallet.api.setSigner(polkadotConfig.polkadotSigner);
   _log('Initial polkadot signer end');
 
-  _log('Initial pallet mantaPay');
-  pallets.mantaPay = await initMantaPayWallet(baseWallet);
-  _log('Initial pallet mantaPay end');
+  _log('Initial pallets');
+  pallets.mantaPay = MantaPayWallet.init(currentNetwork, baseWallet);
+  pallets.mantaSbt = MantaSbtWallet.init(currentNetwork, baseWallet);
+  _log('Initial pallets end');
 
-  _log('Initial pallet mantaSBT');
-  pallets.mantaSbt = await initMantaSbtWallet(baseWallet);
-  _log('Initial pallet mantaSBT end');
+  _log('Initial mantaPay data');
+  await initWalletData(pallets.mantaPay);
+  _log('Initial mantaPay data end');
+
+  _log('Initial mantaSbt data');
+  await initWalletData(pallets.mantaSbt);
+  _log('Initial mantaSbt data end');
 
   _log('Initial successful');
 }

@@ -129,11 +129,8 @@ export default class LedgerApi implements ILedgerApi {
       }
       return pull_result;
     } catch (err) {
-      const newError = wrapWasmError(err);
-      if (typeof this.errorCallback === 'function') {
-        this.errorCallback(newError);
-      }
-      throw newError;
+      console.error(err);
+      return null;
     }
   }
 }

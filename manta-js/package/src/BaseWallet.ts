@@ -110,7 +110,9 @@ export default class BaseWallet implements IBaseWallet {
   }
 
   async disconnectApi() {
-    await this.api.disconnect();
+    if (!this.isHttpProvider) {
+      await this.api.disconnect();
+    }
     return true;
   }
 
