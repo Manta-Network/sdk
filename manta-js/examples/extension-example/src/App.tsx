@@ -1,10 +1,16 @@
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise, HttpProvider, WsProvider } from '@polkadot/api';
 import BigNumber from 'bignumber.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Injected, InjectedWeb3, PrivateWalletStateInfo } from './interfaces';
 
-const rpcUrl = 'wss://c1.calamari.seabird.systems';
+// const rpcUrl = 'wss://c1.calamari.seabird.systems';
+const rpcUrl = [
+  'https://a1.calamari.systems/rpc',
+  'https://a2.calamari.systems/rpc',
+  'https://a3.calamari.systems/rpc',
+  'https://a4.calamari.systems/rpc',
+];
 const decimals = 12;
 const network = 'Calamari';
 
@@ -55,7 +61,11 @@ export default function App() {
     setZkAddress(accounts[0].zkAddress);
     setInjected(injected);
 
-    const provider = new WsProvider(rpcUrl);
+    // const provider = new WsProvider(rpcUrl);
+    const provider = new HttpProvider(
+      rpcUrl[(Math.random() * rpcUrl.length) | 0],
+    );
+
     const api = await ApiPromise.create({ provider });
     api.setSigner(injected.signer);
     setApi(api);

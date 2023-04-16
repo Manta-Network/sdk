@@ -72,6 +72,7 @@ export interface IBaseWallet {
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy: boolean;
   updateApi(apiEndpoint: string | string[], apiTimeout?: number): ApiPromise;
+  isApiReady(): Promise<ApiPromise>;
   disconnectApi(): Promise<boolean>;
   log(message: string, name?: string): void;
 }
