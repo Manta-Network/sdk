@@ -41,6 +41,9 @@ export default class LedgerApi implements ILedgerApi {
   // Pulls data from the ledger from the `checkpoint`
   async initial_pull(checkpoint: any) {
     try {
+      if (this.loggingEnabled) {
+        this._log('checkpoint ' + JSON.stringify(checkpoint));
+      }
       // @ts-ignore
       const result = await this.api.rpc[this.palletName].dense_initial_pull(
         checkpoint,

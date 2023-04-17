@@ -98,7 +98,6 @@ export default class PrivateWallet implements IPrivateWallet {
       const wasmSeedPhrase = this.wasm.mnemonic_from_phrase(seedPhrase);
       const accountTable = this.wasm.accounts_from_mnemonic(wasmSeedPhrase);
       this.wasmWallet.load_accounts(accountTable, this.getWasmNetWork());
-      this.wasmWallet.update_authorization_context(this.getWasmNetWork());
       this.isBindAuthorizationContext = true;
       return true;
     });
@@ -279,7 +278,6 @@ export default class PrivateWallet implements IPrivateWallet {
         this.getWasmNetWork(),
       );
     });
-    this.dropUserSeedPhrase();
     this.dropAuthorizationContext();
     return true;
   }

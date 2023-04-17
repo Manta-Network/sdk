@@ -331,9 +331,11 @@ async function main() {
   await initWalletData(pallets.mantaPay);
   _log('Initial mantaPay data end');
 
-  _log('Initial mantaSbt data');
-  await initWalletData(pallets.mantaSbt);
-  _log('Initial mantaSbt data end');
+  // When the runtime supports sbt api, then enable sync sbt data
+
+  // _log('Initial mantaSbt data');
+  // await initWalletData(pallets.mantaSbt);
+  // _log('Initial mantaSbt data end');
 
   _log('Initial successful');
 }

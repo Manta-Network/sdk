@@ -91,7 +91,6 @@ export default class BaseWallet implements IBaseWallet {
     return this.api;
   }
 
-  // @ts-ignore
   async isApiReady() {
     if (!this.isHttpProvider) {
       return this.api.isReady;
