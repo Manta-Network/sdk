@@ -41,7 +41,6 @@ export default class LedgerApi implements ILedgerApi {
   // Pulls data from the ledger from the `checkpoint`
   async initial_pull(checkpoint: any) {
     try {
-      await this.api.isReady;
       // @ts-ignore
       const result = await this.api.rpc[this.palletName].dense_initial_pull(
         checkpoint,
@@ -89,8 +88,6 @@ export default class LedgerApi implements ILedgerApi {
   // Pulls data from the ledger from the `checkpoint`
   async pull(checkpoint: any) {
     try {
-      await this.api.isReady;
-
       if (this.loggingEnabled) {
         this._log('checkpoint ' + JSON.stringify(checkpoint));
       }
@@ -129,11 +126,8 @@ export default class LedgerApi implements ILedgerApi {
       }
       return pull_result;
     } catch (err) {
-      const newError = wrapWasmError(err);
-      if (typeof this.errorCallback === 'function') {
-        this.errorCallback(newError);
-      }
-      throw newError;
+      console.error(err);
+      return null;
     }
   }
 }

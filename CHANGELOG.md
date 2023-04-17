@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Added
+- [\#119](https://github.com/Manta-Network/sdk/pull/119) Add HttpProvider && Fix private-transfer.lfs file download failure in Manta Wallet && Fix the error that the download failed on Ledger api
 - [\#118](https://github.com/Manta-Network/sdk/pull/118) Add pruning function && Fix initial sync bug
 - [\#115](https://github.com/Manta-Network/sdk/pull/115) Add the reading and writing of JsValue related to authorization_context && Add sync SBT function, without Merkle tree && getZkAddress and toPrivate do not need load_accounts, only authorization_context is required
 - [\#114](https://github.com/Manta-Network/sdk/pull/114) Refactor SDK logic && Add build SBT posts method, and getIdentityProof && Add docs and examples on how to connect Manta Wallet && Add how to use SDK docs and examples

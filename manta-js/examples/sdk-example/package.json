@@ -5,7 +5,8 @@
   "main": "./index.ts",
   "scripts": {
     "start": "yarn --cwd ../../package && yarn --cwd ../../package build-browser && yarn add file:../../package && yarn serve",
-    "serve": "webpack serve"
+    "serve": "webpack serve",
+    "build": "webpack build"
   },
   "dependencies": {
     "@polkadot/extension-dapp": "^0.45.3",

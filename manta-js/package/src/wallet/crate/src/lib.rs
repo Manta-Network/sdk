@@ -54,6 +54,7 @@ use manta_util::{
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     Array,
 };
+use serde_wasm_bindgen::Error;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
 
@@ -104,6 +105,15 @@ where
     T: DeserializeOwned,
 {
     serde_wasm_bindgen::from_value(value).expect("Deserialization is not allowed to fail.")
+}
+
+/// Converts `value` into a value of type `T`.
+#[inline]
+pub fn from_js_result<T>(value: JsValue) -> Result<T, Error>
+    where
+        T: DeserializeOwned,
+{
+    serde_wasm_bindgen::from_value(value)
 }
 
 /// convert AssetId to String for js compatability (AssetID is 128 bit)
@@ -657,11 +667,11 @@ impl ledger::Read<SyncData<config::Config>> for PolkadotJsLedger {
         checkpoint: &'s Self::Checkpoint,
     ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<config::Config>>, Self::Error> {
         Box::pin(async {
-            Ok(
-                from_js::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
-                    .try_into()
-                    .expect("Conversion is not allowed to fail."),
-            )
+            let pull_result = self.0.pull(borrow_js(checkpoint)).await;
+            let from_js_result = from_js_result::<RawPullResponse>(pull_result);
+            let resp = from_js_result.map_err(|_e| LedgerError{})?;
+            let pull_response = resp.try_into().expect("Conversion is not allowed to fail.");
+            Ok(pull_response)
         })
     }
 }

@@ -21,7 +21,13 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-const apiEndpoint = 'wss://c1.calamari.seabird.systems';
+const apiEndpoint = [
+  'https://a1.calamari.systems/rpc',
+  'https://a2.calamari.systems/rpc',
+  'https://a3.calamari.systems/rpc',
+  'https://a4.calamari.systems/rpc',
+];
+ // 'wss://c1.calamari.seabird.systems';
 const nativeTokenDecimals = 12;
 
 const currentNetwork: interfaces.Network = 'Calamari';
@@ -125,18 +131,6 @@ const getBaseWallet = async () => {
   return baseWallet;
 };
 
-const initMantaPayWallet = async (baseWallet: BaseWallet) => {
-  const wallet = MantaPayWallet.init(currentNetwork, baseWallet);
-  await initWalletData(wallet);
-  return wallet;
-};
-
-const initMantaSbtWallet = async (baseWallet: BaseWallet) => {
-  const wallet = MantaSbtWallet.init(currentNetwork, baseWallet);
-  await initWalletData(wallet);
-  return wallet;
-};
-
 const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
   _log('Initial signer');
   await privateWallet.initialSigner();
@@ -147,7 +141,9 @@ const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
 
   _log('Wait for api ready');
 
-  const isInitialed = (await getIdbData(`storage_state_${privateWallet.palletName}_${currentNetwork}`));
+  const isInitialed = await getIdbData(
+    `storage_state_${privateWallet.palletName}_${currentNetwork}`,
+  );
   if (!isInitialed && newAccountFeatureEnabled) {
     _log('initialNewAccountWalletSync');
     await privateWallet.initialNewAccountWalletSync();
@@ -305,10 +301,7 @@ window.actions = {
       { assetId: new BN(startAssetId) },
       { assetId: new BN(startAssetId).add(new BN(1)) },
     ];
-    await multiSbtPostBuild(
-      pallets.mantaSbt as MantaSbtWallet,
-      sbtInfoList,
-    );
+    await multiSbtPostBuild(pallets.mantaSbt as MantaSbtWallet, sbtInfoList);
   },
   async getIdentityProof() {
     await getIdentityProof(pallets.mantaSbt as MantaSbtWallet);
@@ -329,13 +322,18 @@ async function main() {
   baseWallet.api.setSigner(polkadotConfig.polkadotSigner);
   _log('Initial polkadot signer end');
 
-  _log('Initial pallet mantaPay');
-  pallets.mantaPay = await initMantaPayWallet(baseWallet);
-  _log('Initial pallet mantaPay end');
+  _log('Initial pallets');
+  pallets.mantaPay = MantaPayWallet.init(currentNetwork, baseWallet);
+  pallets.mantaSbt = MantaSbtWallet.init(currentNetwork, baseWallet);
+  _log('Initial pallets end');
 
-  _log('Initial pallet mantaSBT');
-  pallets.mantaSbt = await initMantaSbtWallet(baseWallet);
-  _log('Initial pallet mantaSBT end');
+  _log('Initial mantaPay data');
+  await initWalletData(pallets.mantaPay);
+  _log('Initial mantaPay data end');
+
+  _log('Initial mantaSbt data');
+  await initWalletData(pallets.mantaSbt);
+  _log('Initial mantaSbt data end');
 
   _log('Initial successful');
 }

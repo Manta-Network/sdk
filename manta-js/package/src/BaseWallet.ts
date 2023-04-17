@@ -1,4 +1,4 @@
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise, HttpProvider, WsProvider } from '@polkadot/api';
 import * as mantaWasm from './wallet/crate/pkg/manta_wasm_wallet';
 import type {
   SaveStorageStateToLocal,
@@ -22,8 +22,12 @@ export default class BaseWallet implements IBaseWallet {
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy = false;
+  isHttpProvider = false;
 
-  static onWasmCalledJsErrorCallback: (err: Error, palletName: PalletName) => void;
+  static onWasmCalledJsErrorCallback: (
+    err: Error,
+    palletName: PalletName,
+  ) => void;
 
   constructor(
     wasm: any,
@@ -57,6 +61,21 @@ export default class BaseWallet implements IBaseWallet {
     BaseWallet.log(this.loggingEnabled, message, name);
   }
 
+  private getApiProvider(apiEndpoint: string | string[], apiTimeout: number) {
+    const isArray = apiEndpoint instanceof Array;
+    this.isHttpProvider = (isArray ? apiEndpoint[0] : apiEndpoint).startsWith(
+      'http',
+    );
+    if (this.isHttpProvider) {
+      const endPoint = isArray
+        ? apiEndpoint[(Math.random() * apiEndpoint.length) | 0]
+        : apiEndpoint;
+      return new HttpProvider(endPoint);
+    } else {
+      return new WsProvider(this.apiEndpoint, 2500, {}, apiTimeout);
+    }
+  }
+
   updateApi(apiEndpoint: string | string[], apiTimeout?: number) {
     this.log('Initial api');
 
@@ -64,29 +83,49 @@ export default class BaseWallet implements IBaseWallet {
     this.apiTimeout = apiTimeout || 60 * 1000;
 
     this.api = new ApiPromise({
-      provider: new WsProvider(this.apiEndpoint, 2500, {}, this.apiTimeout),
+      provider: this.getApiProvider(apiEndpoint, apiTimeout),
       types: mantaConfig.TYPES,
       rpc: mantaConfig.RPC,
     });
 
-    if (this.loggingEnabled) {
-      this.api.on('connected', () => {
-        Promise.all([
-          this.api.rpc.system.chain(),
-          this.api.rpc.system.name(),
-          this.api.rpc.system.version(),
-        ]).then(([chain, nodeName, nodeVersion]) => {
-          this.log(
-            `Wallet is connected to chain ${chain} using ${nodeName} v${nodeVersion}`,
-          );
-        });
-      });
+    return this.api;
+  }
+
+  // @ts-ignore
+  async isApiReady() {
+    if (!this.isHttpProvider) {
+      return this.api.isReady;
     }
+
+    // see detail https://github.com/polkadot-js/api/blob/master/packages/api/src/base/Init.ts#L413
+    // HttpProvider has no retry logic, so it is necessary to resend the meta information request
+    // to ensure that the api initialization is successful
+
+    // At present, this solution is only a temporary solution,
+    // and this problem will be solved by submitting pr to polkadot/api later
+
+    // @ts-ignore
+    if (this.api._isReady) {
+      return this.api;
+    }
+
+    // @ts-ignore
+    const metaData = await this.api._loadMeta();
+    if (!metaData) {
+      throw new Error('Metadata initialization failed');
+    }
+    // @ts-ignore
+    this.api._isReady = true;
+
+    // @ts-ignore
+    this.api.emit('ready', this.api);
     return this.api;
   }
 
   async disconnectApi() {
-    await this.api.disconnect();
+    if (!this.isHttpProvider) {
+      await this.api.disconnect();
+    }
     return true;
   }
 
@@ -132,7 +171,7 @@ export default class BaseWallet implements IBaseWallet {
       config.saveStorageStateToLocal,
       config.getStorageStateFromLocal,
       loggingEnabled,
-      config.apiTimeout
+      config.apiTimeout,
     );
   }
 }

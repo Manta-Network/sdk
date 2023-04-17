@@ -190,6 +190,7 @@ export default class PrivateWallet implements IPrivateWallet {
     }
     const result = await this.wrapWalletIsBusy(async () => {
       this.log('Start initial new account');
+      await this.baseWallet.isApiReady();
       await this.wasmWallet.initial_sync(this.getWasmNetWork());
       this.log('Initial new account completed');
       await this.saveStateToLocal();
@@ -365,6 +366,7 @@ export default class PrivateWallet implements IPrivateWallet {
     try {
       const syncType =
         this.palletName === 'mantaSBT' ? 'sbt_sync_partial' : 'sync_partial';
+      await this.baseWallet.isApiReady();
       const result = await this.wasmWallet[syncType](this.getWasmNetWork());
       await this.saveStateToLocal();
       return {
