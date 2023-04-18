@@ -54,11 +54,11 @@ export type BaseWalletConfig = {
 export type SbtInfo = {
   assetId: BN;
   amount?: BN;
-}
+};
 
 export type AuthContextType = {
-  proof_authorization_key: Uint8Array,
-}
+  proof_authorization_key: Uint8Array;
+};
 
 export interface IBaseWallet {
   api: ApiPromise;
@@ -117,8 +117,10 @@ export interface IMantaPayWallet extends IPrivateWallet {
 }
 
 export interface IMantaSbtWallet extends IPrivateWallet {
-  multiSbtPostBuild(
-    sbtInfoList: SbtInfo[],
-  ): Promise<SignedMultiSbtPost | null>;
-  getIdentityProof(virtualAsset: string, polkadotAddress: Address,): Promise<any>;
+  multiSbtPostBuild(sbtInfoList: SbtInfo[]): Promise<SignedMultiSbtPost | null>;
+  getTransactionDatas(posts: any[]): Promise<any[]>;
+  getIdentityProof(
+    virtualAsset: string,
+    polkadotAddress: Address,
+  ): Promise<any>;
 }

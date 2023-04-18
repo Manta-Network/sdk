@@ -84,6 +84,37 @@ export default class MantaSbtWallet
     return result;
   }
 
+  async getTransactionDatas(posts: any[]): Promise<any[]> {
+    const result = await this.wrapWalletIsBusy(
+      async () => {
+        const transactionDatas = [];
+        for (let i = 0; i < posts.length; i += 1) {
+          const postBody = {
+            ...posts[i],
+          };
+          delete postBody.sink_accounts;
+          const transferPost = {
+            body: postBody,
+            sink_accounts: posts[i].sink_accounts,
+          };
+          const formatData = this.wasm.TransactionDataRequest.from_string(
+            JSON.stringify([transferPost]),
+          );
+          const result = await this.wasmWallet.transaction_data(
+            formatData,
+            this.getWasmNetWork(),
+          );
+          transactionDatas.push(result);
+        }
+        return formatWasmJson(transactionDatas);
+      },
+      (ex: Error) => {
+        console.error('Failed to get transactionData.', ex);
+      },
+    );
+    return result;
+  }
+
   async getIdentityProof(
     virtualAsset: string,
     polkadotAddress: Address,
