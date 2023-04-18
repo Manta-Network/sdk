@@ -13,7 +13,7 @@
         },
         "Calamari": {
             "name": "Calamari",
-            "ws": "wss://ws.calamari.systems/",
+            "ws": "wss://calamari.systems/",
             "ws_local": "ws://127.0.0.1:9944",
             "parachainId": 2084,
             "decimals": 12,
