@@ -111,8 +111,8 @@ where
 /// Converts `value` into a value of type `T`.
 #[inline]
 pub fn from_js_result<T>(value: JsValue) -> Result<T, Error>
-    where
-        T: DeserializeOwned,
+where
+    T: DeserializeOwned,
 {
     serde_wasm_bindgen::from_value(value)
 }
@@ -130,8 +130,7 @@ pub fn id_string_from_field(id: [u8; 32]) -> Option<String> {
 /// convert String to AssetId (Field)
 #[inline]
 pub fn field_from_id_string(id: String) -> [u8; 32] {
-    panic!("id_string_length {}", id.as_bytes().len());
-    // into_array_unchecked(id.as_bytes())
+    into_array_unchecked(id.as_bytes())
 }
 
 /// convert u128 to AssetId (Field)
@@ -570,15 +569,32 @@ impl TransferPost {
         proof: JsValue,
         sink_accounts: Vec<JsValue>,
     ) -> Self {
+        let authorization_signature = authorization_signature.map(|x| {
+            RawAuthorizationSignature::try_from(x)
+                .expect("Error parsing the JsString as a raw authorization signature")
+                .try_into()
+                .expect("Getting an authorization signature from a raw authorization signature is not allowed to fail")
+        });
         Self {
-            authorization_signature: authorization_signature.map(|x| {
-                let raw: RawAuthorizationSignature = x.try_into().unwrap();
-                raw.try_into().unwrap()
-            }),
+            authorization_signature,
             asset_id: Some(from_js(asset_id)),
             sources: sources.into_iter().map(from_js).collect(),
-            sender_posts: sender_posts.into_iter().map(from_js).collect(),
-            receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
+            sender_posts: sender_posts
+                .into_iter()
+                .map(|post| {
+                    from_js::<RawSenderPost>(post)
+                        .try_into()
+                        .expect("Getting a SenderPost from a RawSenderPost is not allowed to fail")
+                })
+                .collect(),
+            receiver_posts: receiver_posts
+                .into_iter()
+                .map(|post| {
+                    from_js::<RawReceiverPost>(post).try_into().expect(
+                        "Getting a ReceiverPost from a RawReceiverPost is not allowed to fail",
+                    )
+                })
+                .collect(),
             sinks: sinks.into_iter().map(from_js).collect(),
             proof: from_js(proof),
             sink_accounts: sink_accounts.into_iter().map(from_js).collect(),
@@ -666,7 +682,7 @@ impl ledger::Read<SyncData<config::Config>> for PolkadotJsLedger {
         Box::pin(async {
             let pull_result = self.0.pull(borrow_js(checkpoint)).await;
             let from_js_result = from_js_result::<RawPullResponse>(pull_result);
-            let resp = from_js_result.map_err(|_e| LedgerError{})?;
+            let resp = from_js_result.map_err(|_e| LedgerError {})?;
             let pull_response = resp.try_into().expect("Conversion is not allowed to fail.");
             Ok(pull_response)
         })
@@ -1662,11 +1678,11 @@ impl Wallet {
     /// Retrieves the [`TransactionData`] associated with the [`TransferPost`]s in
     /// `request`, if possible.
     #[inline]
-    pub fn transaction_data(&self, request: TransferPost, network: Network) -> Promise {
+    pub fn transaction_data(&self, request: TransactionDataRequest, network: Network) -> Promise {
         self.with_async(
             |this| {
                 Box::pin(async {
-                    this.transaction_data(vec![request.into()])
+                    this.transaction_data(request.0 .0)
                         .await
                         .map(Into::<TransactionDataResponse>::into)
                 })
@@ -1764,6 +1780,16 @@ impl Wallet {
             .signer_mut()
             .prune()
     }
+}
+
+/// Creates a [`TransactionDataRequest`] from `post`.
+#[inline]
+#[wasm_bindgen]
+pub fn transaction_data_request(post: TransferPost) -> TransactionDataRequest {
+    signer::TransactionDataRequest {
+        0: vec![post.into()],
+    }
+    .into()
 }
 
 /// Gets the transfer [`RawFullParameters`] from manta-parameters.

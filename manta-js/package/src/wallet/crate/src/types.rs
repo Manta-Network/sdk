@@ -403,3 +403,50 @@ impl TryFrom<RawInitialPullResponse> for ReadResponse<InitialSyncData<config::Co
         })
     }
 }
+
+/// Raw Receiver Post
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde")]
+pub struct RawReceiverPost {
+    /// Raw Utxo
+    pub utxo: RawUtxo,
+
+    /// Raw Note
+    pub full_incoming_note: RawFullIncomingNote,
+}
+
+impl TryFrom<RawReceiverPost> for config::ReceiverPost {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: RawReceiverPost) -> Result<Self, Self::Error> {
+        Ok(Self {
+            utxo: value.utxo.try_into().map_err(|_| ())?,
+            note: value.full_incoming_note.try_into().map_err(|_| ())?,
+        })
+    }
+}
+
+/// Raw Sender Post
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[serde(crate = "manta_util::serde")]
+pub struct RawSenderPost {
+    /// Raw Utxo Accumulator Output
+    pub utxo_accumulator_output: RawInnerDigest,
+
+    /// Raw Nullifier
+    pub nullifier: RawNulllifier,
+}
+
+impl TryFrom<RawSenderPost> for config::SenderPost {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: RawSenderPost) -> Result<Self, Self::Error> {
+        Ok(Self {
+            utxo_accumulator_output: fp_decode(value.utxo_accumulator_output.to_vec())
+                .map_err(|_| ())?,
+            nullifier: value.nullifier.try_into().map_err(|_| ())?,
+        })
+    }
+}

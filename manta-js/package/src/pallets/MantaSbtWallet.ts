@@ -107,16 +107,19 @@ export default class MantaSbtWallet
           // };
           const formatData = new this.wasm.TransferPost(
             null,
-            JSON.stringify(postBody.asset_id),
-            JSON.stringify(postBody.sources),
-            JSON.stringify(postBody.sender_posts),
-            JSON.stringify(postBody.receiver_posts),
-            JSON.stringify(postBody.sinks),
-            JSON.stringify(postBody.proof),
-            JSON.stringify(postBody.sink_accounts),
+            postBody.asset_id,
+            postBody.sources,
+            postBody.sender_posts,
+            postBody.receiver_posts,
+            postBody.sinks,
+            postBody.proof,
+            postBody.sink_accounts,
+          );
+          const transactionDataRequest = this.wasm.transaction_data_request(
+            formatData
           );
           const result = await this.wasmWallet.transaction_data(
-            formatData,
+            transactionDataRequest,
             this.getWasmNetWork(),
           );
           transactionDatas.push(result);
