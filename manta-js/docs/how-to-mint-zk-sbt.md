@@ -33,27 +33,31 @@ for(var post in posts) {
     const tx = api.tx.mantaSbt.toPrivate(post, metadata);
     batchesTx.push(tx);
 }
-await batchesTx.signAndSend(polkadotAddress);
+await api.tx.utility.batch(batchesTx).signAndSend(polkadotAddress);
 ```
 
 4. When user mint zkSBT, We also return `transactionDatas` which contains the proof key of zkSBT. Third party project can use this proof key information to request our NPO backend service:
 
 POST http://${NPO_BACKEND_SERVICE_URL}/npo/raw-proofs
 
+> Note: Please contact our team to get `NPO_BACKEND_SERVICE_URL`.
+
 ```json
 {
-    "address": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+    "address": "YOUR POLKADOT ADDRESS",
+    "token_type": "zkBAB",
     "proof_info": [
         {
-            "proof_id": "25ea6df873d1541293bf75953103f1d25816eef3ce713c7b7809c1a109ce3025",
-            "blur_url": "BAB Metadata 3023",
+            "proof_id": "0x4d551bb6932126300d403e9963aa051f43675ca4b56a53e9f8e3e84783440726",
+            "blur_url": "https://npo-cdn.asmatch.xyz/zkBAB_Front.jpg",
+            "asset_id": "115",
             "transaction_data":{"identifier":{"is_transparent":false,"utxo_commitment_randomness":[37,234,109,248,115,209,84,18,147,191,117,149,49,3,241,210,88,22,238,243,206,113,60,123,120,9,193,161,9,206,48,37]},"asset_info":{"id":[5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"value":1},"zk_address":{"receiving_key":[80,174,139,214,69,21,2,245,8,21,248,250,162,236,202,190,196,158,75,11,217,235,212,191,19,227,146,27,160,205,8,130]}}
         }
     ]
 }
 ```
 
-The successfully response like:
+A successfully response example:
 
 ```json
 {
@@ -64,26 +68,32 @@ The successfully response like:
 If the api result is failed, it means your transaction data is not correct.
 
 
-5. After proof information is stored on our backend service, you can request our backend verifier service to verify if given proof information is valid or not:
+5. After proof information is stored on NPO backend service, you can request NPO backend verifier service to check if given proof information is valid or not:
 
 POST http://${NPO_BACKEND_SERVICE_URL}/npo/raw-proof
 
 ```json
 {
-    "proof_id": ["0x01234567890123456789012345678901"]
+    "proof_id": ["0x4d551bb6932126300d403e9963aa051f43675ca4b56a53e9f8e3e84783440726"]
 }
 ```
 
-The successfully response example like:
+A successfully response example:
 
 ```json
 {
     "status": true,
     "data": [
         {
-            "proof_id": "0x01234567890123456789012345678901",
-            "metadata": "https://example.com/1.png",
-            "asset_id": "1"
+            "address": "dmuiB62dLVDJxRG66ZPBRnrpvgvgHdQ335qNczznnZsSHmfz1",
+            "url": "https://npo-cdn.asmatch.xyz/zkBAB_Front.jpg",
+            "randomness": "00000000000000000000000000000000",
+            "asset_id": "115",
+            "token_type": "zkBAB",
+            "proof_id": "0x4d551bb6932126300d403e9963aa051f43675ca4b56a53e9f8e3e84783440726",
+            "createAt": 1681788356,
+            "category": "Credential",
+            "token_name": "BAB"
         }
     ]
 }
@@ -91,13 +101,15 @@ The successfully response example like:
 
 ## Credentials
 
-We currently support ethereum compatible chain which use EIP-712 signature, and only allow whitelist users to mint credentials zkSBT.
+We currently support Ethereum compatible chain which use EIP-712 signature, and only allow whitelist users to mint credentials zkSBT.
 
 1. Before user mint sbt, the user need to added to allowlist:
 
+> Note: We have a limit that only one special privilege account can execute `allowlistEvmAccount` transaction. So please also contact us if your project has requirement to mint credentials zkSBT.
+
 ```typescript
 const address = {
-    bab: "0x_babAddress"
+    bab: "YOUR BAB ADDRESS"
 }
 const allowlistTx = await api.tx.mantaSbt.allowlistEvmAccount(address);
 await allowlistTx.signAndSend(polkadotAddress);
@@ -107,7 +119,7 @@ await allowlistTx.signAndSend(polkadotAddress);
 
 ```typescript
 const address = {
-    bab: "0x_babAddress"
+    bab: "YOUR BAB ADDRESS"
 }
 const mintStatus = await api.query.mantaSbt.evmAddressAllowlist(address);
 ```
@@ -134,8 +146,13 @@ const transactionData = transactionDatas[0];
 
 4. Mint zkSBT.
 
+> Note: We're using EIP-712 signature to verify use's eth address.
+
 ```typescript
 const metadata = "YOUR METADATA";
+const address = {
+    bab: "YOUR BAB ADDRESS"
+}
 
 const mintTx = api.tx.mantaSbt.mintSbtEth(
     post,
