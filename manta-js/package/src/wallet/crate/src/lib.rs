@@ -28,6 +28,7 @@ use alloc::{
     format,
     rc::Rc,
     string::{String, ToString},
+    vec,
     vec::Vec,
 };
 use core::{cell::RefCell, fmt::Debug};
@@ -129,7 +130,8 @@ pub fn id_string_from_field(id: [u8; 32]) -> Option<String> {
 /// convert String to AssetId (Field)
 #[inline]
 pub fn field_from_id_string(id: String) -> [u8; 32] {
-    into_array_unchecked(id.as_bytes())
+    panic!("id_string_length {}", id.as_bytes().len());
+    // into_array_unchecked(id.as_bytes())
 }
 
 /// convert u128 to AssetId (Field)
@@ -560,7 +562,7 @@ impl TransferPost {
     #[wasm_bindgen(constructor)]
     pub fn new(
         authorization_signature: Option<JsString>,
-        asset_id: Option<String>,
+        asset_id: JsValue,
         sources: Vec<JsValue>,
         sender_posts: Vec<JsValue>,
         receiver_posts: Vec<JsValue>,
@@ -573,12 +575,7 @@ impl TransferPost {
                 let raw: RawAuthorizationSignature = x.try_into().unwrap();
                 raw.try_into().unwrap()
             }),
-            asset_id: asset_id.map(field_from_id_string).map(|x| {
-                AssetId(
-                    Decode::decode(x)
-                        .expect("Decoding a field element from [u8; 32] is not allowed to fail"),
-                )
-            }),
+            asset_id: Some(from_js(asset_id)),
             sources: sources.into_iter().map(from_js).collect(),
             sender_posts: sender_posts.into_iter().map(from_js).collect(),
             receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
@@ -1665,11 +1662,11 @@ impl Wallet {
     /// Retrieves the [`TransactionData`] associated with the [`TransferPost`]s in
     /// `request`, if possible.
     #[inline]
-    pub fn transaction_data(&self, request: TransactionDataRequest, network: Network) -> Promise {
+    pub fn transaction_data(&self, request: TransferPost, network: Network) -> Promise {
         self.with_async(
             |this| {
                 Box::pin(async {
-                    this.transaction_data(request.0 .0)
+                    this.transaction_data(vec![request.into()])
                         .await
                         .map(Into::<TransactionDataResponse>::into)
                 })

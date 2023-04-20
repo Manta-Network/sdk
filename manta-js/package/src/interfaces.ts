@@ -26,6 +26,9 @@ export type SignedTransaction = {
   txs: SubmittableExtrinsic<'promise', any>[];
 };
 
+export type TransactionPost = any;
+export type TransactionData = any;
+
 export type SignedMultiSbtPost = {
   transactionDatas: any[];
   posts: any[];

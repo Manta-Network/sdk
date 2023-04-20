@@ -9,6 +9,8 @@ import type {
   SbtInfo,
   Address,
   SignedMultiSbtPost,
+  TransactionData,
+  TransactionPost,
 } from '.././interfaces';
 import { formatWasmJson, toPrivateBuildUnsigned, transferPost } from '../utils';
 import PrivateWallet from '../PrivateWallet';
@@ -84,7 +86,9 @@ export default class MantaSbtWallet
     return result;
   }
 
-  async getTransactionDatas(posts: any[]): Promise<any[]> {
+  async getTransactionDatas(
+    posts: TransactionPost[],
+  ): Promise<TransactionData[]> {
     const result = await this.wrapWalletIsBusy(
       async () => {
         const transactionDatas = [];
@@ -92,13 +96,24 @@ export default class MantaSbtWallet
           const postBody = {
             ...posts[i],
           };
-          delete postBody.sink_accounts;
-          const transferPost = {
-            body: postBody,
-            sink_accounts: posts[i].sink_accounts,
-          };
-          const formatData = this.wasm.TransactionDataRequest.from_string(
-            JSON.stringify([transferPost]),
+          // if (postBody.receiver_posts && postBody.receiver_posts.length > 0) {
+          //   postBody.receiver_posts.forEach((item: any) => {
+          //     item.utxo.public_asset.value = (new BN(item.utxo.public_asset.value)).toNumber();
+          //   });
+          // delete postBody.sink_accounts;
+          // const transferPost = {
+          //   body: postBody,
+          //   sink_accounts: posts[i].sink_accounts,
+          // };
+          const formatData = new this.wasm.TransferPost(
+            null,
+            JSON.stringify(postBody.asset_id),
+            JSON.stringify(postBody.sources),
+            JSON.stringify(postBody.sender_posts),
+            JSON.stringify(postBody.receiver_posts),
+            JSON.stringify(postBody.sinks),
+            JSON.stringify(postBody.proof),
+            JSON.stringify(postBody.sink_accounts),
           );
           const result = await this.wasmWallet.transaction_data(
             formatData,
