@@ -24,7 +24,6 @@ import PrivateWallet from '../PrivateWallet';
 
 const CURRENT_PALLET_NAME: PalletName = 'mantaPay';
 
-/// PrivateWallet class
 export default class MantaPayWallet
   extends PrivateWallet
   implements IMantaPayWallet

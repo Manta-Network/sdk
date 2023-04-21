@@ -18,7 +18,6 @@ import { decodeAddress } from '@polkadot/util-crypto';
 
 const CURRENT_PALLET_NAME: PalletName = 'mantaSBT';
 
-/// PrivateWallet class
 export default class MantaSbtWallet
   extends PrivateWallet
   implements IMantaSbtWallet
@@ -93,18 +92,7 @@ export default class MantaSbtWallet
       async () => {
         const transactionDatas = [];
         for (let i = 0; i < posts.length; i += 1) {
-          const postBody = {
-            ...posts[i],
-          };
-          // if (postBody.receiver_posts && postBody.receiver_posts.length > 0) {
-          //   postBody.receiver_posts.forEach((item: any) => {
-          //     item.utxo.public_asset.value = (new BN(item.utxo.public_asset.value)).toNumber();
-          //   });
-          // delete postBody.sink_accounts;
-          // const transferPost = {
-          //   body: postBody,
-          //   sink_accounts: posts[i].sink_accounts,
-          // };
+          const postBody = posts[i];
           const formatData = new this.wasm.TransferPost(
             null,
             postBody.asset_id,
@@ -115,9 +103,8 @@ export default class MantaSbtWallet
             postBody.proof,
             postBody.sink_accounts,
           );
-          const transactionDataRequest = this.wasm.transaction_data_request(
-            formatData
-          );
+          const transactionDataRequest =
+            this.wasm.transaction_data_request(formatData);
           const result = await this.wasmWallet.transaction_data(
             transactionDataRequest,
             this.getWasmNetWork(),
