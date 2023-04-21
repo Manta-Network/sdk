@@ -37,7 +37,6 @@ getrandom = { version = "0.2.8", default-features = false, features = ["js"] }
 js-sys = { version = "0.3.60", default-features = false }
 manta-accounting = { git = "https://github.com/manta-network/manta-rs.git", branch = "merkle_tree_pruning", default-features = false, features = ["serde"] }
 manta-crypto = { git = "https://github.com/manta-network/manta-rs.git", branch = "merkle_tree_pruning", default-features = false, features = ["serde"] }
-manta-parameters = { git = "https://github.com/manta-network/manta-rs.git", branch = "merkle_tree_pruning", default-features = false }
 manta-pay = { git = "https://github.com/manta-network/manta-rs.git", branch = "merkle_tree_pruning", default-features = true, features = ["arkworks", "groth16", "http", "scale", "serde", "wallet"] }
 manta-util = { git = "https://github.com/manta-network/manta-rs.git", branch = "merkle_tree_pruning", default-features = false, features = ["serde", "reqwest"] }
 scale-codec = { package = "parity-scale-codec", version = "3.2.1", default-features = false, features = ["derive", "max-encoded-len"] }

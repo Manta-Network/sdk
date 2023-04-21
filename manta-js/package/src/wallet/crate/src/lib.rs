@@ -41,7 +41,6 @@ use manta_accounting::{
     },
 };
 use manta_crypto::signature::schnorr;
-use manta_parameters::Get;
 use manta_pay::{
     config::{self, utxo},
     key,
@@ -569,14 +568,14 @@ impl TransferPost {
         proof: JsValue,
         sink_accounts: Vec<JsValue>,
     ) -> Self {
-        let authorization_signature = authorization_signature.map(|x| {
-            RawAuthorizationSignature::try_from(x)
-                .expect("Error parsing the JsString as a raw authorization signature")
-                .try_into()
-                .expect("Getting an authorization signature from a raw authorization signature is not allowed to fail")
-        });
         Self {
-            authorization_signature,
+            authorization_signature: authorization_signature
+            .map(|x| {
+                RawAuthorizationSignature::try_from(x)
+                    .expect("Error parsing the JsString as a raw authorization signature")
+                    .try_into()
+                    .expect("Getting an authorization signature from a raw authorization signature is not allowed to fail")
+            }),
             asset_id: Some(from_js(asset_id)),
             sources: sources.into_iter().map(from_js).collect(),
             sender_posts: sender_posts
@@ -680,11 +679,13 @@ impl ledger::Read<SyncData<config::Config>> for PolkadotJsLedger {
         checkpoint: &'s Self::Checkpoint,
     ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<config::Config>>, Self::Error> {
         Box::pin(async {
-            let pull_result = self.0.pull(borrow_js(checkpoint)).await;
-            let from_js_result = from_js_result::<RawPullResponse>(pull_result);
-            let resp = from_js_result.map_err(|_e| LedgerError {})?;
-            let pull_response = resp.try_into().expect("Conversion is not allowed to fail.");
-            Ok(pull_response)
+            from_js_result::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
+                .map(|raw_response| {
+                    raw_response
+                        .try_into()
+                        .expect("Conversion is not allowed to fail.")
+                })
+                .map_err(|_| LedgerError {})
         })
     }
 }
@@ -698,11 +699,15 @@ impl ledger::Read<InitialSyncData<config::Config>> for PolkadotJsLedger {
         checkpoint: &'s Self::Checkpoint,
     ) -> LocalBoxFutureResult<'s, ReadResponse<InitialSyncData<config::Config>>, Self::Error> {
         Box::pin(async {
-            Ok(
-                from_js::<RawInitialPullResponse>(self.0.initial_pull(borrow_js(checkpoint)).await)
-                    .try_into()
-                    .expect("Conversion is not allowed to fail."),
+            from_js_result::<RawInitialPullResponse>(
+                self.0.initial_pull(borrow_js(checkpoint)).await,
             )
+            .map(|raw_response| {
+                raw_response
+                    .try_into()
+                    .expect("Conversion is not allowed to fail.")
+            })
+            .map_err(|_| LedgerError {})
         })
     }
 }
@@ -1790,52 +1795,4 @@ pub fn transaction_data_request(post: TransferPost) -> TransactionDataRequest {
         0: vec![post.into()],
     }
     .into()
-}
-
-/// Gets the transfer [`RawFullParameters`] from manta-parameters.
-#[inline]
-#[wasm_bindgen]
-pub fn get_transfer_parameters() -> RawFullParameters {
-    let utxo_accumulator_model = manta_parameters::pay::parameters::UtxoAccumulatorModel::get()
-        .expect("Checksum did not match.");
-    let group_generator =
-        manta_parameters::pay::parameters::GroupGenerator::get().expect("Checksum did not match.");
-    let address_partition_function =
-        manta_parameters::pay::parameters::AddressPartitionFunction::get()
-            .expect("Checksum did not match.");
-    let incoming_base_encryption_scheme =
-        manta_parameters::pay::parameters::IncomingBaseEncryptionScheme::get()
-            .expect("Checksum did not match.");
-    let light_incoming_base_encryption_scheme =
-        manta_parameters::pay::parameters::LightIncomingBaseEncryptionScheme::get()
-            .expect("Checksum did not match.");
-    let nullifier_commitment_scheme =
-        manta_parameters::pay::parameters::NullifierCommitmentScheme::get()
-            .expect("Checksum did not match.");
-    let outgoing_base_encryption_scheme =
-        manta_parameters::pay::parameters::OutgoingBaseEncryptionScheme::get()
-            .expect("Checksum did not match.");
-    let schnorr_hash_function = manta_parameters::pay::parameters::SchnorrHashFunction::get()
-        .expect("Checksum did not match.");
-    let utxo_accumulator_item_hash =
-        manta_parameters::pay::parameters::UtxoAccumulatorItemHash::get()
-            .expect("Checksum did not match.");
-    let utxo_commitment_scheme = manta_parameters::pay::parameters::UtxoCommitmentScheme::get()
-        .expect("Checksum did not match.");
-    let viewing_key_derivation_function =
-        manta_parameters::pay::parameters::ViewingKeyDerivationFunction::get()
-            .expect("Checksum did not match.");
-    RawFullParameters::new(
-        address_partition_function,
-        group_generator,
-        incoming_base_encryption_scheme,
-        light_incoming_base_encryption_scheme,
-        nullifier_commitment_scheme,
-        outgoing_base_encryption_scheme,
-        schnorr_hash_function,
-        utxo_accumulator_item_hash,
-        utxo_accumulator_model,
-        utxo_commitment_scheme,
-        viewing_key_derivation_function,
-    )
 }
