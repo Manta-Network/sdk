@@ -1,6 +1,6 @@
 {
   "name": "manta-extension-sdk",
-  "version": "1.0.18-beta.0",
+  "version": "1.0.18",
   "description": "manta.js sdk",
   "main": "./dist/browser/index.js",
   "exports": {
