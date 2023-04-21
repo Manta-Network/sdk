@@ -13,7 +13,6 @@ export interface ILedgerApi {
   api: ApiPromise;
   palletName: PalletName;
   loggingEnabled: boolean;
-  errorCallback: (err: Error) => void;
 
   initial_pull(checkpoint: any): any;
   pull(checkpoint: any): any;

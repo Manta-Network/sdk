@@ -124,10 +124,6 @@ const getBaseWallet = async () => {
       return result || null;
     },
   });
-  BaseWallet.onWasmCalledJsErrorCallback = (err, palletName) => {
-    console.log(palletName);
-    console.error(err);
-  };
   return baseWallet;
 };
 

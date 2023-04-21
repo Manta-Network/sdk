@@ -12,7 +12,6 @@ import type {
 } from './interfaces';
 import LedgerApi from './ledger-api';
 import { wrapWasmError } from './utils';
-import BaseWallet from './BaseWallet';
 
 export default class PrivateWallet implements IPrivateWallet {
   palletName: PalletName;
@@ -71,13 +70,6 @@ export default class PrivateWallet implements IPrivateWallet {
       baseWallet.api,
       palletName,
       baseWallet.loggingEnabled,
-      (err) => {
-        console.error(err);
-        baseWallet.walletIsBusy = false;
-        if (typeof BaseWallet.onWasmCalledJsErrorCallback === 'function') {
-          BaseWallet.onWasmCalledJsErrorCallback(err, palletName);
-        }
-      },
     );
     return {
       wasmWallet,

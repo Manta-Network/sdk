@@ -13,25 +13,22 @@ import $, {
   currentPathToJson,
 } from './decodeUtils';
 import type { ILedgerApi, PalletName } from '../interfaces';
-import { log, wrapWasmError } from '../utils';
+import { log } from '../utils';
 import { ApiPromise } from '@polkadot/api';
 
 export default class LedgerApi implements ILedgerApi {
   api: ApiPromise;
   palletName: PalletName;
   loggingEnabled: boolean;
-  errorCallback: (err: any) => void;
 
   constructor(
     api: ApiPromise,
     palletName: PalletName,
     loggingEnabled: boolean,
-    errorCallback: (err: Error) => void,
   ) {
     this.api = api;
     this.palletName = palletName;
     this.loggingEnabled = Boolean(loggingEnabled);
-    this.errorCallback = errorCallback;
   }
 
   _log(message: string) {
@@ -80,11 +77,8 @@ export default class LedgerApi implements ILedgerApi {
 
       return pull_result;
     } catch (err) {
-      const newError = wrapWasmError(err);
-      if (typeof this.errorCallback === 'function') {
-        this.errorCallback(newError);
-      }
-      throw newError;
+      console.error(err);
+      return null;
     }
   }
 
