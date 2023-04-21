@@ -146,7 +146,7 @@ const initWalletData = async (privateWallet: interfaces.IPrivateWallet, initialD
   const isInitialed = await getIdbData(
     `storage_state_${privateWallet.palletName}_${currentNetwork}`,
   );
-  if (!isInitialed && newAccountFeatureEnabled) {
+  if (newAccountFeatureEnabled && !isInitialed && privateWallet instanceof MantaPayWallet) {
     _log('initialNewAccountWalletSync');
     await privateWallet.initialNewAccountWalletSync();
   } else {
