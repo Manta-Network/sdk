@@ -65,6 +65,14 @@ export interface RequestBuildMultiSbtPostPayload {
   network: Network
 }
 
+export type TransactionPost = any;
+export type TransactionData = any;
+
+export interface RequestGetSbtTransactionDatasPayload {
+  posts: TransactionPost[]
+  network: Network
+}
+
 export interface RequestGetIdentityProofPayload {
   virtualAsset: string
   polkadotAddress: string
@@ -91,6 +99,9 @@ export interface InjectedPrivateWallet {
   multiSbtPostBuild(
     payload: RequestBuildMultiSbtPostPayload,
   ): Promise<ResponseBuildMultiSbtPost | null>
+  getSbtTransactionDatas(
+    payload: RequestGetSbtTransactionDatasPayload,
+  ): Promise<TransactionData[] | null>
   getSbtIdentityProof(payload: RequestGetIdentityProofPayload): Promise<any>
   subscribeWalletState: (
     cb: (state: PrivateWalletStateInfo) => void | Promise<void>,
