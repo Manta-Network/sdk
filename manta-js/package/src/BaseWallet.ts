@@ -8,7 +8,8 @@ import type {
 } from './interfaces';
 import { PAY_PARAMETER_NAMES, PAY_PROVING_NAMES } from './constants';
 import mantaConfig from './config.json';
-import { fetchFiles, log } from './utils';
+import { fetchFiles, log, wrapWasmError } from './utils';
+import TaskSchedule from './utils/TaskSchedule';
 
 export default class BaseWallet implements IBaseWallet {
   api: ApiPromise;
@@ -22,6 +23,7 @@ export default class BaseWallet implements IBaseWallet {
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy = false;
   isHttpProvider = false;
+  taskSchedule: TaskSchedule;
 
   constructor(
     wasm: any,
@@ -39,6 +41,8 @@ export default class BaseWallet implements IBaseWallet {
     this.saveStorageStateToLocal = saveStorageStateToLocal;
     this.getStorageStateFromLocal = getStorageStateFromLocal;
     this.loggingEnabled = loggingEnabled;
+
+    this.taskSchedule = new TaskSchedule();
 
     this.updateApi(apiEndpoint, apiTimeout);
   }
@@ -166,5 +170,26 @@ export default class BaseWallet implements IBaseWallet {
       loggingEnabled,
       config.apiTimeout,
     );
+  }
+
+  async wrapWalletIsBusy<T>(
+    func: () => Promise<T>,
+    errorFunc?: (ex: Error) => void,
+  ) {
+    try {
+      await this.taskSchedule.wait();
+      this.walletIsBusy = true;
+      const result = await func();
+      return result;
+    } catch (ex) {
+      const wrapError = wrapWasmError(ex);
+      if (typeof errorFunc === 'function') {
+        errorFunc(wrapError);
+      }
+      throw wrapError;
+    } finally {
+      this.walletIsBusy = false;
+      this.taskSchedule.next();
+    }
   }
 }

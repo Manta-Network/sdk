@@ -56,7 +56,7 @@ export default class MantaPayWallet
     assetId: BN,
     amount: BN,
   ): Promise<SignedTransaction | null> {
-    const result = await this.wrapWalletIsBusy(
+    const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         const transaction = await toPrivateBuildUnsigned(
           this.wasm,
@@ -80,7 +80,7 @@ export default class MantaPayWallet
     amount: BN,
     toZkAddress: Address,
   ): Promise<SignedTransaction | null> {
-    const result = await this.wrapWalletIsBusy(
+    const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         await this.baseWallet.isApiReady();
         const transaction = await privateTransferBuildUnsigned(
@@ -111,7 +111,7 @@ export default class MantaPayWallet
     amount: BN,
     polkadotAddress: Address,
   ): Promise<SignedTransaction | null> {
-    const result = await this.wrapWalletIsBusy(
+    const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         await this.baseWallet.isApiReady();
         const transaction = await toPublicBuildUnsigned(

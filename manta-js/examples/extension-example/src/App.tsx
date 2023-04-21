@@ -14,6 +14,7 @@ const rpcUrl = [
 const decimals = 12;
 const network = 'Calamari';
 
+const assetName = 'KMA';
 const assetId = '1';
 const toZkAddress = '3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX';
 
@@ -144,7 +145,9 @@ export default function App() {
       try {
         setOperating(true);
         setResult('Signing');
-        await syncWallet();
+        if (checkResult) {
+          await syncWallet();
+        }
         const response = await func();
         console.log(response);
         if (!checkResult) {
@@ -315,10 +318,10 @@ export default function App() {
               <fieldset>
                 <legend>Balance</legend>
                 <p>
-                  DOL: <strong>{publicBalance}</strong>
+                  {assetName}: <strong>{publicBalance}</strong>
                 </p>
                 <p>
-                  zkDOL: <strong>{balance}</strong>
+                  zk{assetName}: <strong>{balance}</strong>
                 </p>
               </fieldset>
               <fieldset>
@@ -331,7 +334,7 @@ export default function App() {
                         setToPrivateAmount(e.target.value);
                       }}
                     />
-                    <i>DOL</i>
+                    <i>{assetName}</i>
                   </span>
                   <button
                     type="button"
@@ -349,7 +352,7 @@ export default function App() {
                         setPrivateTransferAmount(e.target.value);
                       }}
                     />
-                    <i>zkDOL</i>
+                    <i>zk{assetName}</i>
                   </span>
                   <button
                     type="button"
@@ -376,7 +379,7 @@ export default function App() {
                         setToPublicAmount(e.target.value);
                       }}
                     />
-                    <i>zkDOL</i>
+                    <i>zk{assetName}</i>
                   </span>
                   <button
                     type="button"

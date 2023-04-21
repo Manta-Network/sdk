@@ -11,7 +11,6 @@ import type {
   AuthContextType,
 } from './interfaces';
 import LedgerApi from './ledger-api';
-import { wrapWasmError } from './utils';
 
 export default class PrivateWallet implements IPrivateWallet {
   palletName: PalletName;
@@ -45,14 +44,6 @@ export default class PrivateWallet implements IPrivateWallet {
     return this.baseWallet.api;
   }
 
-  get walletIsBusy() {
-    return this.baseWallet.walletIsBusy;
-  }
-
-  set walletIsBusy(result: boolean) {
-    this.baseWallet.walletIsBusy = result;
-  }
-
   ///
   /// Public Methods
   ///
@@ -78,7 +69,7 @@ export default class PrivateWallet implements IPrivateWallet {
   }
 
   async dropUserSeedPhrase() {
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       this.wasmWallet.drop_accounts(this.getWasmNetWork());
       return true;
     });
@@ -86,7 +77,7 @@ export default class PrivateWallet implements IPrivateWallet {
   }
 
   async loadUserSeedPhrase(seedPhrase: string) {
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       const wasmSeedPhrase = this.wasm.mnemonic_from_phrase(seedPhrase);
       const accountTable = this.wasm.accounts_from_mnemonic(wasmSeedPhrase);
       this.wasmWallet.load_accounts(accountTable, this.getWasmNetWork());
@@ -100,7 +91,7 @@ export default class PrivateWallet implements IPrivateWallet {
     if (!this.isBindAuthorizationContext) {
       return null;
     }
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       return this.wasmWallet.authorization_context(
         this.getWasmNetWork(),
       ) as AuthContextType;
@@ -109,7 +100,7 @@ export default class PrivateWallet implements IPrivateWallet {
   }
 
   async loadAuthorizationContext(authContext: AuthContextType) {
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       const success = this.wasmWallet.try_load_authorization_context(
         authContext,
         this.getWasmNetWork(),
@@ -123,7 +114,7 @@ export default class PrivateWallet implements IPrivateWallet {
   }
 
   async dropAuthorizationContext() {
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       this.wasmWallet.drop_authorization_context(this.getWasmNetWork());
       this.isBindAuthorizationContext = false;
       return true;
@@ -138,7 +129,7 @@ export default class PrivateWallet implements IPrivateWallet {
 
   /// After initial PrivateWallet, need to call setNetwork
   async setNetwork(network: Network) {
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       this.network = network;
       const storageData = await this.baseWallet.getStorageStateFromLocal(
         this.palletName,
@@ -179,7 +170,7 @@ export default class PrivateWallet implements IPrivateWallet {
     if (!this.isBindAuthorizationContext) {
       throw new Error('No ViewingKey');
     }
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       this.log('Start initial new account');
       await this.baseWallet.isApiReady();
       await this.wasmWallet.initial_sync(this.getWasmNetWork());
@@ -217,7 +208,7 @@ export default class PrivateWallet implements IPrivateWallet {
 
   /// Returns the ZkAddress (Zk Address) of the currently connected manta-signer instance.
   async getZkAddress(): Promise<Address> {
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       const zkAddressRaw = await this.wasmWallet.address(this.getWasmNetWork());
       const zkAddressBytes = [...zkAddressRaw.receiving_key];
       return base58Encode(zkAddressBytes);
@@ -228,7 +219,7 @@ export default class PrivateWallet implements IPrivateWallet {
   /// Returns the zk balance of the currently connected zkAddress for the currently
   /// connected network.
   async getZkBalance(assetId: BN): Promise<BN> {
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       const balanceString = this.wasmWallet.balance(
         assetId.toString(),
         this.getWasmNetWork(),
@@ -241,7 +232,7 @@ export default class PrivateWallet implements IPrivateWallet {
   /// Returns the multi zk balance of the currently connected zkAddress for the currently
   /// connected network.
   async getMultiZkBalance(assetIds: BN[]): Promise<BN[]> {
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       return assetIds.map((assetId) => {
         const balanceString = this.wasmWallet.balance(
           assetId.toString(),
@@ -255,7 +246,7 @@ export default class PrivateWallet implements IPrivateWallet {
 
   /// reset instance state
   async resetState() {
-    await this.wrapWalletIsBusy(async () => {
+    await this.baseWallet.wrapWalletIsBusy(async () => {
       this.initialSyncIsFinished = false;
       this.isBindAuthorizationContext = false;
       const wasmSigner = new this.wasm.Signer(
@@ -288,39 +279,11 @@ export default class PrivateWallet implements IPrivateWallet {
     return this.wasm.Network.from_string(`"${this.network}"`);
   }
 
-  // WASM wallet doesn't allow you to call two methods at once, so before
-  // calling methods it is necessary to wait for a pending call to finish.
-  protected async waitForWallet(): Promise<void> {
-    while (this.walletIsBusy === true) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-    }
-  }
-
-  protected async wrapWalletIsBusy<T>(
-    func: () => Promise<T>,
-    errorFunc?: (ex: Error) => void,
-  ) {
-    try {
-      await this.waitForWallet();
-      this.walletIsBusy = true;
-      const result = await func();
-      this.walletIsBusy = false;
-      return result;
-    } catch (ex) {
-      this.walletIsBusy = false;
-      const wrapError = wrapWasmError(ex);
-      if (typeof errorFunc === 'function') {
-        errorFunc(wrapError);
-      }
-      throw wrapError;
-    }
-  }
-
   private async loopSyncPartialWallet(isInitial: boolean): Promise<boolean> {
     if (!this.isBindAuthorizationContext) {
       throw new Error('No ViewingKey');
     }
-    const result = await this.wrapWalletIsBusy(async () => {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
       if (isInitial) {
         await this.wasmWallet.reset_state(this.getWasmNetWork());
       }
@@ -333,6 +296,9 @@ export default class PrivateWallet implements IPrivateWallet {
           `Sync partial end, success: ${syncResult.success}, continue: ${syncResult.continue}`,
         );
         if (!syncResult.success) {
+          await new Promise((resolve) => {
+            setTimeout(resolve, 600);
+          });
           retryTimes += 1;
         } else {
           retryTimes = 0;

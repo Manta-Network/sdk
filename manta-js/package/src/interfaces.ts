@@ -76,6 +76,10 @@ export interface IBaseWallet {
   updateApi(apiEndpoint: string | string[], apiTimeout?: number): ApiPromise;
   isApiReady(): Promise<ApiPromise>;
   disconnectApi(): Promise<boolean>;
+  wrapWalletIsBusy<T>(
+    func: () => Promise<T>,
+    errorFunc?: (ex: Error) => void,
+  ): Promise<T>;
   log(message: string, name?: string): void;
 }
 

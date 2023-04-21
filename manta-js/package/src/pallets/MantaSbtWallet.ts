@@ -47,7 +47,7 @@ export default class MantaSbtWallet
   async multiSbtPostBuild(
     sbtInfoList: SbtInfo[],
   ): Promise<SignedMultiSbtPost | null> {
-    const result = await this.wrapWalletIsBusy(
+    const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         const defaultAmount = new BN('1');
         const posts = [];
@@ -88,7 +88,7 @@ export default class MantaSbtWallet
   async getTransactionDatas(
     posts: TransactionPost[],
   ): Promise<TransactionData[]> {
-    const result = await this.wrapWalletIsBusy(
+    const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         const transactionDatas = [];
         for (let i = 0; i < posts.length; i += 1) {
@@ -124,7 +124,7 @@ export default class MantaSbtWallet
     virtualAsset: string,
     polkadotAddress: Address,
   ): Promise<any> {
-    const result = await this.wrapWalletIsBusy(
+    const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         const identityJson = `[[${virtualAsset}, ${`[${decodeAddress(
           polkadotAddress,
