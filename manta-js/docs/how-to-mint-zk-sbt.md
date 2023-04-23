@@ -103,9 +103,9 @@ A successfully response example:
 
 We currently support Ethereum compatible chain which use EIP-712 signature, and only allow whitelist users to mint credentials zkSBT.
 
-1. Before user mint sbt, the user need to added to allowlist:
+1. Before user mint zkSBT, user's ethereum address need to added to allowlist. Currently we only allow one special privilege account to execute `allowlistEvmAccount` transaction. So please also contact us if your project has requirement to mint credentials zkSBT.
 
-> Note: We have a limit that only one special privilege account can execute `allowlistEvmAccount` transaction. So please also contact us if your project has requirement to mint credentials zkSBT.
+This is an example of adding user's bab address to `allowlistEvmAccount`.
 
 ```typescript
 const address = {
@@ -117,6 +117,8 @@ await allowlistTx.signAndSend(polkadotAddress);
 
 2. Query your asset ids from on chain storage:
 
+This is an example of query user's bab address from `evmAddressAllowlist`.
+
 ```typescript
 const address = {
     bab: "YOUR BAB ADDRESS"
@@ -124,35 +126,34 @@ const address = {
 const mintStatus = await api.query.mantaSbt.evmAddressAllowlist(address);
 ```
 
-If the result value is Available, then the user is allowed to mint sbt, otherwise if the value is AlreadyMinted, it means the user has already minted sbt.
+If the query result value is `Available` and contains asset id, then the user is allowed to mint zkSBT, otherwise if the value is `AlreadyMinted`, it means the user has already minted zkSBT. Or if the value is `None`, it means the user is not allowed to mint zkSBT.
 
-```json
+```
 {
   Available: 1
 }
 ```
 
-3. Get TransferPost from `privateWallet`
+3. Get `TransferPost` from `privateWallet`.
 
 ```typescript
 const sbtInfoList = [
   { assetId: new BN(1) }
 ];
 const { posts, transactionDatas } = await privateWallet.multiSbtPostBuild(sbtInfoList);
-// This example only mint 1 zkSBT, you can batch your transaction if you have multiple sbt to mint.
-const post = posts[0];
-const transactionData = transactionDatas[0];
 ```
 
 4. Mint zkSBT.
 
-> Note: We're using EIP-712 signature to verify use's eth address.
+> Note: We're using EIP-712 signature to verify use's eth address. So `mintSbtEth` extrinsic need to provide `chainId`, `signature`, and `address`. 
 
 ```typescript
 const metadata = "YOUR METADATA";
 const address = {
     bab: "YOUR BAB ADDRESS"
 }
+// This example only mint 1 zkSBT, you can batch your transaction if you have multiple zkSBT to mint.
+const post = posts[0];
 
 const mintTx = api.tx.mantaSbt.mintSbtEth(
     post,
@@ -166,4 +167,4 @@ const mintTx = api.tx.mantaSbt.mintSbtEth(
 await mintTx.signAndSend(polkadotAddress);
 ```
 
-5. Using the `transactionDatas` and request to NPO backend service, this workflow is same as previous part like mint sbt on Manata Network.
+5. Using the `transactionDatas` and request to NPO backend service, this workflow is same as previous part like mint zkSBT on Manata Network.
