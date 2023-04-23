@@ -9,7 +9,7 @@ import type {
 import { PAY_PARAMETER_NAMES, PAY_PROVING_NAMES } from './constants';
 import mantaConfig from './config.json';
 import { fetchFiles, log, wrapWasmError } from './utils';
-import TaskSchedule from './utils/TaskSchedule';
+import TaskSchedule, { TaskTimeoutError } from './utils/TaskSchedule';
 
 export default class BaseWallet implements IBaseWallet {
   api: ApiPromise;
@@ -176,20 +176,26 @@ export default class BaseWallet implements IBaseWallet {
     func: () => Promise<T>,
     errorFunc?: (ex: Error) => void,
   ) {
+    let isTaskTimeoutError = false;
     try {
       await this.taskSchedule.wait();
       this.walletIsBusy = true;
       const result = await func();
       return result;
     } catch (ex) {
+      isTaskTimeoutError = ex instanceof TaskTimeoutError;
       const wrapError = wrapWasmError(ex);
       if (typeof errorFunc === 'function') {
         errorFunc(wrapError);
       }
       throw wrapError;
     } finally {
-      this.walletIsBusy = false;
-      this.taskSchedule.next();
+      if (!isTaskTimeoutError) {
+        this.walletIsBusy = false;
+        setTimeout(() => {
+          this.taskSchedule.next();
+        }, 0);
+      }
     }
   }
 }
