@@ -21,7 +21,7 @@ await reserveTx.signAndSend(polkadotAddress);
 const assetIdRange = await api.query.mantaSbt.reservedIds(polkadotAddress);
 ```
 
-3. Mint zkSBT by your reserved asset id list.
+4. Mint zkSBT by your reserved asset id list.
 
 ``` typescript
 const sbtInfoList = [
@@ -36,7 +36,7 @@ for(var post in posts) {
 await api.tx.utility.batch(batchesTx).signAndSend(polkadotAddress);
 ```
 
-4. When user mint zkSBT, We also return `transactionDatas` which contains the proof key of zkSBT. Third party project can use this proof key information to request our NPO backend service:
+5. When user mint zkSBT, We also return `transactionDatas` which contains the proof key of zkSBT. Third party project can use this proof key information to request our NPO backend service:
 
 POST http://${NPO_BACKEND_SERVICE_URL}/npo/raw-proofs
 
@@ -68,7 +68,7 @@ A successfully response example:
 If the api result is failed, it means your transaction data is not correct.
 
 
-5. After proof information is stored on NPO backend service, you can request NPO backend verifier service to check if given proof information is valid or not:
+6. After proof information is stored on NPO backend service, you can request NPO backend verifier service to check if given proof information is valid or not:
 
 POST http://${NPO_BACKEND_SERVICE_URL}/npo/raw-proof
 
@@ -167,4 +167,65 @@ const mintTx = api.tx.mantaSbt.mintSbtEth(
 await mintTx.signAndSend(polkadotAddress);
 ```
 
-5. Using the `transactionDatas` and request to NPO backend service, this workflow is same as previous part like mint zkSBT on Manata Network.
+5. Using the `transactionDatas` and request to NPO backend service, Third party project can use this proof key information to request NPO backend service:
+
+POST http://${NPO_BACKEND_SERVICE_URL}/npo/raw-proofs
+
+> Note: Please contact our team to get `NPO_BACKEND_SERVICE_URL`.
+
+```json
+{
+    "address": "YOUR POLKADOT ADDRESS",
+    "token_type": "zkBAB",
+    "proof_info": [
+        {
+            "proof_id": "0x4d551bb6932126300d403e9963aa051f43675ca4b56a53e9f8e3e84783440726",
+            "blur_url": "https://npo-cdn.asmatch.xyz/zkBAB_Front.jpg",
+            "asset_id": "115",
+            "transaction_data":{"identifier":{"is_transparent":false,"utxo_commitment_randomness":[37,234,109,248,115,209,84,18,147,191,117,149,49,3,241,210,88,22,238,243,206,113,60,123,120,9,193,161,9,206,48,37]},"asset_info":{"id":[5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"value":1},"zk_address":{"receiving_key":[80,174,139,214,69,21,2,245,8,21,248,250,162,236,202,190,196,158,75,11,217,235,212,191,19,227,146,27,160,205,8,130]}}
+        }
+    ]
+}
+```
+
+A successfully response example:
+
+```json
+{
+    "status": true
+}
+```
+
+If the api result is failed, it means your transaction data is not correct.
+
+
+6. After proof information is stored on NPO backend service, you can request NPO backend verifier service to check if given proof information is valid or not:
+
+POST http://${NPO_BACKEND_SERVICE_URL}/npo/raw-proof
+
+```json
+{
+    "proof_id": ["0x4d551bb6932126300d403e9963aa051f43675ca4b56a53e9f8e3e84783440726"]
+}
+```
+
+A successfully response example:
+
+```json
+{
+    "status": true,
+    "data": [
+        {
+            "address": "dmuiB62dLVDJxRG66ZPBRnrpvgvgHdQ335qNczznnZsSHmfz1",
+            "url": "https://npo-cdn.asmatch.xyz/zkBAB_Front.jpg",
+            "randomness": "00000000000000000000000000000000",
+            "asset_id": "115",
+            "token_type": "zkBAB",
+            "proof_id": "0x4d551bb6932126300d403e9963aa051f43675ca4b56a53e9f8e3e84783440726",
+            "createAt": 1681788356,
+            "category": "Credential",
+            "token_name": "BAB"
+        }
+    ]
+}
+```
