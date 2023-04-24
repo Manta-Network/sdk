@@ -31,6 +31,9 @@ export default class TaskSchedule {
     });
   }
 
+  /**
+   * Warning: Please DO NOT call `next()` after throwing `TaskTimeoutError`
+   */
   next() {
     this.cleanTimeoutTasks();
     if (this.tasks.length <= 0) {
