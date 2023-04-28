@@ -35,10 +35,12 @@ const transferInAmount = new BN(50).mul(
   new BN(10).pow(new BN(nativeTokenDecimals)),
 );
 // privateTransfer && toPublic Amount (5 KMA)
-const transferOutAmount = transferInAmount.div(new BN(10));
+const transferOutAmount = new BN(110).mul(
+  new BN(10).pow(new BN(nativeTokenDecimals)),
+);
 
 let currentSeedPhrase =
-  'spike napkin obscure diamond slice style excess table process story excuse absurd';
+  'tuition fun wife glove frozen ceiling sick maid under boring wheat harvest'
 
 // If you need to test a new account without any Ledger data, please update it to true
 const newAccountFeatureEnabled = false;
@@ -223,7 +225,7 @@ const privateTransferSend = async (privateWallet: MantaPayWallet) => {
 };
 
 /// Test to execute a `ToPublic` transaction.
-const toPublicSend = async (privateWallet: MantaPayWallet) => {
+const toPublicSend = async (privateWallet: MantaPayWallet, sendTx = true) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
@@ -233,6 +235,9 @@ const toPublicSend = async (privateWallet: MantaPayWallet) => {
     transferOutAmount,
     polkadotConfig.polkadotAddress,
   );
+  if (!sendTx) {
+    return;
+  }
   await publishTransition(transaction.txs);
   await queryTransferResult(privateWallet, initialPrivateBalance);
 };
@@ -293,6 +298,9 @@ window.actions = {
   },
   async toPublicSend() {
     await toPublicSend(pallets.mantaPay as MantaPayWallet);
+  },
+  async toPublicBuild() {
+    await toPublicSend(pallets.mantaPay as MantaPayWallet, false);
   },
   async privateTransferSend() {
     await privateTransferSend(pallets.mantaPay as MantaPayWallet);
