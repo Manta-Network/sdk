@@ -22,10 +22,7 @@ import {
 } from 'idb-keyval';
 
 const apiEndpoint = [
-  'https://a1.calamari.systems/rpc',
-  'https://a2.calamari.systems/rpc',
-  'https://a3.calamari.systems/rpc',
-  'https://a4.calamari.systems/rpc',
+  'https://calamari.systems/rpc',
 ];
  // 'wss://c1.calamari.seabird.systems';
 const nativeTokenDecimals = 12;
