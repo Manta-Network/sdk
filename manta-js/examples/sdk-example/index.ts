@@ -245,7 +245,6 @@ const multiSbtPostBuild = async (
   privateWallet: MantaSbtWallet,
   sbtInfoList: interfaces.SbtInfo[],
 ) => {
-  // await privateWallet.walletSync();
   const result = await privateWallet.multiSbtPostBuild(sbtInfoList);
   console.log(result);
   return result;
@@ -255,7 +254,6 @@ const getTransactionDatas = async (
   privateWallet: MantaSbtWallet,
   posts: any[],
 ) => {
-  // await privateWallet.walletSync();
   const result = await privateWallet.getTransactionDatas(posts);
   console.log(result);
   return result;
