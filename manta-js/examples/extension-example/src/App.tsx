@@ -4,15 +4,21 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Injected, InjectedWeb3, PrivateWalletStateInfo } from './interfaces';
 
-// const rpcUrl = 'wss://c1.calamari.seabird.systems';
-const rpcUrl = [
-  'https://a1.calamari.systems/rpc',
-  'https://a2.calamari.systems/rpc',
-  'https://a3.calamari.systems/rpc',
-  'https://a4.calamari.systems/rpc',
-];
-const decimals = 12;
-const network = 'Calamari';
+const networkConfigs: Record<
+  string,
+  { rpc: string | string[]; assetName: string; decimals: number }
+> = {
+  Dolphin: {
+    rpc: ['https://calamari.seabird.systems/rpc'],
+    assetName: 'DOL',
+    decimals: 12,
+  },
+  Calamari: {
+    rpc: ['https://calamari.systems/rpc'],
+    assetName: 'KMA',
+    decimals: 12,
+  },
+};
 
 const assetId = '1';
 const toZkAddress = '3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX';
@@ -26,6 +32,7 @@ let isConnecting = false;
 export default function App() {
   const [isInjected] = useState(!!injectedWeb3);
   const [injected, setInjected] = useState<Injected | null>(null);
+  const [network, setNetwork] = useState<string>('');
   const [api, setApi] = useState<ApiPromise | null>(null);
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [zkAddress, setZkAddress] = useState<string | null>(null);
@@ -51,32 +58,21 @@ export default function App() {
     if (!injected) {
       return;
     }
-
-    const accounts = await injected.accounts.get();
-    if (!accounts || accounts.length <= 0) {
-      return;
-    }
-    setPublicAddress(accounts[0].address);
-    // @ts-ignore
-    setZkAddress(accounts[0].zkAddress);
     setInjected(injected);
-
-    // const provider = new WsProvider(rpcUrl);
-    const provider = new HttpProvider(
-      rpcUrl[(Math.random() * rpcUrl.length) | 0],
-    );
-
-    const api = await ApiPromise.create({ provider });
-    api.setSigner(injected.signer);
-    setApi(api);
-    localStorage.setItem('connected', '1');
   }, [setInjected]);
+
+  const currentNetwork = useMemo(() => {
+    return networkConfigs[network];
+  }, [network]);
 
   const syncWallet = useCallback(async () => {
     return await injected?.privateWallet.walletSync();
   }, [injected]);
 
   const fetchBalance = useCallback(async () => {
+    if (!stateInfo?.isWalletReady) {
+      return null;
+    }
     const balance = await injected?.privateWallet.getZkBalance({
       network,
       assetId,
@@ -85,12 +81,15 @@ export default function App() {
       return null;
     }
     return new BigNumber(balance)
-      .div(new BigNumber(10).pow(decimals))
+      .div(new BigNumber(10).pow(currentNetwork.decimals))
       .toFixed();
-  }, [injected]);
+  }, [injected, network]);
 
   const fetchPublicBalance = useCallback(async () => {
-    const accountInfo = await api?.query.system.account(publicAddress);
+    if (!api) {
+      return;
+    }
+    const accountInfo = await api.query.system.account(publicAddress);
     const result = accountInfo as { data?: { free?: any } };
     const balanceString = result?.data?.free?.toString();
     if (!balanceString) {
@@ -98,10 +97,10 @@ export default function App() {
     }
     return balanceString
       ? new BigNumber(balanceString)
-          .div(new BigNumber(10).pow(decimals))
+          .div(new BigNumber(10).pow(currentNetwork.decimals))
           .toFixed()
       : '0';
-  }, [api, publicAddress]);
+  }, [api, publicAddress, currentNetwork]);
 
   const updateBalance = useCallback(async () => {
     const result = await Promise.all([fetchBalance(), fetchPublicBalance()]);
@@ -144,7 +143,9 @@ export default function App() {
       try {
         setOperating(true);
         setResult('Signing');
-        await syncWallet();
+        if (checkResult) {
+          await syncWallet();
+        }
         const response = await func();
         console.log(response);
         if (!checkResult) {
@@ -178,7 +179,7 @@ export default function App() {
       const response = await injected?.privateWallet.toPrivateBuild({
         assetId,
         amount: new BigNumber(10)
-          .pow(decimals)
+          .pow(currentNetwork.decimals)
           .times(toPrivateAmount)
           .toFixed(),
         polkadotAddress: publicAddress!,
@@ -186,14 +187,21 @@ export default function App() {
       });
       return response || null;
     });
-  }, [toPrivateAmount, injected, publicAddress, sendTransaction]);
+  }, [
+    toPrivateAmount,
+    injected,
+    publicAddress,
+    sendTransaction,
+    currentNetwork,
+    network,
+  ]);
 
   const privateTransferTransaction = useCallback(async () => {
     sendTransaction(async () => {
       const response = await injected?.privateWallet.privateTransferBuild({
         assetId,
         amount: new BigNumber(10)
-          .pow(decimals)
+          .pow(currentNetwork.decimals)
           .times(privateTransferAmount)
           .toFixed(),
         polkadotAddress: publicAddress!,
@@ -208,19 +216,31 @@ export default function App() {
     publicAddress,
     sendTransaction,
     receiveZkAddress,
+    network,
+    currentNetwork,
   ]);
 
   const toPublicTransaction = useCallback(async () => {
     sendTransaction(async () => {
       const response = await injected?.privateWallet.toPublicBuild({
         assetId,
-        amount: new BigNumber(10).pow(decimals).times(toPublicAmount).toFixed(),
+        amount: new BigNumber(10)
+          .pow(currentNetwork.decimals)
+          .times(toPublicAmount)
+          .toFixed(),
         polkadotAddress: publicAddress!,
         network,
       });
       return response || null;
     });
-  }, [toPublicAmount, injected, publicAddress, sendTransaction]);
+  }, [
+    toPublicAmount,
+    injected,
+    publicAddress,
+    sendTransaction,
+    network,
+    currentNetwork,
+  ]);
 
   const multiSbtPostBuildTransition = useCallback(async () => {
     sendTransaction(async () => {
@@ -232,7 +252,7 @@ export default function App() {
         network,
       });
     }, false);
-  }, [startAssetId, injected, sendTransaction]);
+  }, [startAssetId, injected, sendTransaction, network]);
 
   const getSbtIdentityProof = useCallback(async () => {
     await sendTransaction(async () => {
@@ -242,7 +262,7 @@ export default function App() {
         network,
       });
     }, false);
-  }, [virtualAsset, publicAddress, injected, sendTransaction]);
+  }, [virtualAsset, publicAddress, injected, sendTransaction, network]);
 
   const formattedResult = useMemo(() => {
     if (result instanceof Error) {
@@ -261,13 +281,53 @@ export default function App() {
     return injected.privateWallet.subscribeWalletState(setStateInfo);
   }, [injected, setStateInfo]);
 
+  // sub accounts && unSub accounts
+  useEffect(() => {
+    if (!injected || !injected.privateWallet) {
+      return;
+    }
+    return injected.accounts.subscribe(async (accounts) => {
+      if (accounts.length <= 0) {
+        setPublicAddress('');
+        setZkAddress('');
+        localStorage.removeItem('connected');
+        return;
+      }
+      setPublicAddress(accounts[0].address);
+      // @ts-ignore
+      setZkAddress(accounts[0].zkAddress);
+      // @ts-ignore
+      setNetwork(accounts[0].network);
+      localStorage.setItem('connected', '1');
+    });
+  }, [setPublicAddress, setZkAddress, setNetwork, injected]);
+
+  useEffect(() => {
+    if (!injected || !injected.privateWallet || !currentNetwork) {
+      return;
+    }
+    const updateProvider = async () => {
+      const rpcUrl = currentNetwork.rpc instanceof Array
+        ? currentNetwork.rpc[(Math.random() * currentNetwork.rpc.length) | 0]
+        : currentNetwork.rpc;
+      const provider = new HttpProvider(rpcUrl);
+      // const provider = new WsProvider(rpcUrl);
+      setApi(null);
+      const api = await ApiPromise.create({ provider });
+      console.log(`[connected rpcUrl]: ${rpcUrl}`)
+      api.setSigner(injected.signer);
+      setApi(api);
+    };
+    updateProvider();
+  }, [injected, currentNetwork]);
+
   // loop balance
   useEffect(() => {
-    if (stateInfo?.isWalletBusy || !stateInfo?.isWalletReady) {
+    if (!api) {
       return;
     }
     updateBalance();
-  }, [stateInfo?.isWalletReady, updateBalance]);
+  }, [updateBalance, api]);
 
   // auto connect wallet
   useEffect(() => {
@@ -282,7 +342,7 @@ export default function App() {
     <div className="App">
       {!isInjected ? (
         <>No wallet</>
-      ) : !injected ? (
+      ) : !zkAddress || !publicAddress ? (
         <button type="button" onClick={onConnect}>
           Connect
         </button>
@@ -315,10 +375,10 @@ export default function App() {
               <fieldset>
                 <legend>Balance</legend>
                 <p>
-                  DOL: <strong>{publicBalance}</strong>
+                  {currentNetwork.assetName}: <strong>{publicBalance}</strong>
                 </p>
                 <p>
-                  zkDOL: <strong>{balance}</strong>
+                  zk{currentNetwork.assetName}: <strong>{balance}</strong>
                 </p>
               </fieldset>
               <fieldset>
@@ -331,7 +391,7 @@ export default function App() {
                         setToPrivateAmount(e.target.value);
                       }}
                     />
-                    <i>DOL</i>
+                    <i>{currentNetwork.assetName}</i>
                   </span>
                   <button
                     type="button"
@@ -349,7 +409,7 @@ export default function App() {
                         setPrivateTransferAmount(e.target.value);
                       }}
                     />
-                    <i>zkDOL</i>
+                    <i>zk{currentNetwork.assetName}</i>
                   </span>
                   <button
                     type="button"
@@ -376,7 +436,7 @@ export default function App() {
                         setToPublicAmount(e.target.value);
                       }}
                     />
-                    <i>zkDOL</i>
+                    <i>zk{currentNetwork.assetName}</i>
                   </span>
                   <button
                     type="button"

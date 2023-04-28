@@ -28,6 +28,7 @@ use alloc::{
     format,
     rc::Rc,
     string::{String, ToString},
+    vec,
     vec::Vec,
 };
 use core::{cell::RefCell, fmt::Debug};
@@ -40,7 +41,6 @@ use manta_accounting::{
     },
 };
 use manta_crypto::signature::schnorr;
-use manta_parameters::Get;
 use manta_pay::{
     config::{self, utxo},
     key,
@@ -110,8 +110,8 @@ where
 /// Converts `value` into a value of type `T`.
 #[inline]
 pub fn from_js_result<T>(value: JsValue) -> Result<T, Error>
-    where
-        T: DeserializeOwned,
+where
+    T: DeserializeOwned,
 {
     serde_wasm_bindgen::from_value(value)
 }
@@ -560,7 +560,7 @@ impl TransferPost {
     #[wasm_bindgen(constructor)]
     pub fn new(
         authorization_signature: Option<JsString>,
-        asset_id: Option<String>,
+        asset_id: JsValue,
         sources: Vec<JsValue>,
         sender_posts: Vec<JsValue>,
         receiver_posts: Vec<JsValue>,
@@ -569,19 +569,31 @@ impl TransferPost {
         sink_accounts: Vec<JsValue>,
     ) -> Self {
         Self {
-            authorization_signature: authorization_signature.map(|x| {
-                let raw: RawAuthorizationSignature = x.try_into().unwrap();
-                raw.try_into().unwrap()
+            authorization_signature: authorization_signature
+            .map(|x| {
+                RawAuthorizationSignature::try_from(x)
+                    .expect("Error parsing the JsString as a raw authorization signature")
+                    .try_into()
+                    .expect("Getting an authorization signature from a raw authorization signature is not allowed to fail")
             }),
-            asset_id: asset_id.map(field_from_id_string).map(|x| {
-                AssetId(
-                    Decode::decode(x)
-                        .expect("Decoding a field element from [u8; 32] is not allowed to fail"),
-                )
-            }),
+            asset_id: Some(from_js(asset_id)),
             sources: sources.into_iter().map(from_js).collect(),
-            sender_posts: sender_posts.into_iter().map(from_js).collect(),
-            receiver_posts: receiver_posts.into_iter().map(from_js).collect(),
+            sender_posts: sender_posts
+                .into_iter()
+                .map(|post| {
+                    from_js::<RawSenderPost>(post)
+                        .try_into()
+                        .expect("Getting a SenderPost from a RawSenderPost is not allowed to fail")
+                })
+                .collect(),
+            receiver_posts: receiver_posts
+                .into_iter()
+                .map(|post| {
+                    from_js::<RawReceiverPost>(post).try_into().expect(
+                        "Getting a ReceiverPost from a RawReceiverPost is not allowed to fail",
+                    )
+                })
+                .collect(),
             sinks: sinks.into_iter().map(from_js).collect(),
             proof: from_js(proof),
             sink_accounts: sink_accounts.into_iter().map(from_js).collect(),
@@ -667,11 +679,13 @@ impl ledger::Read<SyncData<config::Config>> for PolkadotJsLedger {
         checkpoint: &'s Self::Checkpoint,
     ) -> LocalBoxFutureResult<'s, ReadResponse<SyncData<config::Config>>, Self::Error> {
         Box::pin(async {
-            let pull_result = self.0.pull(borrow_js(checkpoint)).await;
-            let from_js_result = from_js_result::<RawPullResponse>(pull_result);
-            let resp = from_js_result.map_err(|_e| LedgerError{})?;
-            let pull_response = resp.try_into().expect("Conversion is not allowed to fail.");
-            Ok(pull_response)
+            from_js_result::<RawPullResponse>(self.0.pull(borrow_js(checkpoint)).await)
+                .map(|raw_response| {
+                    raw_response
+                        .try_into()
+                        .expect("Conversion is not allowed to fail.")
+                })
+                .map_err(|_| LedgerError {})
         })
     }
 }
@@ -685,11 +699,15 @@ impl ledger::Read<InitialSyncData<config::Config>> for PolkadotJsLedger {
         checkpoint: &'s Self::Checkpoint,
     ) -> LocalBoxFutureResult<'s, ReadResponse<InitialSyncData<config::Config>>, Self::Error> {
         Box::pin(async {
-            Ok(
-                from_js::<RawInitialPullResponse>(self.0.initial_pull(borrow_js(checkpoint)).await)
-                    .try_into()
-                    .expect("Conversion is not allowed to fail."),
+            from_js_result::<RawInitialPullResponse>(
+                self.0.initial_pull(borrow_js(checkpoint)).await,
             )
+            .map(|raw_response| {
+                raw_response
+                    .try_into()
+                    .expect("Conversion is not allowed to fail.")
+            })
+            .map_err(|_| LedgerError {})
         })
     }
 }
@@ -1154,12 +1172,6 @@ impl Signer {
         self.as_mut().drop_authorization_context()
     }
 
-    /// Updates `self.state.authorization_context` from `self.state.accounts`, if possible.
-    #[inline]
-    pub fn update_authorization_context(&mut self) -> bool {
-        self.as_mut().update_authorization_context()
-    }
-
     /// Tries to update `self` from `storage_state`.
     #[inline]
     pub fn set_storage(&mut self, storage_state: JsValue) -> bool {
@@ -1269,6 +1281,13 @@ impl Signer {
         self.as_mut()
             .sign_with_transaction_data(transaction.into())
             .into()
+    }
+
+    /// Prunes the [`UtxoAccumulator`], deleting any data which
+    /// cannot be used to [`sign`](Self::sign) or [`sync`](Self::sync).
+    #[inline]
+    pub fn prune(&mut self) {
+        self.as_mut().prune()
     }
 }
 
@@ -1387,16 +1406,6 @@ impl Wallet {
             .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
             .signer_mut()
             .drop_authorization_context()
-    }
-
-    /// Updates the [`AuthorizationContext`] from the [`AccountTable`] in `network`, if possible.
-    #[inline]
-    pub fn update_authorization_context(&self, network: Network) -> bool {
-        self.0.borrow_mut()[usize::from(network.0)]
-            .as_mut()
-            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
-            .signer_mut()
-            .update_authorization_context()
     }
 
     /// Saves `self` as a [`StorageStateOption`] in `network`.
@@ -1765,52 +1774,25 @@ impl Wallet {
     pub fn initial_sync(&self, network: Network) -> Promise {
         self.with_async(|this| Box::pin(this.initial_sync()), network)
     }
+
+    /// Prunes the [`UtxoAccumulator`] in `network`, deleting any data which
+    /// cannot be used to [`sign`](Self::sign) or [`sync`](Self::sync).
+    #[inline]
+    pub fn prune(&mut self, network: Network) {
+        self.0.borrow_mut()[usize::from(network.0)]
+            .as_mut()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer_mut()
+            .prune()
+    }
 }
 
-/// Gets the transfer [`RawFullParameters`] from manta-parameters.
+/// Creates a [`TransactionDataRequest`] from `post`.
 #[inline]
 #[wasm_bindgen]
-pub fn get_transfer_parameters() -> RawFullParameters {
-    let utxo_accumulator_model = manta_parameters::pay::parameters::UtxoAccumulatorModel::get()
-        .expect("Checksum did not match.");
-    let group_generator =
-        manta_parameters::pay::parameters::GroupGenerator::get().expect("Checksum did not match.");
-    let address_partition_function =
-        manta_parameters::pay::parameters::AddressPartitionFunction::get()
-            .expect("Checksum did not match.");
-    let incoming_base_encryption_scheme =
-        manta_parameters::pay::parameters::IncomingBaseEncryptionScheme::get()
-            .expect("Checksum did not match.");
-    let light_incoming_base_encryption_scheme =
-        manta_parameters::pay::parameters::LightIncomingBaseEncryptionScheme::get()
-            .expect("Checksum did not match.");
-    let nullifier_commitment_scheme =
-        manta_parameters::pay::parameters::NullifierCommitmentScheme::get()
-            .expect("Checksum did not match.");
-    let outgoing_base_encryption_scheme =
-        manta_parameters::pay::parameters::OutgoingBaseEncryptionScheme::get()
-            .expect("Checksum did not match.");
-    let schnorr_hash_function = manta_parameters::pay::parameters::SchnorrHashFunction::get()
-        .expect("Checksum did not match.");
-    let utxo_accumulator_item_hash =
-        manta_parameters::pay::parameters::UtxoAccumulatorItemHash::get()
-            .expect("Checksum did not match.");
-    let utxo_commitment_scheme = manta_parameters::pay::parameters::UtxoCommitmentScheme::get()
-        .expect("Checksum did not match.");
-    let viewing_key_derivation_function =
-        manta_parameters::pay::parameters::ViewingKeyDerivationFunction::get()
-            .expect("Checksum did not match.");
-    RawFullParameters::new(
-        address_partition_function,
-        group_generator,
-        incoming_base_encryption_scheme,
-        light_incoming_base_encryption_scheme,
-        nullifier_commitment_scheme,
-        outgoing_base_encryption_scheme,
-        schnorr_hash_function,
-        utxo_accumulator_item_hash,
-        utxo_accumulator_model,
-        utxo_commitment_scheme,
-        viewing_key_derivation_function,
-    )
+pub fn transaction_data_request(post: TransferPost) -> TransactionDataRequest {
+    signer::TransactionDataRequest {
+        0: vec![post.into()],
+    }
+    .into()
 }

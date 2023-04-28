@@ -5,11 +5,11 @@ import type {
   GetStorageStateFromLocal,
   BaseWalletConfig,
   IBaseWallet,
-  PalletName,
 } from './interfaces';
 import { PAY_PARAMETER_NAMES, PAY_PROVING_NAMES } from './constants';
 import mantaConfig from './config.json';
-import { fetchFiles, log } from './utils';
+import { fetchFiles, log, wrapWasmError } from './utils';
+import TaskSchedule, { TaskTimeoutError } from './utils/TaskSchedule';
 
 export default class BaseWallet implements IBaseWallet {
   api: ApiPromise;
@@ -23,11 +23,7 @@ export default class BaseWallet implements IBaseWallet {
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy = false;
   isHttpProvider = false;
-
-  static onWasmCalledJsErrorCallback: (
-    err: Error,
-    palletName: PalletName,
-  ) => void;
+  taskSchedule: TaskSchedule;
 
   constructor(
     wasm: any,
@@ -45,6 +41,8 @@ export default class BaseWallet implements IBaseWallet {
     this.saveStorageStateToLocal = saveStorageStateToLocal;
     this.getStorageStateFromLocal = getStorageStateFromLocal;
     this.loggingEnabled = loggingEnabled;
+
+    this.taskSchedule = new TaskSchedule();
 
     this.updateApi(apiEndpoint, apiTimeout);
   }
@@ -91,7 +89,6 @@ export default class BaseWallet implements IBaseWallet {
     return this.api;
   }
 
-  // @ts-ignore
   async isApiReady() {
     if (!this.isHttpProvider) {
       return this.api.isReady;
@@ -173,5 +170,32 @@ export default class BaseWallet implements IBaseWallet {
       loggingEnabled,
       config.apiTimeout,
     );
+  }
+
+  async wrapWalletIsBusy<T>(
+    func: () => Promise<T>,
+    errorFunc?: (ex: Error) => void,
+  ) {
+    let isTaskTimeoutError = false;
+    try {
+      await this.taskSchedule.wait();
+      this.walletIsBusy = true;
+      const result = await func();
+      return result;
+    } catch (ex) {
+      isTaskTimeoutError = ex instanceof TaskTimeoutError;
+      const wrapError = wrapWasmError(ex);
+      if (typeof errorFunc === 'function') {
+        errorFunc(wrapError);
+      }
+      throw wrapError;
+    } finally {
+      if (!isTaskTimeoutError) {
+        this.walletIsBusy = false;
+        setTimeout(() => {
+          this.taskSchedule.next();
+        }, 0);
+      }
+    }
   }
 }

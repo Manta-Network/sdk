@@ -13,7 +13,6 @@ export interface ILedgerApi {
   api: ApiPromise;
   palletName: PalletName;
   loggingEnabled: boolean;
-  errorCallback: (err: Error) => void;
 
   initial_pull(checkpoint: any): any;
   pull(checkpoint: any): any;
@@ -25,6 +24,9 @@ export type SignedTransaction = {
   transactions: SubmittableExtrinsic<'promise', any>[];
   txs: SubmittableExtrinsic<'promise', any>[];
 };
+
+export type TransactionPost = any;
+export type TransactionData = any;
 
 export type SignedMultiSbtPost = {
   transactionDatas: any[];
@@ -54,11 +56,11 @@ export type BaseWalletConfig = {
 export type SbtInfo = {
   assetId: BN;
   amount?: BN;
-}
+};
 
 export type AuthContextType = {
-  proof_authorization_key: Uint8Array,
-}
+  proof_authorization_key: Uint8Array;
+};
 
 export interface IBaseWallet {
   api: ApiPromise;
@@ -74,6 +76,10 @@ export interface IBaseWallet {
   updateApi(apiEndpoint: string | string[], apiTimeout?: number): ApiPromise;
   isApiReady(): Promise<ApiPromise>;
   disconnectApi(): Promise<boolean>;
+  wrapWalletIsBusy<T>(
+    func: () => Promise<T>,
+    errorFunc?: (ex: Error) => void,
+  ): Promise<T>;
   log(message: string, name?: string): void;
 }
 
@@ -117,8 +123,10 @@ export interface IMantaPayWallet extends IPrivateWallet {
 }
 
 export interface IMantaSbtWallet extends IPrivateWallet {
-  multiSbtPostBuild(
-    sbtInfoList: SbtInfo[],
-  ): Promise<SignedMultiSbtPost | null>;
-  getIdentityProof(virtualAsset: string, polkadotAddress: Address,): Promise<any>;
+  multiSbtPostBuild(sbtInfoList: SbtInfo[]): Promise<SignedMultiSbtPost | null>;
+  getTransactionDatas(posts: TransactionPost[]): Promise<TransactionData[]>;
+  getIdentityProof(
+    virtualAsset: string,
+    polkadotAddress: Address,
+  ): Promise<any>;
 }

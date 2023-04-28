@@ -9,6 +9,8 @@ import type {
   SbtInfo,
   Address,
   SignedMultiSbtPost,
+  TransactionData,
+  TransactionPost,
 } from '.././interfaces';
 import { formatWasmJson, toPrivateBuildUnsigned, transferPost } from '../utils';
 import PrivateWallet from '../PrivateWallet';
@@ -16,7 +18,6 @@ import { decodeAddress } from '@polkadot/util-crypto';
 
 const CURRENT_PALLET_NAME: PalletName = 'mantaSBT';
 
-/// PrivateWallet class
 export default class MantaSbtWallet
   extends PrivateWallet
   implements IMantaSbtWallet
@@ -46,7 +47,7 @@ export default class MantaSbtWallet
   async multiSbtPostBuild(
     sbtInfoList: SbtInfo[],
   ): Promise<SignedMultiSbtPost | null> {
-    const result = await this.wrapWalletIsBusy(
+    const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         const defaultAmount = new BN('1');
         const posts = [];
@@ -84,11 +85,46 @@ export default class MantaSbtWallet
     return result;
   }
 
+  async getTransactionDatas(
+    posts: TransactionPost[],
+  ): Promise<TransactionData[]> {
+    const result = await this.baseWallet.wrapWalletIsBusy(
+      async () => {
+        const transactionDatas = [];
+        for (let i = 0; i < posts.length; i += 1) {
+          const postBody = posts[i];
+          const formatData = new this.wasm.TransferPost(
+            null,
+            postBody.asset_id,
+            postBody.sources,
+            postBody.sender_posts,
+            postBody.receiver_posts,
+            postBody.sinks,
+            postBody.proof,
+            postBody.sink_accounts,
+          );
+          const transactionDataRequest =
+            this.wasm.transaction_data_request(formatData);
+          const result = await this.wasmWallet.transaction_data(
+            transactionDataRequest,
+            this.getWasmNetWork(),
+          );
+          transactionDatas.push(result);
+        }
+        return formatWasmJson(transactionDatas);
+      },
+      (ex: Error) => {
+        console.error('Failed to get transactionData.', ex);
+      },
+    );
+    return result;
+  }
+
   async getIdentityProof(
     virtualAsset: string,
     polkadotAddress: Address,
   ): Promise<any> {
-    const result = await this.wrapWalletIsBusy(
+    const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         const identityJson = `[[${virtualAsset}, ${`[${decodeAddress(
           polkadotAddress,

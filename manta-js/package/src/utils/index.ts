@@ -3,8 +3,8 @@ import { ApiPromise } from '@polkadot/api';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import { base58Decode, decodeAddress } from '@polkadot/util-crypto';
 import { bnToU8a } from '@polkadot/util';
-import type { Address, PalletName, Network } from './interfaces';
-import { NATIVE_TOKEN_ASSET_ID, PRIVATE_ASSET_PREFIX } from './constants';
+import type { Address, PalletName, Network } from '../interfaces';
+import { NATIVE_TOKEN_ASSET_ID, PRIVATE_ASSET_PREFIX } from '../constants';
 
 /// Convert a private address to JSON.
 export function convertZkAddressToJson(address: string) {

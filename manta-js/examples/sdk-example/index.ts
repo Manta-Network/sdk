@@ -124,14 +124,10 @@ const getBaseWallet = async () => {
       return result || null;
     },
   });
-  BaseWallet.onWasmCalledJsErrorCallback = (err, palletName) => {
-    console.log(palletName);
-    console.error(err);
-  };
   return baseWallet;
 };
 
-const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
+const initWalletData = async (privateWallet: interfaces.IPrivateWallet, initialData = true) => {
   _log('Initial signer');
   await privateWallet.initialSigner();
   _log('Load user mnemonic');
@@ -139,12 +135,14 @@ const initWalletData = async (privateWallet: interfaces.IPrivateWallet) => {
   const zkAddress = await privateWallet.getZkAddress();
   _log('The zkAddress is: ', zkAddress);
 
-  _log('Wait for api ready');
+  if (!initialData) {
+    return;
+  }
 
   const isInitialed = await getIdbData(
     `storage_state_${privateWallet.palletName}_${currentNetwork}`,
   );
-  if (!isInitialed && newAccountFeatureEnabled) {
+  if (newAccountFeatureEnabled && !isInitialed && privateWallet instanceof MantaPayWallet) {
     _log('initialNewAccountWalletSync');
     await privateWallet.initialNewAccountWalletSync();
   } else {
@@ -247,9 +245,18 @@ const multiSbtPostBuild = async (
   privateWallet: MantaSbtWallet,
   sbtInfoList: interfaces.SbtInfo[],
 ) => {
-  await privateWallet.walletSync();
   const result = await privateWallet.multiSbtPostBuild(sbtInfoList);
   console.log(result);
+  return result;
+};
+
+const getTransactionDatas = async (
+  privateWallet: MantaSbtWallet,
+  posts: any[],
+) => {
+  const result = await privateWallet.getTransactionDatas(posts);
+  console.log(result);
+  return result;
 };
 
 const getIdentityProof = async (privateWallet: MantaSbtWallet) => {
@@ -301,7 +308,10 @@ window.actions = {
       { assetId: new BN(startAssetId) },
       { assetId: new BN(startAssetId).add(new BN(1)) },
     ];
-    await multiSbtPostBuild(pallets.mantaSbt as MantaSbtWallet, sbtInfoList);
+    return await multiSbtPostBuild(pallets.mantaSbt as MantaSbtWallet, sbtInfoList);
+  },
+  async getTransactionDatas(posts: any[]) {
+    return await getTransactionDatas(pallets.mantaSbt as MantaSbtWallet, posts);
   },
   async getIdentityProof() {
     await getIdentityProof(pallets.mantaSbt as MantaSbtWallet);
@@ -331,8 +341,10 @@ async function main() {
   await initWalletData(pallets.mantaPay);
   _log('Initial mantaPay data end');
 
+  // When the runtime supports sbt api, then enable sync sbt data
+
   _log('Initial mantaSbt data');
-  await initWalletData(pallets.mantaSbt);
+  await initWalletData(pallets.mantaSbt, false);
   _log('Initial mantaSbt data end');
 
   _log('Initial successful');
