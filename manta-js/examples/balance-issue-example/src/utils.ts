@@ -1,4 +1,3 @@
-import { ApiPromise } from '@polkadot/api';
 import BN from 'bn.js';
 import BigNumber from 'bignumber.js';
 import {
@@ -27,30 +26,31 @@ export const stepList = [
   },
   {
     title: 'Initial Wallet Data',
+    content: 'This may take a few minutes',
     action: 'initialWalletData',
     button: 'Initial Data',
   },
   {
     title: 'Transfer KMA',
-    content: 'Transfer 100 KMA to the Public Address just created',
+    content: 'Transfer 50 KMA to the Public Address just created',
     action: 'updateBalance',
     button: 'Update Balance',
   },
   {
     title: 'ToPrivate Transaction',
-    content: 'Deposit 20 KMA to zkAddress',
+    content: 'Deposit 30 KMA to zkAddress',
     action: 'toPrivate',
     button: 'Execute ToPrivate',
   },
   {
     title: 'Private Transfer Transaction',
-    content: 'Transfer 20 zkKMA to another zkAddress',
+    content: 'Transfer 5 zkKMA to another zkAddress',
     action: 'privateTransfer',
     button: 'Execute PrivateTransfer',
   },
   {
     title: 'ToPublic Transfer Transaction',
-    content: 'Withdraw 10 zkKMA to your Public Address',
+    content: 'Withdraw 15 zkKMA to your Public Address',
     action: 'toPublic',
     button: 'Execute ToPublic',
   },
@@ -62,8 +62,9 @@ export const stepList = [
   },
   {
     title: 'Reinitialize wallet data',
+    content: 'This may take a few minutes',
     action: 'initialWalletData',
-    button: 'Sync Data',
+    button: 'ReInitial Data',
   },
 ];
 

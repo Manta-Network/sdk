@@ -1,8 +1,12 @@
-import type { interfaces } from 'manta-extension-sdk';
-import { BaseWallet, MantaPayWallet } from 'manta-extension-sdk';
-import { ApiPromise } from '@polkadot/api';
 import BN from 'bn.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { mnemonicGenerate } from '@polkadot/util-crypto';
+import keyring from '@polkadot/ui-keyring';
+import type { KeyringPair } from '@polkadot/keyring/types';
+import { assert } from '@polkadot/util';
+import type { interfaces } from 'manta-extension-sdk';
+import { BaseWallet, MantaPayWallet } from 'manta-extension-sdk';
+
 import {
   clearStorage,
   fetchPublicBalance,
@@ -11,11 +15,12 @@ import {
   stepList,
   type StepResult,
 } from './utils';
-import { get as getIdbData, set as setIdbData } from 'idb-keyval';
-import { mnemonicGenerate } from '@polkadot/util-crypto';
-import keyring from '@polkadot/ui-keyring';
-import type { KeyringPair } from '@polkadot/keyring/types';
-import { assert } from '@polkadot/util';
+
+import {
+  get as getIdbData,
+  set as setIdbData,
+  del as delIdbData,
+} from 'idb-keyval';
 
 const assetId = new BN(1);
 const decimals = 12;
@@ -34,26 +39,23 @@ export default function App() {
   );
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [zkAddress, setZkAddress] = useState<string | null>(null);
-  const [balance, setBalance] = useState<string | null>(null);
+  const [mnemonic, setMnemonic] = useState<string | null>(null);
+  const [correctZkBalance, setCorrectZkBalance] = useState<string | null>(null);
+  const [latestZkBalance, setLatestZkBalance] = useState<string | null>(null);
   const [publicBalance, setPublicBalance] = useState<string | null>(null);
   const [operating, setOperating] = useState<boolean>(false);
 
   const updateBalance = useCallback(async () => {
-    if (
-      !privateWallet ||
-      !baseWallet?.api ||
-      !publicAddress ||
-      !privateWallet.initialSyncIsFinished
-    ) {
+    if (!baseWallet?.api || !publicAddress) {
       return;
     }
-    const [zkBalance, publicBalance] = await Promise.all([
-      fetchZkBalance(assetId, decimals, privateWallet),
-      fetchPublicBalance(decimals, baseWallet.api, publicAddress),
-    ]);
-    setBalance(zkBalance ?? '-');
+    const publicBalance = await fetchPublicBalance(
+      decimals,
+      baseWallet.api,
+      publicAddress,
+    );
     setPublicBalance(publicBalance ?? '-');
-  }, [setBalance, setPublicBalance, privateWallet, publicAddress]);
+  }, [setPublicBalance, publicAddress]);
 
   const nextStep = useCallback(
     (value?: any, index?: number) => {
@@ -62,7 +64,7 @@ export default function App() {
         const newResult = [...prevResult!];
         newResult[newIndex] = {
           done: 1,
-          value,
+          value: value || {},
         };
         setIdbData('stepResult', newResult);
         return newResult;
@@ -83,11 +85,12 @@ export default function App() {
       setBaseWallet(baseWallet);
       setPrivateWallet(privateWallet);
       setPair(pair);
+      setMnemonic(mnemonic);
       setZkAddress(zkAddress);
       setPublicAddress(pair.address);
       return { privateWallet };
     },
-    [setPair, setZkAddress, setPublicAddress],
+    [setPair, setZkAddress, setPublicAddress, setMnemonic],
   );
 
   const queryTransferResult = useCallback(
@@ -116,50 +119,67 @@ export default function App() {
     [],
   );
 
-  const toPrivateSend = useCallback(async (privateWallet: MantaPayWallet, pair: KeyringPair) => {
-    await privateWallet.walletSync();
-    const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
-    const transaction = await privateWallet.toPrivateBuild(
-      assetId,
-      new BN(20).mul(new BN(10).pow(new BN(decimals))),
-    );
-    assert(transaction && transaction.txs.length > 0, 'ToPrivate Failed');
-    for (let i = 0; i < transaction.txs.length; i += 1) {
-      await transaction.txs[i].signAndSend(pair!);
-    }
-    await queryTransferResult(privateWallet, initialPrivateBalance);
-  }, []);
+  const toPrivateSend = useCallback(
+    async (privateWallet: MantaPayWallet, pair: KeyringPair) => {
+      await privateWallet.walletSync();
+      const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
+      const transaction = await privateWallet.toPrivateBuild(
+        assetId,
+        new BN(30).mul(new BN(10).pow(new BN(decimals))),
+      );
+      assert(transaction && transaction.txs.length > 0, 'ToPrivate Failed');
+      for (let i = 0; i < transaction.txs.length; i += 1) {
+        await transaction.txs[i].signAndSend(pair!);
+      }
+      await queryTransferResult(privateWallet, initialPrivateBalance);
+    },
+    [],
+  );
 
-  const privateTransferSend = useCallback(async (privateWallet: MantaPayWallet, pair: KeyringPair) => {
-    await privateWallet.walletSync();
-    const toPrivateTestAddress = 'ByFduKK9RSaNT99wYraLGCQ61yXUWUw69qP786WdvKmf';
-    const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
-    const transaction = await privateWallet.privateTransferBuild(
-      assetId,
-      new BN(2).mul(new BN(10).pow(new BN(decimals))),
-      toPrivateTestAddress,
-    );
-    assert(transaction && transaction.txs.length > 0, 'PrivateTransfer Failed');
-    for (let i = 0; i < transaction.txs.length; i += 1) {
-      await transaction.txs[i].signAndSend(pair!);
-    }
-    await queryTransferResult(privateWallet, initialPrivateBalance);
-  }, []);
+  const privateTransferSend = useCallback(
+    async (privateWallet: MantaPayWallet, pair: KeyringPair) => {
+      await privateWallet.walletSync();
+      const toPrivateTestAddress =
+        'ByFduKK9RSaNT99wYraLGCQ61yXUWUw69qP786WdvKmf';
+      const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
+      const transaction = await privateWallet.privateTransferBuild(
+        assetId,
+        new BN(5).mul(new BN(10).pow(new BN(decimals))),
+        toPrivateTestAddress,
+      );
+      assert(
+        transaction && transaction.txs.length > 0,
+        'PrivateTransfer Failed',
+      );
+      for (let i = 0; i < transaction.txs.length; i += 1) {
+        await transaction.txs[i].signAndSend(pair!);
+      }
+      await queryTransferResult(privateWallet, initialPrivateBalance);
+    },
+    [],
+  );
 
-  const toPublicSend = useCallback(async (privateWallet: MantaPayWallet, pair: KeyringPair, publicAddress: string) => {
-    await privateWallet.walletSync();
-    const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
-    const transaction = await privateWallet.toPublicBuild(
-      assetId,
-      new BN(1).mul(new BN(10).pow(new BN(decimals))),
-      publicAddress,
-    );
-    assert(transaction && transaction.txs.length > 0, 'ToPublic Failed');
-    for (let i = 0; i < transaction.txs.length; i += 1) {
-      await transaction.txs[i].signAndSend(pair!);
-    }
-    await queryTransferResult(privateWallet, initialPrivateBalance);
-  }, []);
+  const toPublicSend = useCallback(
+    async (
+      privateWallet: MantaPayWallet,
+      pair: KeyringPair,
+      publicAddress: string,
+    ) => {
+      await privateWallet.walletSync();
+      const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
+      const transaction = await privateWallet.toPublicBuild(
+        assetId,
+        new BN(15).mul(new BN(10).pow(new BN(decimals))),
+        publicAddress,
+      );
+      assert(transaction && transaction.txs.length > 0, 'ToPublic Failed');
+      for (let i = 0; i < transaction.txs.length; i += 1) {
+        await transaction.txs[i].signAndSend(pair!);
+      }
+      await queryTransferResult(privateWallet, initialPrivateBalance);
+    },
+    [],
+  );
 
   const executeStep = async (action: string, index: number) => {
     setOperating(true);
@@ -173,36 +193,53 @@ export default function App() {
         if (result) {
           nextStep();
         }
+        if (index === stepList.length - 1) {
+          const zkBalance = await fetchZkBalance(
+            assetId,
+            decimals,
+            privateWallet!,
+          );
+          setLatestZkBalance(zkBalance);
+        }
       } else if (action === 'updateBalance') {
         const balance = await fetchPublicBalance(
           decimals,
           baseWallet?.api,
           publicAddress!,
         );
-        if (balance && Number(balance) > 0) {
-          nextStep({
-            zkBalance: '0',
-          });
+        assert(
+          balance && Number(balance) >= 50,
+          'Please transfer 50 KMA to Public Address first',
+        );
+        setCorrectZkBalance('0');
+        nextStep({
+          zkBalance: '0',
+        });
+      } else if (
+        action === 'toPrivate' ||
+        action === 'privateTransfer' ||
+        action === 'toPublic'
+      ) {
+        if (action === 'toPrivate') {
+          await toPrivateSend(privateWallet!, pair!);
+        } else if (action === 'privateTransfer') {
+          await privateTransferSend(privateWallet!, pair!);
+        } else if (action === 'toPublic') {
+          await toPublicSend(privateWallet!, pair!, publicAddress!);
         }
-      } else if (action === 'toPrivate') {
-        await toPrivateSend(privateWallet!, pair!);
-        nextStep({
-          zkBalance: balance,
-        });
-      } else if (action === 'privateTransfer') {
-        await privateTransferSend(privateWallet!, pair!);
-        nextStep({
-          zkBalance: balance,
-        });
-      } else if (action === 'toPublic') {
-        // await toPublicSend(privateWallet!, pair!, publicAddress!);
-        nextStep({
-          zkBalance: balance,
-        });
+        const zkBalance = await fetchZkBalance(
+          assetId,
+          decimals,
+          privateWallet!,
+        );
+        setCorrectZkBalance(zkBalance);
+        nextStep({ zkBalance });
       } else if (action === 'clearStorage') {
         await clearStorage(privateWallet!.palletName, network);
         nextStep();
-        setTimeout(window.location.reload, 1000);
+        setTimeout(() => {
+          window.location.reload();
+        }, 300);
       }
     } catch (ex) {
       console.error(ex);
@@ -211,19 +248,50 @@ export default function App() {
     }
   };
 
+  const clearAllData = async () => {
+    setOperating(true);
+    await clearStorage(privateWallet!.palletName, network);
+    await delIdbData('stepResult');
+    window.location.reload();
+  };
+
   useEffect(() => {
     const init = async () => {
       await keyring.loadAll({ type: 'sr25519' });
       const stepResult = (await getIdbData('stepResult')) || [];
-      let privateWallet: MantaPayWallet;
+      let privateWallet: MantaPayWallet | null = null;
       if (stepResult[0] && stepResult[0].done) {
         const result = await initialWallet(stepResult[0].value.mnemonic);
         privateWallet = result.privateWallet;
         assert(privateWallet, 'Initial Wallet Failed');
       }
       if (stepResult[1] && stepResult[1].done) {
-        const result = await privateWallet!.initialWalletSync();
-        assert(result, 'Initial Wallet Data Failed');
+        const needReInitial =
+          stepResult[6] &&
+          stepResult[6].done &&
+          (!stepResult[7] || !stepResult[7].done);
+        if (!needReInitial) {
+          const result = await privateWallet!.initialWalletSync();
+          assert(result, 'Initial Wallet Data Failed');
+        }
+      }
+      if (stepResult[5]?.done) {
+        setCorrectZkBalance(stepResult[5].value.zkBalance);
+      } else if (privateWallet?.initialSyncIsFinished) {
+        const zkBalance = await fetchZkBalance(
+          assetId,
+          decimals,
+          privateWallet,
+        );
+        setCorrectZkBalance(zkBalance);
+      }
+      if (stepResult && stepResult[stepList.length - 1]?.done) {
+        const zkBalance = await fetchZkBalance(
+          assetId,
+          decimals,
+          privateWallet!,
+        );
+        setLatestZkBalance(zkBalance);
       }
       setStepResultList(stepResult);
     };
@@ -258,6 +326,10 @@ export default function App() {
                     stepResultList[index]?.done && (
                       <>
                         <p>
+                          <strong className="address">{mnemonic}</strong>
+                          (Mnemonic)
+                        </p>
+                        <p>
                           <strong className="address">{publicAddress}</strong>
                           (Public Address)
                         </p>
@@ -274,7 +346,7 @@ export default function App() {
                           KMA: <strong>{publicBalance}</strong>
                         </p>
                         <p>
-                          zkKMA: <strong>{balance}</strong>
+                          Correct zkKMA: <strong>{correctZkBalance}</strong>
                         </p>
                       </>
                     )}
@@ -282,24 +354,44 @@ export default function App() {
                 {step.button && !stepResultList[index]?.done && (
                   <button
                     type="button"
+                    className={operating ? 'dots-ellipsis' : ''}
                     disabled={operating}
                     onClick={() => {
                       executeStep(step.action, index);
                     }}
                   >
-                    {step.button}
+                    {operating ? 'Operating' : step.button}
                   </button>
                 )}
                 {stepResultList[index]?.done && <div>State: ✅</div>}
               </fieldset>
             ),
-        )) || <>Initial...</>}
-      {stepResultList && stepResultList[stepList.length - 1] && (
+        )) || <strong className="dots-ellipsis">Initial</strong>}
+
+      {stepResultList && stepResultList[stepList.length - 1]?.done && (
         <fieldset>
           <legend>Result</legend>
-          <div></div>
+          <div className="content">
+            <p>
+              Correct zkKMA: <strong>{correctZkBalance}</strong>
+            </p>
+            <p>
+              Latest zkKMA: <strong>{latestZkBalance}</strong>
+            </p>
+          </div>
+          <button
+            type="button"
+            className={operating ? 'dots-ellipsis' : ''}
+            disabled={operating}
+            onClick={clearAllData}
+          >
+            {operating ? 'Operating' : 'Clear All Data'}
+          </button>
         </fieldset>
       )}
+      <p style={{ fontSize: 12, marginTop: 20 }}>
+        Open Chrome Developer Console to see more information
+      </p>
     </div>
   );
 }
