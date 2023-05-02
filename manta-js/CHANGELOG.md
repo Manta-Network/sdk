@@ -32,3 +32,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 [\#102](https://github.com/Manta-Network/sdk/pull/102) Include sink accounts in ToPublic. Removes `assetIdToUInt8Array` function as it encodes values < 255 incorrectly, now changed to use polkadot.js utility function.
+
+
+
+## [3.0.2] 2023-5-4
+
+### Changed
+[\#123](https://github.com/Manta-Network/sdk/pull/123) Update Calamari socket
