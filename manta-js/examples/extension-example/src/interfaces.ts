@@ -79,6 +79,12 @@ export interface RequestGetIdentityProofPayload {
   network: Network
 }
 
+export interface RequestMatchPrivateTransaction {
+  extrinsicHash: string
+  method: string
+  network: Network
+}
+
 export interface InjectedPrivateWallet {
   getWalletState(): Promise<PrivateWalletStateInfo>
   walletSync(): Promise<boolean>
@@ -103,6 +109,7 @@ export interface InjectedPrivateWallet {
     payload: RequestGetSbtTransactionDatasPayload,
   ): Promise<TransactionData[] | null>
   getSbtIdentityProof(payload: RequestGetIdentityProofPayload): Promise<any>
+  matchPrivateTransaction(payload: RequestMatchPrivateTransaction): Promise<boolean>
   subscribeWalletState: (
     cb: (state: PrivateWalletStateInfo) => void | Promise<void>,
   ) => Unsubcall
