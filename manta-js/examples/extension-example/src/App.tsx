@@ -160,18 +160,16 @@ export default function App() {
           setResult('Sign Successful');
           for (let i = 0; i < response.length; i++) {
             const tx = api?.tx(response[i]);
-            const a = await tx?.signAndSend(publicAddress);
-            const matchData = {
-              network,
-              extrinsicHash: a?.toHex() ?? '',
-              method: tx?.method.toHex() ?? '',
-            };
-            console.log('matchPrivateTransaction: ', matchData);
+            const extrinsicHash = await tx?.signAndSend(publicAddress);
             if (
               typeof injected?.privateWallet.matchPrivateTransaction ===
               'function'
             ) {
-              injected?.privateWallet.matchPrivateTransaction(matchData);
+              injected?.privateWallet.matchPrivateTransaction({
+                network,
+                extrinsicHash: extrinsicHash?.toHex() ?? '',
+                method: tx?.method.toHex() ?? '',
+              });
             }
           }
           const originBalance = await fetchBalance();
