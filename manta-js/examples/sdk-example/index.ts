@@ -265,11 +265,15 @@ const getIdentityProof = async (privateWallet: MantaSbtWallet) => {
   console.log(proof);
 };
 
-const relaunch = async (privateWallet: interfaces.IPrivateWallet) => {
+const resetData = async (privateWallet: interfaces.IPrivateWallet) => {
   await privateWallet.resetState();
   await delIdbData(
     `storage_state_${privateWallet.palletName}_${currentNetwork}`,
   );
+}
+
+const relaunch = async (privateWallet: interfaces.IPrivateWallet) => {
+  await resetData(privateWallet);
   currentSeedPhrase =
     'must payment asthma judge tray recall another course zebra morning march engine';
   await initWalletData(privateWallet);
@@ -284,6 +288,14 @@ const pallets: Record<string, interfaces.IPrivateWallet> = {
 window.actions = {
   getPallets() {
     return pallets;
+  },
+  async clearData() {
+    await resetData(pallets.mantaPay);
+    await resetData(pallets.mantaSbt);
+    window.location.reload();
+  },
+  async getZkBalance(assetId: string) {
+    return (await pallets.mantaPay.getZkBalance(new BN(assetId))).toString();
   },
   async toPrivateBuild() {
     await toPrivateBuild(pallets.mantaPay as MantaPayWallet);
