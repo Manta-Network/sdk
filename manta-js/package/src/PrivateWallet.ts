@@ -339,7 +339,7 @@ export default class PrivateWallet implements IPrivateWallet {
   }
 
   private async saveStateToLocal() {
-    // this.wasmWallet.prune(this.getWasmNetWork());
+    this.wasmWallet.prune(this.getWasmNetWork());
     const stateData = await this.wasmWallet.get_storage(this.getWasmNetWork());
     await this.baseWallet.saveStorageStateToLocal(
       this.palletName,
