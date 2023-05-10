@@ -22,7 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - [\#88](https://github.com/Manta-Network/sdk/pull/88) Update API wording to be consistent with company-wide language.
 
 ### Deprecated
-
+- [\#125](https://github.com/Manta-Network/sdk/pull/125) Disable pruning feature.
 ### Removed
 
 ### Fixed
