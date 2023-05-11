@@ -18,6 +18,12 @@ export interface ILedgerApi {
   pull(checkpoint: any): any;
 }
 
+export type LedgerSyncProcess = {
+  current: number,
+  total: number,
+  syncType: 'initial' | 'normal',
+}
+
 export type SignedTransaction = {
   posts: any;
   transactionData: any;

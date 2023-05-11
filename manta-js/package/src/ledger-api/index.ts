@@ -1,6 +1,6 @@
 // Polkadot-JS Ledger Integration
 import { base64Decode } from '@polkadot/util-crypto';
-import { nToBigInt, u8aToU8a } from '@polkadot/util';
+import { nToBigInt, u8aToBn, u8aToU8a } from '@polkadot/util';
 import { MAX_RECEIVERS_PULL_SIZE, MAX_SENDERS_PULL_SIZE } from '../constants';
 import $, {
   $Utxos,
@@ -12,14 +12,15 @@ import $, {
   utxoToJson,
   currentPathToJson,
 } from './decodeUtils';
-import type { ILedgerApi, PalletName } from '../interfaces';
-import { log } from '../utils';
+import type { ILedgerApi, LedgerSyncProcess, PalletName } from '../interfaces';
+import { getLedgerSyncedCount, log } from '../utils';
 import { ApiPromise } from '@polkadot/api';
 
 export default class LedgerApi implements ILedgerApi {
   api: ApiPromise;
   palletName: PalletName;
   loggingEnabled: boolean;
+  syncProgress: LedgerSyncProcess;
 
   constructor(
     api: ApiPromise,
@@ -29,6 +30,11 @@ export default class LedgerApi implements ILedgerApi {
     this.api = api;
     this.palletName = palletName;
     this.loggingEnabled = Boolean(loggingEnabled);
+    this.syncProgress = {
+      current: 0,
+      total: 0,
+      syncType: 'normal',
+    };
   }
 
   _log(message: string) {
@@ -59,8 +65,12 @@ export default class LedgerApi implements ILedgerApi {
       const decodedMemberShipProofData = $CurrentPaths.decode(
         base64Decode(result.membership_proof_data.toString()),
       );
+      let sendersReceiversTotal = 0;
       const membershipProofData = decodedMemberShipProofData.map(
-        (currentPath) => currentPathToJson(currentPath),
+        (currentPath) => {
+          sendersReceiversTotal += currentPath.leaf_index || 0;
+          return currentPathToJson(currentPath);
+        },
       );
 
       const pull_result = {
@@ -74,6 +84,12 @@ export default class LedgerApi implements ILedgerApi {
       }
       // JSON.stringify does not support bigint
       pull_result.nullifier_count = nToBigInt(result.nullifier_count);
+
+      this.syncProgress = {
+        current: getLedgerSyncedCount(checkpoint),
+        total: sendersReceiversTotal,
+        syncType: 'initial',
+      };
 
       return pull_result;
     } catch (err) {
@@ -121,6 +137,11 @@ export default class LedgerApi implements ILedgerApi {
       if (this.loggingEnabled) {
         this._log('pull response: ' + JSON.stringify(pull_result));
       }
+      this.syncProgress = {
+        current: getLedgerSyncedCount(checkpoint),
+        total: u8aToBn(result.senders_receivers_total).toNumber(),
+        syncType: 'normal',
+      };
       return pull_result;
     } catch (err) {
       console.error(err);
