@@ -18,7 +18,7 @@ export interface ILedgerApi {
   pull(checkpoint: any): any;
 }
 
-export type LedgerSyncProcess = {
+export type LedgerSyncProgress = {
   current: number,
   total: number,
   syncType: 'initial' | 'normal',

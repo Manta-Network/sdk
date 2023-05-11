@@ -12,7 +12,7 @@ import $, {
   utxoToJson,
   currentPathToJson,
 } from './decodeUtils';
-import type { ILedgerApi, LedgerSyncProcess, PalletName } from '../interfaces';
+import type { ILedgerApi, LedgerSyncProgress, PalletName } from '../interfaces';
 import { getLedgerSyncedCount, log } from '../utils';
 import { ApiPromise } from '@polkadot/api';
 
@@ -20,7 +20,7 @@ export default class LedgerApi implements ILedgerApi {
   api: ApiPromise;
   palletName: PalletName;
   loggingEnabled: boolean;
-  syncProgress: LedgerSyncProcess;
+  syncProgress: LedgerSyncProgress;
 
   constructor(
     api: ApiPromise,
