@@ -43,6 +43,15 @@ window.actions = {
   getPallets() {
     return pallets;
   },
+  async clearData() {
+    await resetData(pallets.mantaPay);
+    await resetData(pallets.mantaSbt);
+
+    window.location.reload();
+  },
+  async getZkBalance(assetId: string) {
+    return (await pallets.mantaPay.getZkBalance(new BN(assetId))).toString();
+  },
   async toPrivateBuild() {
     await toPrivateBuild(pallets.mantaPay as MantaPayWallet);
   },
@@ -63,10 +72,10 @@ window.actions = {
       { assetId: new BN(startAssetId) },
       { assetId: new BN(startAssetId).add(new BN(1)) },
     ];
-    await multiSbtPostBuild(
-      pallets.mantaSbt as MantaSbtWallet,
-      sbtInfoList,
-    );
+    return await multiSbtPostBuild(pallets.mantaSbt as MantaSbtWallet, sbtInfoList);
+  },
+  async getTransactionDatas(posts: any[]) {
+    return await getTransactionDatas(pallets.mantaSbt as MantaSbtWallet, posts);
   },
   async getIdentityProof() {
     await getIdentityProof(pallets.mantaSbt as MantaSbtWallet);
@@ -78,6 +87,9 @@ window.actions = {
 };
 
 // Now you can execute the corresponding method to test
+
+// get zkBalance
+window.actions.getZkBalance('1');
 
 // test toPrivate
 window.actions.toPrivateSend();

@@ -160,7 +160,17 @@ export default function App() {
           setResult('Sign Successful');
           for (let i = 0; i < response.length; i++) {
             const tx = api?.tx(response[i]);
-            await tx?.signAndSend(publicAddress, () => {});
+            const extrinsicHash = await tx?.signAndSend(publicAddress);
+            if (
+              typeof injected?.privateWallet.matchPrivateTransaction ===
+              'function'
+            ) {
+              injected?.privateWallet.matchPrivateTransaction({
+                network,
+                extrinsicHash: extrinsicHash?.toHex() ?? '',
+                method: tx?.method.toHex() ?? '',
+              });
+            }
           }
           const originBalance = await fetchBalance();
           queryResult(originBalance ?? '0');
@@ -171,7 +181,15 @@ export default function App() {
         console.error(ex);
       }
     },
-    [publicAddress, api, setResult, fetchBalance, setOperating, syncWallet],
+    [
+      publicAddress,
+      api,
+      setResult,
+      fetchBalance,
+      setOperating,
+      syncWallet,
+      injected,
+    ],
   );
 
   const toPrivateTransaction = useCallback(async () => {
@@ -297,7 +315,7 @@ export default function App() {
       // @ts-ignore
       setZkAddress(accounts[0].zkAddress);
       // @ts-ignore
-      setNetwork(accounts[0].network);
+      setNetwork(accounts[0].network || 'Calamari');
       localStorage.setItem('connected', '1');
     });
   }, [setPublicAddress, setZkAddress, setNetwork, injected]);
@@ -307,14 +325,15 @@ export default function App() {
       return;
     }
     const updateProvider = async () => {
-      const rpcUrl = currentNetwork.rpc instanceof Array
-        ? currentNetwork.rpc[(Math.random() * currentNetwork.rpc.length) | 0]
-        : currentNetwork.rpc;
+      const rpcUrl =
+        currentNetwork.rpc instanceof Array
+          ? currentNetwork.rpc[(Math.random() * currentNetwork.rpc.length) | 0]
+          : currentNetwork.rpc;
       const provider = new HttpProvider(rpcUrl);
       // const provider = new WsProvider(rpcUrl);
       setApi(null);
       const api = await ApiPromise.create({ provider });
-      console.log(`[connected rpcUrl]: ${rpcUrl}`)
+      console.log(`[connected rpcUrl]: ${rpcUrl}`);
       api.setSigner(injected.signer);
       setApi(api);
     };
