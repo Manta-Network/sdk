@@ -262,3 +262,17 @@ export async function fetchFile(url: string): Promise<Uint8Array | null> {
 export function wrapWasmError(error: Error | string) {
   return typeof error === 'string' ? new Error(error) : error;
 }
+
+export function getLedgerSyncedCount(checkpoint: any) {
+  if (!checkpoint) {
+    return 0;
+  }
+  let receiverTotal = 0;
+  if (checkpoint.receiver_index instanceof Array) {
+    receiverTotal = checkpoint.receiver_index.reduce(
+      (total: number, value: number) => total + value,
+      0,
+    );
+  }
+  return (checkpoint.sender_index || 0) + (receiverTotal || 0);
+}
