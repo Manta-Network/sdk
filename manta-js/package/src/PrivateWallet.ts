@@ -11,6 +11,7 @@ import type {
   AuthContextType,
 } from './interfaces';
 import LedgerApi from './ledger-api';
+import { u8aToBn } from '@polkadot/util';
 
 export default class PrivateWallet implements IPrivateWallet {
   palletName: PalletName;
@@ -263,6 +264,13 @@ export default class PrivateWallet implements IPrivateWallet {
     });
     this.dropAuthorizationContext();
     return true;
+  }
+
+  async getLedgerTotalCount() {
+    await this.baseWallet.isApiReady();
+    // @ts-ignore
+    const totalCount = await this.api.rpc[this.palletName].pull_ledger_total_count();
+    return u8aToBn(totalCount).toNumber();
   }
 
   ///

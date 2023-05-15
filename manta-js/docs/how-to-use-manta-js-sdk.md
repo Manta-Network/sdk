@@ -67,6 +67,7 @@ export interface IPrivateWallet {
   getZkBalance(assetId: BN): Promise<BN>;
   getMultiZkBalance(assetIds: BN[]): Promise<BN[]>;
   resetState(): Promise<boolean>;
+  getLedgerTotalCount(): Promise<number>;
 }
 ```
 - [pallets/MantaPayWallet.ts](../package/src/pallets/MantaPayWallet.ts) Inherited PrivateWallet and implemented MantaPay related functions

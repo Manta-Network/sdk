@@ -114,6 +114,7 @@ export interface IPrivateWallet {
   getZkBalance(assetId: BN): Promise<BN>;
   getMultiZkBalance(assetIds: BN[]): Promise<BN[]>;
   resetState(): Promise<boolean>;
+  getLedgerTotalCount(): Promise<number>;
 }
 
 export interface IMantaPayWallet extends IPrivateWallet {
