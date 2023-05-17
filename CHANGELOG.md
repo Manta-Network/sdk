@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Added
+- [\#128](https://github.com/Manta-Network/sdk/pull/128) Add total ledger count
 - [\#127](https://github.com/Manta-Network/sdk/pull/127) Add ledger sync progress
 - [\#126](https://github.com/Manta-Network/sdk/pull/126) Add Reproduce extra balance example && Update SDK example && && Update extension example
 - [\#119](https://github.com/Manta-Network/sdk/pull/119) Add HttpProvider && Fix private-transfer.lfs file download failure in Manta Wallet && Fix the error that the download failed on Ledger api

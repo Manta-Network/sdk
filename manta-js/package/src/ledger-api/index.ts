@@ -139,7 +139,7 @@ export default class LedgerApi implements ILedgerApi {
       }
       this.syncProgress = {
         current: getLedgerSyncedCount(checkpoint),
-        total: u8aToBn(result.senders_receivers_total).toNumber() + 256,
+        total: u8aToBn(result.senders_receivers_total).toNumber(),
         syncType: 'normal',
       };
       return pull_result;

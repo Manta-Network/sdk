@@ -32,6 +32,11 @@
           }
         ],
         "type": "DenseInitialSyncResponse"
+      },
+      "pull_ledger_total_count": {
+        "description": "pull ledger total count from mantaPay",
+        "params": [],
+        "type": "[u8; 16]"
       }
     },
     "mantaSBT": {
@@ -66,6 +71,11 @@
           }
         ],
         "type": "DenseInitialSyncResponse"
+      },
+      "pull_ledger_total_count": {
+        "description": "pull ledger total count from mantaSBT",
+        "params": [],
+        "type": "[u8; 16]"
       }
     }
   },
