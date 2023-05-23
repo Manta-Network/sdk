@@ -160,7 +160,9 @@ export default function App() {
           setResult('Sign Successful');
           for (let i = 0; i < response.length; i++) {
             const tx = api?.tx(response[i]);
-            const extrinsicHash = await tx?.signAndSend(publicAddress);
+            const extrinsicHash = await tx?.signAndSend(publicAddress, {
+              nonce: -1,
+            });
             if (
               typeof injected?.privateWallet.matchPrivateTransaction ===
               'function'

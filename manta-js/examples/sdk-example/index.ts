@@ -21,10 +21,8 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-const apiEndpoint = [
-  'https://calamari.systems/rpc',
-];
- // 'wss://c1.calamari.seabird.systems';
+const apiEndpoint = ['https://calamari.systems/rpc'];
+// 'wss://c1.calamari.seabird.systems';
 const nativeTokenDecimals = 12;
 
 const currentNetwork: interfaces.Network = 'Calamari';
@@ -85,7 +83,11 @@ const publishTransition = async (
   txs: SubmittableExtrinsic<'promise', any>[],
 ) => {
   for (let i = 0; i < txs.length; i++) {
-    await txs[i].signAndSend(polkadotConfig.polkadotAddress, () => {});
+    await txs[i].signAndSend(
+      polkadotConfig.polkadotAddress,
+      { nonce: -1 },
+      () => {},
+    );
   }
 };
 
@@ -124,7 +126,10 @@ const getBaseWallet = async () => {
   return baseWallet;
 };
 
-const initWalletData = async (privateWallet: interfaces.IPrivateWallet, initialData = true) => {
+const initWalletData = async (
+  privateWallet: interfaces.IPrivateWallet,
+  initialData = true,
+) => {
   _log('Initial signer');
   await privateWallet.initialSigner();
   _log('Load user mnemonic');
@@ -139,7 +144,11 @@ const initWalletData = async (privateWallet: interfaces.IPrivateWallet, initialD
   const isInitialed = await getIdbData(
     `storage_state_${privateWallet.palletName}_${currentNetwork}`,
   );
-  if (newAccountFeatureEnabled && !isInitialed && privateWallet instanceof MantaPayWallet) {
+  if (
+    newAccountFeatureEnabled &&
+    !isInitialed &&
+    privateWallet instanceof MantaPayWallet
+  ) {
     _log('initialNewAccountWalletSync');
     await privateWallet.initialNewAccountWalletSync();
   } else {
@@ -270,7 +279,7 @@ const resetData = async (privateWallet: interfaces.IPrivateWallet) => {
   await delIdbData(
     `storage_state_${privateWallet.palletName}_${currentNetwork}`,
   );
-}
+};
 
 const relaunch = async (privateWallet: interfaces.IPrivateWallet) => {
   await resetData(privateWallet);
@@ -317,7 +326,10 @@ window.actions = {
       { assetId: new BN(startAssetId) },
       { assetId: new BN(startAssetId).add(new BN(1)) },
     ];
-    return await multiSbtPostBuild(pallets.mantaSbt as MantaSbtWallet, sbtInfoList);
+    return await multiSbtPostBuild(
+      pallets.mantaSbt as MantaSbtWallet,
+      sbtInfoList,
+    );
   },
   async getTransactionDatas(posts: any[]) {
     return await getTransactionDatas(pallets.mantaSbt as MantaSbtWallet, posts);
