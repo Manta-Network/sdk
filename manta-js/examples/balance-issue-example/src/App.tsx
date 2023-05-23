@@ -110,7 +110,7 @@ export default function App() {
           break;
         }
         retryTimes += 1;
-        if (retryTimes >= 10) {
+        if (retryTimes >= 30) {
           throw new Error('Check balance timeout');
         }
       }
