@@ -127,7 +127,7 @@ export async function transactionsToBatches(
   api: ApiPromise,
   transactions: any,
 ): Promise<SubmittableExtrinsic<'promise', any>[]> {
-  const MAX_BATCH = 6;
+  const MAX_BATCH = 2;
   const batches = [];
   for (let i = 0; i < transactions.length; i += MAX_BATCH) {
     const transactionsInSameBatch = transactions.slice(i, i + MAX_BATCH);
