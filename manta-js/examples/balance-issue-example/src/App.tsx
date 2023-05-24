@@ -110,7 +110,7 @@ export default function App() {
           break;
         }
         retryTimes += 1;
-        if (retryTimes >= 10) {
+        if (retryTimes >= 30) {
           throw new Error('Check balance timeout');
         }
       }
@@ -129,7 +129,7 @@ export default function App() {
       );
       assert(transaction && transaction.txs.length > 0, 'ToPrivate Failed');
       for (let i = 0; i < transaction.txs.length; i += 1) {
-        await transaction.txs[i].signAndSend(pair!);
+        await transaction.txs[i].signAndSend(pair!, { nonce: -1 });
       }
       await queryTransferResult(privateWallet, initialPrivateBalance);
     },
@@ -152,7 +152,7 @@ export default function App() {
         'PrivateTransfer Failed',
       );
       for (let i = 0; i < transaction.txs.length; i += 1) {
-        await transaction.txs[i].signAndSend(pair!);
+        await transaction.txs[i].signAndSend(pair!, { nonce: -1 });
       }
       await queryTransferResult(privateWallet, initialPrivateBalance);
     },
@@ -174,7 +174,7 @@ export default function App() {
       );
       assert(transaction && transaction.txs.length > 0, 'ToPublic Failed');
       for (let i = 0; i < transaction.txs.length; i += 1) {
-        await transaction.txs[i].signAndSend(pair!);
+        await transaction.txs[i].signAndSend(pair!, { nonce: -1 });
       }
       await queryTransferResult(privateWallet, initialPrivateBalance);
     },
