@@ -33,6 +33,7 @@ export type SignedTransaction = {
   txs: SubmittableExtrinsic<'promise', any>[];
 };
 
+export type Checkpoint = any;
 export type TransactionPost = any;
 export type TransactionData = any;
 
@@ -115,6 +116,7 @@ export interface IPrivateWallet {
   getMultiZkBalance(assetIds: BN[]): Promise<BN[]>;
   resetState(): Promise<boolean>;
   getLedgerTotalCount(): Promise<number>;
+  getLedgerCurrentCount(checkpoint: Checkpoint): number;
 }
 
 export interface IMantaPayWallet extends IPrivateWallet {

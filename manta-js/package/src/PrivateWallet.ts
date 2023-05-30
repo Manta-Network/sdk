@@ -9,9 +9,11 @@ import type {
   PalletName,
   Network,
   AuthContextType,
+  Checkpoint,
 } from './interfaces';
 import LedgerApi from './ledger-api';
 import { u8aToBn } from '@polkadot/util';
+import { getLedgerSyncedCount } from './utils';
 
 export default class PrivateWallet implements IPrivateWallet {
   palletName: PalletName;
@@ -271,6 +273,10 @@ export default class PrivateWallet implements IPrivateWallet {
     // @ts-ignore
     const totalCount = await this.api.rpc[this.palletName].pull_ledger_total_count();
     return u8aToBn(totalCount).toNumber();
+  }
+
+  getLedgerCurrentCount(checkpoint: Checkpoint) {
+    return getLedgerSyncedCount(checkpoint);
   }
 
   ///
