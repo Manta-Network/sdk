@@ -139,7 +139,7 @@ const privateTransferOnlySignTest = async () => {
 
     const toPrivateTestAddress = "3UG1BBvv7viqwyg1QKsMVarnSPcdiRQ1aL2vnTgwjWYX";
 
-    await privateWallet.initalWalletSync();
+    await privateWallet.initialWalletSync();
 
     const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
     console.log("The initial private balance is: ", initialPrivateBalance.toString());
@@ -248,10 +248,10 @@ const toPublicOnlySignTest = async () => {
     const assetId = new BN("1"); // KMA
     const amount = new BN("5000000000000"); // 5 units
 
-    await privateWallet.initalWalletSync();
+    await privateWallet.initialWalletSync();
 
     const initialPrivateBalance = await privateWallet.getPrivateBalance(assetId);
-    console.log("The inital private balance is: ", initialPrivateBalance.toString());
+    console.log("The initial private balance is: ", initialPrivateBalance.toString());
 
     let signResult = await privateWallet.toPublicBuild(assetId, amount, polkadotConfig.polkadotSigner, polkadotConfig.polkadotAddress);
 
