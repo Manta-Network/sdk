@@ -1,6 +1,6 @@
 {
   "name": "manta.js",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "manta.js sdk",
   "main": "./dist/browser/index.js",
   "exports": {
@@ -28,14 +28,14 @@
     "build-all": "yarn clean && yarn build-browser && yarn build-node"
   },
   "dependencies": {
-    "@polkadot/api": "6.8.1",
-    "@polkadot/extension-dapp": "0.39.3",
-    "@polkadot/keyring": "8.1.2",
-    "@polkadot/types": "8.11.3",
-    "@polkadot/ui-keyring": "0.85.1",
-    "@polkadot/ui-settings": "0.85.1",
-    "@polkadot/util": "8.1.2",
-    "@polkadot/util-crypto": "8.1.2",
+    "@polkadot/api": "^9.6.2",
+    "@polkadot/extension-dapp": "^0.44.6",
+    "@polkadot/keyring": "^10.1.12",
+    "@polkadot/types": "^9.6.2",
+    "@polkadot/ui-keyring": "^2.9.13",
+    "@polkadot/ui-settings": "^2.9.13",
+    "@polkadot/util": "^10.1.12",
+    "@polkadot/util-crypto": "^10.1.12",
     "axios": "^0.27.2",
     "bn.js": "^5.2.0",
     "scale-codec": "^0.10.2",
