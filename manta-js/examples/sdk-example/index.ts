@@ -10,12 +10,6 @@ import {
 } from 'manta-extension-sdk';
 
 import {
-  web3Accounts,
-  web3Enable,
-  web3FromSource,
-} from '@polkadot/extension-dapp';
-
-import {
   get as getIdbData,
   set as setIdbData,
   del as delIdbData,
@@ -36,7 +30,8 @@ const transferInAmount = new BN(50).mul(
 const transferOutAmount = transferInAmount.div(new BN(10));
 
 let currentSeedPhrase =
-  'spike napkin obscure diamond slice style excess table process story excuse absurd';
+  'steak jelly sentence pumpkin crazy fantasy album uncover giant novel strong message';
+  // 'spike napkin obscure diamond slice style excess table process story excuse absurd';
 
 // If you need to test a new account without any Ledger data, please update it to true
 const newAccountFeatureEnabled = false;
@@ -61,18 +56,19 @@ function _log(...message: any[]) {
 
 // Get Polkadot JS Signer and Polkadot JS account address.
 const requestPolkadotSignerAndAddress = async () => {
-  const extensions = await web3Enable('Manta SDK');
-  if (extensions.length === 0) {
+  await new Promise((resolve) => {
+    setTimeout(resolve, 5000);
+  })
+
+  // @ts-ignore
+  const polkadotJs = await window.injectedWeb3?.['polkadot-js']?.enable('Manta SDK');
+  if (!polkadotJs) {
     throw new Error(
       'Polkadot browser extension missing. https://polkadot.js.org/extension/',
     );
   }
-  const allAccounts = await web3Accounts();
-  let account = allAccounts[0];
-
-  const injector = await web3FromSource(account.meta.source);
-  const polkadotSigner = injector.signer;
-  const polkadotAddress = account.address;
+  const polkadotSigner = polkadotJs.signer;
+  const polkadotAddress = (await polkadotJs.accounts.get())[0].address;
   return {
     polkadotSigner,
     polkadotAddress,
@@ -352,6 +348,7 @@ async function main() {
   polkadotConfig = await requestPolkadotSignerAndAddress();
   baseWallet.api.setSigner(polkadotConfig.polkadotSigner);
   _log('Initial polkadot signer end');
+  _log(`The public address is: ${polkadotConfig.polkadotAddress}`);
 
   _log('Initial pallets');
   pallets.mantaPay = MantaPayWallet.init(currentNetwork, baseWallet);
