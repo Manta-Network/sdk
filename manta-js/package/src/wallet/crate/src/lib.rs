@@ -211,6 +211,11 @@ impl_js_compatible!(
 impl_js_compatible!(AccountId, config::AccountId, "AccountId");
 impl_js_compatible!(AssetMetadata, signer::AssetMetadata, "Asset Metadata");
 impl_js_compatible!(
+    AssetListResponse,
+    signer::AssetListResponse,
+    "Asset List Response"
+);
+impl_js_compatible!(
     MultiProvingContext,
     config::MultiProvingContext,
     "Multi Proving Context"
@@ -1289,6 +1294,12 @@ impl Signer {
     pub fn prune(&mut self) {
         self.as_mut().prune()
     }
+
+    ///
+    #[inline]
+    pub fn asset_list(&self) -> AssetListResponse {
+        self.as_ref().asset_list().into()
+    }
 }
 
 /// Wallet Error
@@ -1784,6 +1795,17 @@ impl Wallet {
             .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
             .signer_mut()
             .prune()
+    }
+
+    ///
+    #[inline]
+    pub fn asset_list(&self, network: Network) -> AssetListResponse {
+        self.0.borrow()[usize::from(network.0)]
+            .as_ref()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer()
+            .asset_list()
+            .into()
     }
 }
 
