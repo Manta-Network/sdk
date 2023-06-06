@@ -16,22 +16,26 @@ import {
 } from 'idb-keyval';
 
 const apiEndpoint = ['https://calamari.systems/rpc'];
-// 'wss://c1.calamari.seabird.systems';
+// 'https://calamari.seabird.systems/rpc';
 const nativeTokenDecimals = 12;
 
 const currentNetwork: interfaces.Network = 'Calamari';
 
+const getTokenAmount = (
+  value: number | string,
+  decimals: number = nativeTokenDecimals,
+) => {
+  return new BN(value).mul(new BN(10).pow(new BN(decimals)));
+};
+
 const assetId = new BN('1');
 // toPrivate Amount (50 KMA)
-const transferInAmount = new BN(50).mul(
-  new BN(10).pow(new BN(nativeTokenDecimals)),
-);
+const transferInAmount = getTokenAmount(50);
 // privateTransfer && toPublic Amount (5 KMA)
-const transferOutAmount = transferInAmount.div(new BN(10));
+const transferOutAmount = getTokenAmount(5);
 
 let currentSeedPhrase =
   'steak jelly sentence pumpkin crazy fantasy album uncover giant novel strong message';
-  // 'spike napkin obscure diamond slice style excess table process story excuse absurd';
 
 // If you need to test a new account without any Ledger data, please update it to true
 const newAccountFeatureEnabled = false;
@@ -58,10 +62,12 @@ function _log(...message: any[]) {
 const requestPolkadotSignerAndAddress = async () => {
   await new Promise((resolve) => {
     setTimeout(resolve, 5000);
-  })
+  });
 
   // @ts-ignore
-  const polkadotJs = await window.injectedWeb3?.['polkadot-js']?.enable('Manta SDK');
+  const polkadotJs = await window.injectedWeb3?.['polkadot-js']?.enable(
+    'Manta SDK',
+  );
   if (!polkadotJs) {
     throw new Error(
       'Polkadot browser extension missing. https://polkadot.js.org/extension/',
@@ -182,13 +188,13 @@ const queryTransferResult = async (
 
 /// Test to execute a `PrivateBuild` transaction.
 /// without publishing the transaction.
-const toPrivateBuild = async (privateWallet: MantaPayWallet) => {
+const toPrivateBuild = async (privateWallet: MantaPayWallet, amount?: BN) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
   const signResult = await privateWallet.toPrivateBuild(
     assetId,
-    transferInAmount,
+    amount ?? transferInAmount,
   );
   _log('The result of the signing: ', signResult);
   _log('Full: ', JSON.stringify(signResult.txs));
@@ -200,42 +206,46 @@ const toPrivateBuild = async (privateWallet: MantaPayWallet) => {
 };
 
 /// Test to execute a `ToPrivate` transaction.
-const toPrivateSend = async (privateWallet: MantaPayWallet) => {
+const toPrivateSend = async (privateWallet: MantaPayWallet, amount?: BN) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
   const transaction = await privateWallet.toPrivateBuild(
     assetId,
-    transferInAmount,
+    amount ?? transferInAmount,
   );
   await publishTransition(transaction.txs);
   await queryTransferResult(privateWallet, initialPrivateBalance);
 };
 
 /// Test to execute a `PrivateTransfer` transaction.
-const privateTransferSend = async (privateWallet: MantaPayWallet) => {
-  const toPrivateTestAddress = '2JZCtGNR1iz6dR613g9p2VGHAAmXQK8xYJ117DLzs4s4';
+/// default toZkAddress mnemonic is: spike napkin obscure diamond slice style excess table process story excuse absurd
+const privateTransferSend = async (
+  privateWallet: MantaPayWallet,
+  amount?: BN,
+  toZkAddress: string = 'KqjRB8VgFqADvhgHvjnvENPVieWUR4fYufGTAUwCCWp',
+) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
   const transaction = await privateWallet.privateTransferBuild(
     assetId,
-    transferOutAmount,
-    toPrivateTestAddress,
+    amount ?? transferOutAmount,
+    toZkAddress,
   );
   await publishTransition(transaction.txs);
   await queryTransferResult(privateWallet, initialPrivateBalance);
 };
 
 /// Test to execute a `ToPublic` transaction.
-const toPublicSend = async (privateWallet: MantaPayWallet) => {
+const toPublicSend = async (privateWallet: MantaPayWallet, amount?: BN) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
   _log('The initial balance is: ', initialPrivateBalance.toString());
 
   const transaction = await privateWallet.toPublicBuild(
     assetId,
-    transferOutAmount,
+    amount ?? transferOutAmount,
     polkadotConfig.polkadotAddress,
   );
   await publishTransition(transaction.txs);
@@ -302,17 +312,30 @@ window.actions = {
   async getZkBalance(assetId: string) {
     return (await pallets.mantaPay.getZkBalance(new BN(assetId))).toString();
   },
-  async toPrivateBuild() {
-    await toPrivateBuild(pallets.mantaPay as MantaPayWallet);
+  async toPrivateBuild(amount?: number | string) {
+    await toPrivateBuild(
+      pallets.mantaPay as MantaPayWallet,
+      amount ? getTokenAmount(amount) : undefined,
+    );
   },
-  async toPrivateSend() {
-    await toPrivateSend(pallets.mantaPay as MantaPayWallet);
+  async toPrivateSend(amount?: number | string) {
+    await toPrivateSend(
+      pallets.mantaPay as MantaPayWallet,
+      amount ? getTokenAmount(amount) : undefined,
+    );
   },
-  async toPublicSend() {
-    await toPublicSend(pallets.mantaPay as MantaPayWallet);
+  async toPublicSend(amount?: number | string) {
+    await toPublicSend(
+      pallets.mantaPay as MantaPayWallet,
+      amount ? getTokenAmount(amount) : undefined,
+    );
   },
-  async privateTransferSend() {
-    await privateTransferSend(pallets.mantaPay as MantaPayWallet);
+  async privateTransferSend(amount?: number | string, toZkAddress?: string) {
+    await privateTransferSend(
+      pallets.mantaPay as MantaPayWallet,
+      amount ? getTokenAmount(amount) : undefined,
+      toZkAddress,
+    );
   },
   async multiSbtPostBuild(startAssetId: string) {
     if (!startAssetId) {
