@@ -178,20 +178,18 @@ export default class MantaPayWallet
       const assetList = this.wasmWallet.asset_list(this.getWasmNetWork());
       const utxoList: UtxoInfo[] = [];
       assetList.forEach((item: any) => {
-        if (item.asset.value > 0) {
-          utxoList.push({
-            asset: {
-              id: u8aToBn(item.asset.id).toString(),
-              value: item.asset.value.toString(),
-            },
-            identifier: {
-              is_transparent: item.identifier.is_transparent,
-              utxo_commitment_randomness: u8aToBn(
-                item.identifier.utxo_commitment_randomness,
-              ).toString(),
-            },
-          } as UtxoInfo);
-        }
+        utxoList.push({
+          asset: {
+            id: u8aToBn(item.asset.id).toString(),
+            value: item.asset.value.toString(),
+          },
+          identifier: {
+            is_transparent: item.identifier.is_transparent,
+            utxo_commitment_randomness: u8aToBn(
+              item.identifier.utxo_commitment_randomness,
+            ).toString(),
+          },
+        } as UtxoInfo);
       });
       return utxoList;
     });
