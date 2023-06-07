@@ -1297,8 +1297,8 @@ impl Signer {
 
     ///
     #[inline]
-    pub fn asset_list(&self) -> AssetListResponse {
-        self.as_ref().asset_list().into()
+    pub fn asset_list(&self) -> JsValue {
+        into_js(AssetListResponse::from(self.as_ref().asset_list()))
     }
 }
 
@@ -1799,13 +1799,14 @@ impl Wallet {
 
     ///
     #[inline]
-    pub fn asset_list(&self, network: Network) -> AssetListResponse {
-        self.0.borrow()[usize::from(network.0)]
-            .as_ref()
-            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
-            .signer()
-            .asset_list()
-            .into()
+    pub fn asset_list(&self, network: Network) -> JsValue {
+        into_js(AssetListResponse::from(
+            self.0.borrow()[usize::from(network.0)]
+                .as_ref()
+                .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+                .signer()
+                .asset_list(),
+        ))
     }
 }
 
