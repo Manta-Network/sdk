@@ -11,6 +11,7 @@ import type {
   ILedgerApi,
   PalletName,
   Network,
+  UtxoInfo,
 } from '.././interfaces';
 import {
   mapPostToTransaction,
@@ -21,6 +22,7 @@ import {
   transferPost,
 } from '../utils';
 import PrivateWallet from '../PrivateWallet';
+import { u8aToBn } from '@polkadot/util';
 
 const CURRENT_PALLET_NAME: PalletName = 'mantaPay';
 
@@ -169,5 +171,30 @@ export default class MantaPayWallet
       transactions,
       txs,
     };
+  }
+
+  async getAllUtxoList() {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
+      const assetList = this.wasmWallet.asset_list(this.getWasmNetWork());
+      const utxoList: UtxoInfo[] = [];
+      assetList.forEach((item: any) => {
+        if (item.asset.value > 0) {
+          utxoList.push({
+            asset: {
+              id: u8aToBn(item.asset.id).toString(),
+              value: item.asset.value.toString(),
+            },
+            identifier: {
+              is_transparent: item.identifier.is_transparent,
+              utxo_commitment_randomness: u8aToBn(
+                item.identifier.utxo_commitment_randomness,
+              ).toString(),
+            },
+          } as UtxoInfo);
+        }
+      });
+      return utxoList;
+    });
+    return result;
   }
 }

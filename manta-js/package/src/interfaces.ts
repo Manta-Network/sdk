@@ -71,6 +71,21 @@ export type AuthContextType = {
   proof_authorization_key: Uint8Array;
 };
 
+export type UtxoAsset = {
+  id: string;
+  value: string;
+}
+
+export type UtxoIdentifier = {
+  is_transparent: boolean;
+  utxo_commitment_randomness: string;
+}
+
+export type UtxoInfo = {
+  asset: UtxoAsset;
+  identifier: UtxoIdentifier;
+}
+
 export interface IBaseWallet {
   api: ApiPromise;
   apiEndpoint: string | string[];
@@ -131,6 +146,7 @@ export interface IMantaPayWallet extends IPrivateWallet {
     amount: BN,
     polkadotAddress: Address,
   ): Promise<SignedTransaction | null>;
+  getAllUtxoList(): Promise<UtxoInfo[]>;
 }
 
 export interface IMantaSbtWallet extends IPrivateWallet {

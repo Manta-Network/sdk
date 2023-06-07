@@ -271,7 +271,9 @@ export default class PrivateWallet implements IPrivateWallet {
   async getLedgerTotalCount() {
     await this.baseWallet.isApiReady();
     // @ts-ignore
-    const totalCount = await this.api.rpc[this.palletName].pull_ledger_total_count();
+    const totalCount = await this.api.rpc[
+      this.palletName
+    ].pull_ledger_total_count();
     return u8aToBn(totalCount).toNumber();
   }
 
