@@ -255,6 +255,11 @@ impl_js_compatible!(SignRequest, signer::SignRequest, "Signing Request");
 impl_js_compatible!(SignResponse, signer::SignResponse, "Signing Response");
 impl_js_compatible!(SignError, signer::SignError, "Signing Error");
 impl_js_compatible!(SignResult, signer::SignResult, "Signing Result");
+impl_js_compatible!(
+    ConsolidationPrerequest,
+    signer::ConsolidationPrerequest,
+    "Consolidation Prerequest"
+);
 impl_js_compatible!(SyncRequest, signer::SyncRequest, "Synchronization Request");
 impl_js_compatible!(
     InitialSyncRequest,
@@ -1300,6 +1305,14 @@ impl Signer {
     pub fn asset_list(&self) -> JsValue {
         into_js(AssetListResponse::from(self.as_ref().asset_list()))
     }
+
+    ///
+    #[inline]
+    pub fn consolidate(&mut self, request: JsValue) -> SignResult {
+        self.as_mut()
+            .consolidate(ConsolidationPrerequest::new(request).into())
+            .into()
+    }
 }
 
 /// Wallet Error
@@ -1807,6 +1820,36 @@ impl Wallet {
                 .signer()
                 .asset_list(),
         ))
+    }
+
+    ///
+    #[inline]
+    pub fn consolidate(&self, request: JsValue, network: Network) -> Promise {
+        self.with_async(
+            |this| {
+                Box::pin(async {
+                    this.consolidate(ConsolidationPrerequest::new(request).into())
+                        .await
+                        .map(|response| {
+                            response
+                                .posts
+                                .into_iter()
+                                .map(TransferPost::from)
+                                .collect::<Vec<_>>()
+                        })
+                })
+            },
+            network,
+        )
+    }
+
+    ///
+    #[inline]
+    pub fn post_consolidation(&self, request: JsValue, network: Network) -> Promise {
+        self.with_async(
+            |this| Box::pin(this.post_consolidation(ConsolidationPrerequest::new(request).into())),
+            network,
+        )
     }
 }
 
