@@ -252,6 +252,23 @@ const toPublicSend = async (privateWallet: MantaPayWallet, amount?: BN) => {
   await queryTransferResult(privateWallet, initialPrivateBalance);
 };
 
+/// Test to execute a `Consolidate` transaction.
+const consolidateSend = async (
+  privateWallet: MantaPayWallet,
+  utxoList: interfaces.UtxoInfo[],
+) => {
+  await privateWallet.walletSync();
+  const transaction = await privateWallet.consolidateTransactionBuild(utxoList);
+  await publishTransition(transaction.txs);
+  _log('Waiting transaction result...');
+  await new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(true);
+    }, 60_000);
+  });
+  await privateWallet.walletSync();
+};
+
 /// Test to execute a `MultiSbtPostBuild` transaction.
 const multiSbtPostBuild = async (
   privateWallet: MantaSbtWallet,
@@ -336,6 +353,9 @@ window.actions = {
       amount ? getTokenAmount(amount) : undefined,
       toZkAddress,
     );
+  },
+  async consolidateTransferSend(utxoList: interfaces.UtxoInfo[]) {
+    await consolidateSend(pallets.mantaPay as MantaPayWallet, utxoList);
   },
   async multiSbtPostBuild(startAssetId: string) {
     if (!startAssetId) {

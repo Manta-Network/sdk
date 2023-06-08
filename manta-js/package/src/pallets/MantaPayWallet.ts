@@ -14,15 +14,13 @@ import type {
   UtxoInfo,
 } from '.././interfaces';
 import {
-  mapPostToTransaction,
+  getSignedTransaction,
   privateTransferBuildUnsigned,
   toPrivateBuildUnsigned,
   toPublicBuildUnsigned,
-  transactionsToBatches,
-  transferPost,
 } from '../utils';
 import PrivateWallet from '../PrivateWallet';
-import { u8aToBn } from '@polkadot/util';
+import { bnToBn, bnToU8a, nToBigInt, u8aToBn } from '@polkadot/util';
 
 const CURRENT_PALLET_NAME: PalletName = 'mantaPay';
 
@@ -154,23 +152,8 @@ export default class MantaPayWallet
       this.getWasmNetWork(),
     );
     this.log('Sign End');
-    const transactions = [];
-    for (let i = 0; i < posts.length; i++) {
-      const convertedPost = transferPost(posts[i]);
-      const transaction = await mapPostToTransaction(
-        this.palletName,
-        this.api,
-        convertedPost,
-      );
-      transactions.push(transaction);
-    }
-    const txs = await transactionsToBatches(this.api, transactions);
-    return {
-      posts,
-      transactionData: null,
-      transactions,
-      txs,
-    };
+    const result = await getSignedTransaction(this.palletName, this.api, posts);
+    return result;
   }
 
   async getAllUtxoList() {
@@ -193,6 +176,46 @@ export default class MantaPayWallet
       });
       return utxoList;
     });
+    return result;
+  }
+
+  async consolidateTransactionBuild(utxoList: UtxoInfo[]) {
+    const result = await this.baseWallet.wrapWalletIsBusy(
+      async () => {
+        await this.baseWallet.isApiReady();
+        const originUtxoList = utxoList.map((item: UtxoInfo) => {
+          return {
+            asset: {
+              id: bnToU8a(bnToBn(item.asset.id), { bitLength: 256 }),
+              value: nToBigInt(item.asset.value),
+            },
+            identifier: {
+              is_transparent: item.identifier.is_transparent,
+              utxo_commitment_randomness: bnToU8a(
+                bnToBn(item.identifier.utxo_commitment_randomness),
+                { bitLength: 256 },
+              ),
+            },
+          };
+        });
+        console.log(originUtxoList);
+        this.log('Consolidate Start');
+        const posts = await this.wasmWallet.consolidate(
+          originUtxoList,
+          this.getWasmNetWork(),
+        );
+        this.log('Consolidate End');
+        const result = await getSignedTransaction(
+          this.palletName,
+          this.api,
+          posts,
+        );
+        return result;
+      },
+      (ex: Error) => {
+        console.error('Failed to build consolidateTransactionBuild.', ex);
+      },
+    );
     return result;
   }
 }

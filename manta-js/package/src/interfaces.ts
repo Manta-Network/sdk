@@ -147,6 +147,7 @@ export interface IMantaPayWallet extends IPrivateWallet {
     polkadotAddress: Address,
   ): Promise<SignedTransaction | null>;
   getAllUtxoList(): Promise<UtxoInfo[]>;
+  consolidateTransactionBuild(utxoList: UtxoInfo[]): Promise<SignedTransaction | null>;
 }
 
 export interface IMantaSbtWallet extends IPrivateWallet {
