@@ -1313,6 +1313,12 @@ impl Signer {
             .consolidate(ConsolidationPrerequest::new(request).into())
             .into()
     }
+
+    ///
+    #[inline]
+    pub fn estimate_transferposts(&self, transaction: Transaction) -> usize {
+        self.as_ref().estimate_transferposts(&transaction.into())
+    }
 }
 
 /// Wallet Error
@@ -1850,6 +1856,16 @@ impl Wallet {
             |this| Box::pin(this.post_consolidation(ConsolidationPrerequest::new(request).into())),
             network,
         )
+    }
+
+    ///
+    #[inline]
+    pub fn estimate_transferposts(&self, transaction: Transaction, network: Network) -> usize {
+        self.0.borrow()[usize::from(network.0)]
+            .as_ref()
+            .unwrap_or_else(|| panic!("There is no wallet for the {} network", network.0))
+            .signer()
+            .estimate_transferposts(&transaction.into())
     }
 }
 
