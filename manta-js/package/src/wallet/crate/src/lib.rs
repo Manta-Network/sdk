@@ -1300,13 +1300,18 @@ impl Signer {
         self.as_mut().prune()
     }
 
-    ///
+    /// Returns a list of all the assets owned by `self`.
     #[inline]
     pub fn asset_list(&self) -> JsValue {
         into_js(AssetListResponse::from(self.as_ref().asset_list()))
     }
 
+    /// Signs a [`ConsolidationPrerequest`] and returns the transfer posts if successful.
     ///
+    /// # Implementation Note
+    ///
+    /// Utxo consolidation is a self transfer which merges several Utxos into a single
+    /// one whose asset value is the sum of the asset values of the original Utxos.
     #[inline]
     pub fn consolidate(&mut self, request: JsValue) -> SignResult {
         self.as_mut()
@@ -1314,7 +1319,7 @@ impl Signer {
             .into()
     }
 
-    ///
+    /// Returns the estimated number of [`TransferPost`]s necessary to execute the `transaction`.
     #[inline]
     pub fn estimate_transferposts(&self, transaction: Transaction) -> usize {
         self.as_ref().estimate_transferposts(&transaction.into())
@@ -1816,7 +1821,7 @@ impl Wallet {
             .prune()
     }
 
-    ///
+    /// Returns a list of all the assets owned by `self` in `network`.
     #[inline]
     pub fn asset_list(&self, network: Network) -> JsValue {
         into_js(AssetListResponse::from(
@@ -1828,7 +1833,13 @@ impl Wallet {
         ))
     }
 
+    /// Signs a [`ConsolidationPrerequest`] in `network` and returns the transfer posts
+    /// if successful.
     ///
+    /// # Implementation Note
+    ///
+    /// Utxo consolidation is a self transfer which merges several Utxos into a single
+    /// one whose asset value is the sum of the asset values of the original Utxos.
     #[inline]
     pub fn consolidate(&self, request: JsValue, network: Network) -> Promise {
         self.with_async(
@@ -1849,7 +1860,25 @@ impl Wallet {
         )
     }
 
+    /// Posts a consolidation to the ledger, returning a success [`Response`] if the assets in
+    /// `request` were successfully consolidated and posted to the ledger. This method automatically
+    /// synchronizes with the ledger before posting, _but not after_. To amortize the cost of future
+    /// calls to [`post_consolidation`], the [`sync`] method can be used to synchronize with the ledger.
     ///
+    /// # Failure Conditions
+    ///
+    /// This method returns a [`Response`] when there were no errors in producing transfer data and
+    /// sending and receiving from the ledger, but instead the ledger just did not accept the
+    /// transaction as is. This could be caused by an external update to the ledger while the signer
+    /// was building the transaction that caused the wallet and the ledger to get out of sync. In
+    /// this case, [`post_consolidation`] can safely be called again, to retry the transaction.
+    ///
+    /// This method returns an error in any other case. The internal state of the wallet is kept
+    /// consistent between calls and recoverable errors are returned for the caller to handle.
+    ///
+    /// [`Response`]: ledger::Write::Response
+    /// [`post_consolidation`]: Self::post_consolidation
+    /// [`sync`]: Self::sync
     #[inline]
     pub fn post_consolidation(&self, request: JsValue, network: Network) -> Promise {
         self.with_async(
@@ -1858,7 +1887,7 @@ impl Wallet {
         )
     }
 
-    ///
+    /// Returns the estimated number of [`TransferPost`]s necessary to execute the `transaction`.
     #[inline]
     pub fn estimate_transferposts(&self, transaction: Transaction, network: Network) -> usize {
         self.0.borrow()[usize::from(network.0)]
