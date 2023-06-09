@@ -21,7 +21,7 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-const apiEndpoint = ['https://calamari.systems/rpc'];
+const apiEndpoint = ['http://127.0.0.1:9933'];
 // 'wss://c1.calamari.seabird.systems';
 const nativeTokenDecimals = 12;
 
@@ -79,7 +79,7 @@ const requestPolkadotSignerAndAddress = async () => {
   };
 };
 
-const publishTransition = async (
+const publishTransaction = async (
   txs: SubmittableExtrinsic<'promise', any>[],
 ) => {
   for (let i = 0; i < txs.length; i++) {
@@ -212,7 +212,7 @@ const toPrivateSend = async (privateWallet: MantaPayWallet) => {
     assetId,
     transferInAmount,
   );
-  await publishTransition(transaction.txs);
+  await publishTransaction(transaction.txs);
   await queryTransferResult(privateWallet, initialPrivateBalance);
 };
 
@@ -227,7 +227,7 @@ const privateTransferSend = async (privateWallet: MantaPayWallet) => {
     transferOutAmount,
     toPrivateTestAddress,
   );
-  await publishTransition(transaction.txs);
+  await publishTransaction(transaction.txs);
   await queryTransferResult(privateWallet, initialPrivateBalance);
 };
 
@@ -242,7 +242,7 @@ const toPublicSend = async (privateWallet: MantaPayWallet) => {
     transferOutAmount,
     polkadotConfig.polkadotAddress,
   );
-  await publishTransition(transaction.txs);
+  await publishTransaction(transaction.txs);
   await queryTransferResult(privateWallet, initialPrivateBalance);
 };
 
@@ -254,6 +254,56 @@ const multiSbtPostBuild = async (
   const result = await privateWallet.multiSbtPostBuild(sbtInfoList);
   console.log(result);
   return result;
+};
+
+const reserveSbt = async (
+  privateWallet: MantaSbtWallet
+) => {
+  const reserveTx = privateWallet.api.tx.mantaSbt.reserveSbt(null);
+  await publishTransaction([reserveTx]);
+};
+
+const mintSbt = async (
+  privateWallet: MantaSbtWallet
+) => {
+  const assetIdRange: any = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
+  const [startAssetId, endAssetId] = assetIdRange.unwrap();
+  const sbtInfoList: interfaces.SbtInfo[] = [
+      { assetId: new BN(startAssetId) },
+      { assetId: new BN(startAssetId).add(new BN(1)) },
+  ];
+
+  const { transactionDatas, posts } = await multiSbtPostBuild(privateWallet, sbtInfoList);
+  const batchesTx: any[] = [];
+  posts.forEach((post) => {
+    const tx = privateWallet.api.tx.mantaSbt.toPrivate(null, post[0], []);
+    batchesTx.push(tx);
+  });
+  const sbtTx = privateWallet.api.tx.utility.batch(batchesTx);
+  await publishTransaction([sbtTx]);
+};
+
+const mintSbtWithSignature = async (
+  privateWallet: MantaSbtWallet,
+) => {
+  const assetIdRange: any = await privateWallet.api.query.mantaSbt.reservedIds(polkadotConfig.polkadotAddress);
+  const [startAssetId, endAssetId] = assetIdRange.unwrap();
+  const sbtInfoList: interfaces.SbtInfo[] = [
+      { assetId: new BN(startAssetId) },
+  ];
+
+  const { transactionDatas, posts } = await multiSbtPostBuild(privateWallet, sbtInfoList);
+  const batchesTx: any[] = [];
+
+  // generate signature
+
+
+  posts.forEach((post) => {
+    const tx = privateWallet.api.tx.mantaSbt.toPrivate(null, post[0], []);
+    batchesTx.push(tx);
+  });
+  const sbtTx = privateWallet.api.tx.utility.batch(batchesTx);
+  await publishTransaction([sbtTx]);
 };
 
 const getTransactionDatas = async (
@@ -330,6 +380,12 @@ window.actions = {
       pallets.mantaSbt as MantaSbtWallet,
       sbtInfoList,
     );
+  },
+  async reserveSbt() {
+    return await reserveSbt(pallets.mantaSbt as MantaSbtWallet);
+  },
+  async mintSbt() {
+    return await mintSbt(pallets.mantaSbt as MantaSbtWallet);
   },
   async getTransactionDatas(posts: any[]) {
     return await getTransactionDatas(pallets.mantaSbt as MantaSbtWallet, posts);
