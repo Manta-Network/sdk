@@ -5,7 +5,7 @@
     "NETWORKS": {
         "Dolphin": {
             "name": "Dolphin",
-            "ws": "wss://kwaltz.baikal.testnet.dolphin.training",
+            "ws": "wss://c1.calamari.seabird.systems/",
             "ws_local": "ws://127.0.0.1:9944",
             "parachainId": 2084,
             "decimals": 12,
@@ -14,15 +14,15 @@
         "Calamari": {
             "name": "Calamari",
             "ws": "wss://ws.calamari.systems/",
-            "ws_local": "wss://zenlink.zqhxuyuan.cloud:444",
+            "ws_local": "wss://blockchain.zqhxuyuan.cloud:444",
             "parachainId": 2084,
             "decimals": 12,
             "subscanUrl": "https://calamari.subscan.io"
         },
         "Manta": {
             "name": "Manta",
-            "ws": null,
-            "ws_local": null,
+            "ws": "wss://ws.calamari.systems/",
+            "ws_local": "wss://zenlink.zqhxuyuan.cloud:444",
             "parachainId": null,
             "decimals": null,
             "subscanUrl": null

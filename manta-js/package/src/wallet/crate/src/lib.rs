@@ -55,6 +55,8 @@ use manta_util::{
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
+// use wasm_bindgen::prelude::*;
+// use web_sys::console;
 
 mod types;
 
@@ -73,6 +75,9 @@ extern "C" {
 
     #[wasm_bindgen(structural, method)]
     async fn sbt_push(this: &Api, posts: Vec<JsValue>) -> JsValue;
+
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
 }
 
 /// Serialize the borrowed `value` as a Javascript object.
@@ -101,7 +106,7 @@ where
 {
     value
         .into_serde()
-        .expect("Deserialization is not allowed to fail.")
+        .expect("Deserialization is not allowed to fail1.")
 }
 
 /// convert AssetId to String for js compatability (AssetID is 128 bit)
@@ -147,7 +152,8 @@ macro_rules! impl_js_compatible {
             /// Parses `Self` from a [`String`].
             #[inline]
             pub fn from_string(value: String) -> $name {
-                serde_json::from_str(&value).expect("Deserialization is not allowed to fail.")
+                log(&value);
+                serde_json::from_str(&value).expect("Deserialization is not allowed to fail2.")
             }
 
             /// Parses `Self` from a Javascript string.
@@ -155,7 +161,7 @@ macro_rules! impl_js_compatible {
             #[inline]
             pub(crate) fn from_js_string(value: JsString) -> $type {
                 serde_json::from_str(&String::from(value))
-                    .expect("Deserialization is not allowed to fail.")
+                    .expect("Deserialization is not allowed to fail3.")
             }
         }
 
@@ -696,6 +702,27 @@ impl Wallet {
             })
         })
     }
+
+    // pub fn transaction_data2(
+    //     &self,
+    //     transfer_post: TransferPost,
+    //     network: Network,
+    // ) -> Promise {
+    //     self.with_async(|this| {
+    //         Box::pin(async {
+    //             this.signer_mut().set_network(Some(network.into()));
+    //             // let posts = transfer_posts
+    //             //     .into_iter()
+    //             //     .map(Into::into)
+    //             //     .collect::<Vec<TransferPost>>();
+    //             let posts: Vec<config::TransferPost> = vec![transfer_post.into()];
+    //             let response = this.transaction_data(posts).await;
+    //             this.signer_mut().set_network(None);
+    //             response
+    //         })
+    //     })
+    // }
+
 
     /// Sign Identity proof, signer creates a ToPublic post from randomized inputs
     /// @TODO: fix JSObject bug with `Vec<VirtualAsset>`

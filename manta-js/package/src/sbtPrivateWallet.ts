@@ -95,6 +95,7 @@ export class SbtMantaPrivateWallet extends MantaPrivateWallet {
         const posts = posts_txs[0];
         for (let j = 0; j < posts.length; j++) {
           const convertedPost = this.transferPost(posts[j]);
+          console.log("transfer post:" + JSON.stringify(convertedPost));
           const transaction = await this.sbtPostToTransaction(convertedPost, this.api, metadata[i]);
           transactions.push(transaction);
         }
