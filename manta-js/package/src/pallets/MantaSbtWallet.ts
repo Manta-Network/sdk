@@ -60,7 +60,7 @@ export default class MantaSbtWallet
             sbtInfo.amount ?? defaultAmount,
           );
           const result = await this.wasmWallet.sign_with_transaction_data(
-            transactionUnsigned,
+            transactionUnsigned.transaction,
             null,
             this.getWasmNetWork(),
           );

@@ -7,6 +7,11 @@ export type PalletName = 'mantaPay' | 'mantaSBT';
 
 export type Network = 'Dolphin' | 'Calamari' | 'Manta';
 
+export type PrivateTransactionType =
+  | 'publicToPrivate'
+  | 'privateToPrivate'
+  | 'privateToPublic';
+
 export type Address = string;
 
 export interface ILedgerApi {
@@ -21,10 +26,10 @@ export interface ILedgerApi {
 export type LedgerSyncType = 'initial' | 'normal';
 
 export type LedgerSyncProgress = {
-  current: number,
-  total: number,
-  syncType: LedgerSyncType,
-}
+  current: number;
+  total: number;
+  syncType: LedgerSyncType;
+};
 
 export type SignedTransaction = {
   posts: any;
@@ -74,17 +79,17 @@ export type AuthContextType = {
 export type UtxoAsset = {
   id: string;
   value: string;
-}
+};
 
 export type UtxoIdentifier = {
   is_transparent: boolean;
   utxo_commitment_randomness: string;
-}
+};
 
 export type UtxoInfo = {
   asset: UtxoAsset;
   identifier: UtxoIdentifier;
-}
+};
 
 export interface IBaseWallet {
   api: ApiPromise;
@@ -147,7 +152,15 @@ export interface IMantaPayWallet extends IPrivateWallet {
     polkadotAddress: Address,
   ): Promise<SignedTransaction | null>;
   getAllUtxoList(): Promise<UtxoInfo[]>;
-  consolidateTransactionBuild(utxoList: UtxoInfo[]): Promise<SignedTransaction | null>;
+  consolidateTransactionBuild(
+    utxoList: UtxoInfo[],
+  ): Promise<SignedTransaction | null>;
+  estimateTransferPostsCount(
+    type: PrivateTransactionType,
+    assetId: BN,
+    amount: BN,
+    zkAddressOrPolkadotAddress?: Address,
+  ): Promise<number>;
 }
 
 export interface IMantaSbtWallet extends IPrivateWallet {

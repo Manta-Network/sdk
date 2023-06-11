@@ -37,6 +37,10 @@ const transferOutAmount = getTokenAmount(5);
 let currentSeedPhrase =
   'steak jelly sentence pumpkin crazy fantasy album uncover giant novel strong message';
 
+
+// spike napkin obscure diamond slice style excess table process story excuse absurd
+const defaultToZkAddress = 'KqjRB8VgFqADvhgHvjnvENPVieWUR4fYufGTAUwCCWp';
+
 // If you need to test a new account without any Ledger data, please update it to true
 const newAccountFeatureEnabled = false;
 
@@ -219,11 +223,10 @@ const toPrivateSend = async (privateWallet: MantaPayWallet, amount?: BN) => {
 };
 
 /// Test to execute a `PrivateTransfer` transaction.
-/// default toZkAddress mnemonic is: spike napkin obscure diamond slice style excess table process story excuse absurd
 const privateTransferSend = async (
   privateWallet: MantaPayWallet,
   amount?: BN,
-  toZkAddress: string = 'KqjRB8VgFqADvhgHvjnvENPVieWUR4fYufGTAUwCCWp',
+  toZkAddress: string = defaultToZkAddress,
 ) => {
   await privateWallet.walletSync();
   const initialPrivateBalance = await privateWallet.getZkBalance(assetId);
@@ -341,11 +344,28 @@ window.actions = {
       amount ? getTokenAmount(amount) : undefined,
     );
   },
+  async estimateToPrivate(amount?: number | string) {
+    const count = await (pallets.mantaPay as MantaPayWallet).estimateTransferPostsCount(
+      'publicToPrivate',
+      assetId,
+      amount ? getTokenAmount(amount) : transferInAmount,
+    );
+    console.log(`estimateToPrivate: ${count}`)
+  },
   async toPublicSend(amount?: number | string) {
     await toPublicSend(
       pallets.mantaPay as MantaPayWallet,
       amount ? getTokenAmount(amount) : undefined,
     );
+  },
+  async estimateToPublic(amount?: number | string) {
+    const count = await (pallets.mantaPay as MantaPayWallet).estimateTransferPostsCount(
+      'privateToPublic',
+      assetId,
+      amount ? getTokenAmount(amount) : transferOutAmount,
+      polkadotConfig.polkadotAddress,
+    );
+    console.log(`estimateToPublic: ${count}`)
   },
   async privateTransferSend(amount?: number | string, toZkAddress?: string) {
     await privateTransferSend(
@@ -353,6 +373,15 @@ window.actions = {
       amount ? getTokenAmount(amount) : undefined,
       toZkAddress,
     );
+  },
+  async estimatePrivateTransfer(amount?: number | string, toZkAddress?: string) {
+    const count = await (pallets.mantaPay as MantaPayWallet).estimateTransferPostsCount(
+      'privateToPrivate',
+      assetId,
+      amount ? getTokenAmount(amount) : transferOutAmount,
+      toZkAddress ?? defaultToZkAddress,
+    );
+    console.log(`estimatePrivateTransfer: ${count}`)
   },
   async consolidateTransferSend(utxoList: interfaces.UtxoInfo[]) {
     await consolidateSend(pallets.mantaPay as MantaPayWallet, utxoList);

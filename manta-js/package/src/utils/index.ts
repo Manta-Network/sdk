@@ -73,11 +73,11 @@ export function toPrivateBuildUnsigned(
   wasm: any,
   assetId: BN,
   amount: BN,
-): Promise<any> {
+): any {
   const assetIdArray = bnToU8a(assetId, { bitLength: 256 });
   const txJson = `{ "ToPrivate": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
   const transaction = wasm.Transaction.from_string(txJson);
-  return transaction;
+  return { transaction };
 }
 
 /// private transfer transaction

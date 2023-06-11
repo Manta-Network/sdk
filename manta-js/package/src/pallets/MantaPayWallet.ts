@@ -12,6 +12,7 @@ import type {
   PalletName,
   Network,
   UtxoInfo,
+  PrivateTransactionType,
 } from '.././interfaces';
 import {
   getSignedTransaction,
@@ -58,12 +59,15 @@ export default class MantaPayWallet
   ): Promise<SignedTransaction | null> {
     const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
-        const transaction = await toPrivateBuildUnsigned(
-          this.wasm,
+        const transaction = await this.getTransaction(
+          'publicToPrivate',
           assetId,
           amount,
         );
-        const signResult = await this.signTransaction(null, transaction);
+        const signResult = await this.signTransaction(
+          null,
+          transaction.transaction,
+        );
         return signResult;
       },
       (ex: Error) => {
@@ -83,13 +87,11 @@ export default class MantaPayWallet
     const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         await this.baseWallet.isApiReady();
-        const transaction = await privateTransferBuildUnsigned(
-          this.wasm,
-          this.api,
+        const transaction = await this.getTransaction(
+          'privateToPrivate',
           assetId,
           amount,
           toZkAddress,
-          this.network,
         );
         const signResult = await this.signTransaction(
           transaction.assetMetadataJson,
@@ -114,13 +116,11 @@ export default class MantaPayWallet
     const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         await this.baseWallet.isApiReady();
-        const transaction = await toPublicBuildUnsigned(
-          this.wasm,
-          this.api,
+        const transaction = await this.getTransaction(
+          'privateToPublic',
           assetId,
           amount,
           polkadotAddress,
-          this.network,
         );
         const signResult = await this.signTransaction(
           transaction.assetMetadataJson,
@@ -132,27 +132,6 @@ export default class MantaPayWallet
         console.error('Failed to build toPublicBuild.', ex);
       },
     );
-    return result;
-  }
-
-  /// Signs the a given transaction returning posts, transactions and batches.
-  /// assetMetaDataJson is optional, pass in null if transaction should not contain any.
-  private async signTransaction(
-    assetMetadataJson: any,
-    transaction: WasmTransaction,
-  ): Promise<SignedTransaction | null> {
-    let assetMetadata: any = null;
-    if (assetMetadataJson) {
-      assetMetadata = this.wasm.AssetMetadata.from_string(assetMetadataJson);
-    }
-    this.log('Sign Start');
-    const posts = await this.wasmWallet.sign(
-      transaction,
-      assetMetadata,
-      this.getWasmNetWork(),
-    );
-    this.log('Sign End');
-    const result = await getSignedTransaction(this.palletName, this.api, posts);
     return result;
   }
 
@@ -216,6 +195,83 @@ export default class MantaPayWallet
         console.error('Failed to build consolidateTransactionBuild.', ex);
       },
     );
+    return result;
+  }
+
+  async estimateTransferPostsCount(
+    type: PrivateTransactionType,
+    assetId: BN,
+    amount: BN,
+    operateAddress?: Address,
+  ) {
+    const result = await this.baseWallet.wrapWalletIsBusy(
+      async () => {
+        const transaction = await this.getTransaction(
+          type,
+          assetId,
+          amount,
+          operateAddress,
+        );
+        const count = this.wasmWallet.estimate_transferposts(
+          transaction.transaction,
+          this.getWasmNetWork(),
+        );
+        return count;
+      },
+      (ex: Error) => {
+        console.error('Failed to build toPrivateBuild.', ex);
+      },
+    );
+    return result;
+  }
+
+  private async getTransaction(
+    type: PrivateTransactionType,
+    assetId: BN,
+    amount: BN,
+    operateAddress?: Address,
+  ): Promise<any> {
+    if (type === 'publicToPrivate') {
+      return toPrivateBuildUnsigned(this.wasm, assetId, amount);
+    } else if (type === 'privateToPrivate') {
+      return privateTransferBuildUnsigned(
+        this.wasm,
+        this.api,
+        assetId,
+        amount,
+        operateAddress!,
+        this.network,
+      );
+    } else if (type === 'privateToPublic') {
+      return toPublicBuildUnsigned(
+        this.wasm,
+        this.api,
+        assetId,
+        amount,
+        operateAddress,
+        this.network,
+      );
+    }
+  }
+
+  /// Signs the a given transaction returning posts, transactions and batches.
+  /// assetMetaDataJson is optional, pass in null if transaction should not contain any.
+  private async signTransaction(
+    assetMetadataJson: any,
+    transaction: WasmTransaction,
+  ): Promise<SignedTransaction | null> {
+    let assetMetadata: any = null;
+    if (assetMetadataJson) {
+      assetMetadata = this.wasm.AssetMetadata.from_string(assetMetadataJson);
+    }
+    this.log('Sign Start');
+    const posts = await this.wasmWallet.sign(
+      transaction,
+      assetMetadata,
+      this.getWasmNetWork(),
+    );
+    this.log('Sign End');
+    const result = await getSignedTransaction(this.palletName, this.api, posts);
     return result;
   }
 }
