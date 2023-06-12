@@ -8,6 +8,11 @@ const networkConfigs: Record<
   string,
   { rpc: string | string[]; assetName: string; decimals: number }
 > = {
+  Manta: {
+    rpc: ['https://c1.manta.seabird.systems/rpc'],
+    assetName: 'MANTA',
+    decimals: 18
+  },
   Dolphin: {
     rpc: ['https://calamari.seabird.systems/rpc'],
     assetName: 'DOL',
