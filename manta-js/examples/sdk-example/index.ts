@@ -2,6 +2,9 @@ import BN from 'bn.js';
 import type { interfaces } from 'manta-extension-sdk';
 import type { Signer as InjectSigner } from '@polkadot/api/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
+import type { SignerPayloadRaw } from '@polkadot/types/types';
+import { decodeAddress } from '@polkadot/util-crypto';
+import { ethers } from 'ethers';
 
 import {
   BaseWallet,
@@ -295,13 +298,33 @@ const mintSbtWithSignature = async (
   const { transactionDatas, posts } = await multiSbtPostBuild(privateWallet, sbtInfoList);
   const batchesTx: any[] = [];
 
-  // generate signature
+  const genesis = (await privateWallet.api.rpc.chain.getBlockHash(0)).toHex();
 
+  const domain = {
+      name: "Claim Free SBT",
+      version: "1",
+      chainId: 0,
+      salt: genesis,
+  };
+  const types = {
+      Transaction: [{ name: "proof", type: "bytes" }],
+  };
 
-  posts.forEach((post) => {
-    const tx = privateWallet.api.tx.mantaSbt.toPrivate(null, post[0], []);
+  for (const post of posts) {
+    const zkp = post[0];
+    const value = {
+        proof: zkp.proof,
+    };
+    const payload: SignerPayloadRaw = {address: polkadotConfig.polkadotAddress, data: ethers.utils._TypedDataEncoder.hash(domain, types, value), type: "bytes"};
+
+    // generate signature
+    const sig = await polkadotConfig.polkadotSigner.signRaw(payload);
+    const sigAndPubKey = {sig: {sr25519: sig.signature}, pub_key: {sr25519: decodeAddress(polkadotConfig.polkadotAddress)} };
+
+    const tx = privateWallet.api.tx.mantaSbt.toPrivate(sigAndPubKey, zkp, "hello");
     batchesTx.push(tx);
-  });
+  };
+
   const sbtTx = privateWallet.api.tx.utility.batch(batchesTx);
   await publishTransaction([sbtTx]);
 };
@@ -386,6 +409,9 @@ window.actions = {
   },
   async mintSbt() {
     return await mintSbt(pallets.mantaSbt as MantaSbtWallet);
+  },
+  async mintSbtWithSignature() {
+    return await mintSbtWithSignature(pallets.mantaSbt as MantaSbtWallet);
   },
   async getTransactionDatas(posts: any[]) {
     return await getTransactionDatas(pallets.mantaSbt as MantaSbtWallet, posts);
