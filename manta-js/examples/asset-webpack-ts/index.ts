@@ -3,17 +3,17 @@ import { MantaPrivateWallet, SbtMantaPrivateWallet, Environment, Network, MantaU
 import BN from 'bn.js';
 import { web3Accounts, web3Enable, web3FromSource } from '@polkadot/extension-dapp';
 import axios from "axios";
-import { u8aToBn, hexToU8a, u8aToHex } from '@polkadot/util';
+import { u8aToBn, hexToU8a, u8aToHex, u8aWrapBytes, u8aUnwrapBytes } from '@polkadot/util';
 import { Wallet } from "@ethersproject/wallet";
 import { ethers } from 'ethers';
 import { Keyring } from '@polkadot/api';
 import { encodeAddress } from "@polkadot/keyring";
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { cryptoWaitReady, decodeAddress, signatureVerify } from '@polkadot/util-crypto';
 
 const privateWalletConfig = {
     environment: Environment.Development,
-    network: Network.Manta,
+    network: Network.Calamari,
     loggingEnabled: true
 }
 // const privateWalletConfig = {
@@ -28,8 +28,10 @@ async function main() {
     // const proof_json = await identityProofGen(privateWallet, id_proof);
     // console.log("proof json:" + proof_json);
 
-    // await reserve_assetId();
-    await ethPompMint();
+    // await ethPompMintBySign();
+    await ethPompMintBySignRaw();
+
+    // await ethPompMint();
     // await ethMintSbt();
     // await toSBTPrivateTest(false);
     // await reserveAndMints();
@@ -806,38 +808,26 @@ const test_address = async () => {
     console.log("calamari:" + calamari_address + ",manta:" + manta_address);
 }
 
-const ethPompMint = async () => {
+const ethPompMintBySign = async () => {
     const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
 
     const keyring = new Keyring({ type: 'sr25519' });
     const alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-    console.log("alice: " + alice.address); // 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
-
-    const calamari_address = encodeAddress(alice.address, 67);
-    const manta_address = encodeAddress(alice.address, 68);
-    console.log("calamari:" + calamari_address + ",manta:" + manta_address);
-
-    const polkadotConfig = await getPolkadotSignerAndAddress();
-    // 5GC5tSpmWL68P3aPs6ZwrjP5JSrtVrziwQaHVxRZGdhbwdxQ
-    // console.log("public:" + polkadotConfig.polkadotAddress);
+    console.log("public: " + alice.address); // 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY 5GC5tSpmWL68P3aPs6ZwrjP5JSrtVrziwQaHVxRZGdhbwdxQ
+    console.log("pubkey:" + JSON.stringify(Array.from(alice.publicKey)));
 
     // 0x0123456789012345678901234567890123456789012345678901234567890123
-    // const signer = new Wallet("522bd73700711e4a0080dd31dbabbe6e0a0c025007528d2440fa997803aae265");
     const signer = new Wallet("0x0123456789012345678901234567890123456789012345678901234567890123");
     // 0x14791697260E4c9A71f18484C9f997B308e59325
     console.log("eth address: ", signer.address);
 
-    // const mintId = 3;
-    const assetId = new BN(3);
-    // const maybeAssetId: any = await privateWallet.api.query.mantaSbt.reserverId(alice.address);
-    // if exist, return maybeAssetId.0
-    // not exist, send reserverSbt tx, and query again
-    // await privateWallet.api.tx.mantaSbt.reserverSbt(alice.address); //public_address -> [startAssetId, endAssetId]
+    const assetId = new BN(1);
 
     const chain_id = 0;
     const post = await privateWallet.buildSbtPost(assetId);
-    console.log("post:" + JSON.stringify(post));
+    // console.log("post:" + JSON.stringify(post));
 
+    // 0x1442fc2d5c7c2928b48c9e8ddc38258ced9088781bb485c274b67f87032246fd
     const genesis = (await privateWallet.api.rpc.chain.getBlockHash(0)).toHex();
     console.log("genesis:" + genesis);
 
@@ -857,16 +847,16 @@ const ethPompMint = async () => {
     console.log("eth signature: " + signature);
 
     const structHash = ethers.utils._TypedDataEncoder.hash(domain, types, value)
-    console.log("message hashed:" + structHash + ",type:" + typeof(structHash));
+    console.log("message hashed: " + structHash);
+    console.log("message array:" + JSON.stringify(Array.from(hexToU8a(structHash.toString()))));
 
-    const public_signature1 = await polkadotConfig.polkadotSigner.signRaw({
-        address: polkadotConfig.polkadotAddress,
-        type: "bytes",
-        data: structHash
-    });
-    console.log("dot signature: " + JSON.stringify(public_signature1));
+    const wrapHex = u8aWrapBytes(structHash);
+    console.log("wrapp bytes:" + JSON.stringify(Array.from(wrapHex)));
 
-    const public_signature = alice.sign(structHash);
+    const public_signature = alice.sign(wrapHex);
+    console.log("dot sign signature: " + JSON.stringify(Array.from(public_signature)));
+    console.log("sign signature hex: " + JSON.stringify(u8aToHex(public_signature)));
+
     const public_sig_key = {
         sig: {
             Sr25519: Array.from(public_signature)
@@ -877,16 +867,95 @@ const ethPompMint = async () => {
     }
     console.log("public signature:" + JSON.stringify(public_sig_key));
 
-    // const evmTx = privateWallet.api.tx.mantaSbt.to_private(post, chain_id, signature, mintId, null, null, "hello eth");
-    await privateWallet.api.tx.mantaSbt.toPrivate(public_sig_key, post, "metadata").signAndSend(alice.address);
+    const { isValid } = signatureVerify(structHash, public_signature, alice.address);
+    console.log("is vaild:" + isValid);
+
+    await privateWallet.api.tx.mantaSbt.toPrivate(public_sig_key, post, "metadata").signAndSend(alice);
 
     // User pay gas fee:
-    const signedExtrinsic = await privateWallet.api.tx.mantaSbt.toPrivate(
-        public_sig_key, post, "{range:0-1,mintId:10,}").signAsync(polkadotConfig.polkadotAddress, { nonce: -1, era: 64 });
-    const signedExtrinsicHash = signedExtrinsic.toHex();
+    // const signedExtrinsic = await privateWallet.api.tx.mantaSbt.toPrivate(
+        // public_sig_key, post, "{range:0-1,mintId:10,}").signAsync(polkadotConfig.polkadotAddress, { nonce: -1, era: 64 });
+    // const signedExtrinsicHash = signedExtrinsic.toHex();
 
     // server/relayer execute tx:
-    await privateWallet.api.rpc.author.submitExtrinsic(signedExtrinsicHash);
+    // await privateWallet.api.rpc.author.submitExtrinsic(signedExtrinsicHash);
+
+    await new Promise(r => setTimeout(r, 10000));
+}
+
+const ethPompMintBySignRaw = async () => {
+    const privateWallet = await SbtMantaPrivateWallet.initSBT(privateWalletConfig);
+
+    const polkadotConfig = await getPolkadotSignerAndAddress();
+    // 5GC5tSpmWL68P3aPs6ZwrjP5JSrtVrziwQaHVxRZGdhbwdxQ
+    console.log("public:" + polkadotConfig.polkadotAddress);
+    console.log("pubkey:" + JSON.stringify(Array.from(decodeAddress(polkadotConfig.polkadotAddress))));
+
+    // 0x0123456789012345678901234567890123456789012345678901234567890123
+    const signer = new Wallet("0x0123456789012345678901234567890123456789012345678901234567890123");
+    // 0x14791697260E4c9A71f18484C9f997B308e59325
+    console.log("eth address: ", signer.address);
+
+    const assetId = new BN(11);
+
+    const chain_id = 0;
+    const post = await privateWallet.buildSbtPost(assetId);
+    // console.log("post:" + JSON.stringify(post));
+
+    // 0x1442fc2d5c7c2928b48c9e8ddc38258ced9088781bb485c274b67f87032246fd
+    const genesis = (await privateWallet.api.rpc.chain.getBlockHash(0)).toHex();
+    console.log("genesis:" + genesis);
+
+    const domain = {
+        name: "Claim Free SBT",
+        version: "1",
+        chainId: chain_id,
+        salt: genesis,
+    };
+    const types = {
+        Transaction: [{ name: "proof", type: "bytes" }],
+    };
+    const value = {
+        proof: post.proof,
+    };
+    const signature = await signer._signTypedData(domain, types, value);
+    console.log("eth signature: " + signature);
+
+    const structHash = ethers.utils._TypedDataEncoder.hash(domain, types, value)
+    console.log("message hashed: " + structHash);
+    console.log("message array:" + JSON.stringify(Array.from(hexToU8a(structHash.toString()))));
+
+    const public_signature1 = await polkadotConfig.polkadotSigner.signRaw({
+        address: polkadotConfig.polkadotAddress,
+        type: "bytes",
+        data: structHash
+    });
+    console.log("signRaw signature:" + JSON.stringify(Array.from(hexToU8a(public_signature1.signature))));
+    console.log("signRaw signature hex:" + JSON.stringify(public_signature1.signature));
+
+    const public_sig_key = {
+        sig: {
+            Sr25519: Array.from(hexToU8a(public_signature1.signature))
+        },
+        pub_key: {
+            Sr25519: Array.from(decodeAddress(polkadotConfig.polkadotAddress))
+        }
+    }
+    console.log("public signature:" + JSON.stringify(public_sig_key));
+
+    const { isValid } = signatureVerify(structHash, public_signature1.signature, polkadotConfig.polkadotAddress);
+    console.log("is vaild:" + isValid);
+
+    privateWallet.api.setSigner(polkadotConfig.polkadotSigner);
+    await privateWallet.api.tx.mantaSbt.toPrivate(public_sig_key, post, "metadata").signAndSend(polkadotConfig.polkadotAddress);
+
+    // User pay gas fee:
+    // const signedExtrinsic = await privateWallet.api.tx.mantaSbt.toPrivate(
+        // public_sig_key, post, "{range:0-1,mintId:10,}").signAsync(polkadotConfig.polkadotAddress, { nonce: -1, era: 64 });
+    // const signedExtrinsicHash = signedExtrinsic.toHex();
+
+    // server/relayer execute tx:
+    // await privateWallet.api.rpc.author.submitExtrinsic(signedExtrinsicHash);
 
     await new Promise(r => setTimeout(r, 10000));
 }
