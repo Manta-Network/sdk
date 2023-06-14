@@ -279,7 +279,7 @@ const mintSbt = async (
   const { transactionDatas, posts } = await multiSbtPostBuild(privateWallet, sbtInfoList);
   const batchesTx: any[] = [];
   posts.forEach((post) => {
-    const tx = privateWallet.api.tx.mantaSbt.toPrivate(null, post[0], []);
+    const tx = privateWallet.api.tx.mantaSbt.toPrivate(null, null, null, post[0], []);
     batchesTx.push(tx);
   });
   const sbtTx = privateWallet.api.tx.utility.batch(batchesTx);
@@ -321,7 +321,7 @@ const mintSbtWithSignature = async (
     const sig = await polkadotConfig.polkadotSigner.signRaw(payload);
     const sigAndPubKey = {sig: {sr25519: sig.signature}, pub_key: {sr25519: decodeAddress(polkadotConfig.polkadotAddress)} };
 
-    const tx = privateWallet.api.tx.mantaSbt.toPrivate(sigAndPubKey, zkp, "hello");
+    const tx = privateWallet.api.tx.mantaSbt.toPrivate(null, null, sigAndPubKey, zkp, "hello");
     batchesTx.push(tx);
   };
 
