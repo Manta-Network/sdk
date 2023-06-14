@@ -870,7 +870,8 @@ const ethPompMintBySign = async () => {
     const { isValid } = signatureVerify(structHash, public_signature, alice.address);
     console.log("is vaild:" + isValid);
 
-    await privateWallet.api.tx.mantaSbt.toPrivate(public_sig_key, post, "metadata").signAndSend(alice);
+    let mint_id = 11;
+    await privateWallet.api.tx.mantaSbt.toPrivate(mint_id, chain_id, public_sig_key, post, "metadata").signAndSend(alice);
 
     // User pay gas fee:
     // const signedExtrinsic = await privateWallet.api.tx.mantaSbt.toPrivate(
@@ -898,7 +899,7 @@ const ethPompMintBySignRaw = async () => {
 
     const assetId = new BN(11);
 
-    const chain_id = 0;
+    const chain_id = 10;
     const post = await privateWallet.buildSbtPost(assetId);
     // console.log("post:" + JSON.stringify(post));
 
@@ -947,7 +948,8 @@ const ethPompMintBySignRaw = async () => {
     console.log("is vaild:" + isValid);
 
     privateWallet.api.setSigner(polkadotConfig.polkadotSigner);
-    await privateWallet.api.tx.mantaSbt.toPrivate(public_sig_key, post, "metadata").signAndSend(polkadotConfig.polkadotAddress);
+    let mint_id = 11;
+    await privateWallet.api.tx.mantaSbt.toPrivate(mint_id, chain_id, public_sig_key, post, "metadata").signAndSend(polkadotConfig.polkadotAddress);
 
     // User pay gas fee:
     // const signedExtrinsic = await privateWallet.api.tx.mantaSbt.toPrivate(
