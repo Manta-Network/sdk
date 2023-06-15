@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Added
+- [\#134](https://github.com/Manta-Network/sdk/pull/134) Add zkSBT minting to example
 - [\#131](https://github.com/Manta-Network/sdk/pull/131) Add synced ledger count api
 - [\#128](https://github.com/Manta-Network/sdk/pull/128) Add total ledger count
 - [\#127](https://github.com/Manta-Network/sdk/pull/127) Add ledger sync progress
