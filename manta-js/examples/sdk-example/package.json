@@ -12,6 +12,7 @@
     "@polkadot/extension-dapp": "^0.45.3",
     "bn.js": "^5.2.0",
     "buffer": "^6.0.3",
+    "ethers": "^5.7.0",
     "idb-keyval": "^6.2.0",
     "manta-extension-sdk": "file:../../package"
   },
