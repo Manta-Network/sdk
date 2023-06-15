@@ -28,6 +28,8 @@ export interface PrivateWalletStateInfo {
   isWalletAuthorized: boolean;
   isWalletReady: boolean;
   isWalletBusy: boolean;
+  isWalletSyncing: boolean;
+  isWalletConsolidating: boolean;
 }
 
 export interface RequestBasePayload {
