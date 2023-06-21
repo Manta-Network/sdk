@@ -4,8 +4,6 @@
     "Utxo"
   ],
   "rust-analyzer.linkedProjects": [
-    "./manta-js/package/src/wallet/crate/Cargo.toml",
-    "./manta-js/package/src/wallet/crate/Cargo.toml",
     "./manta-js/package/src/wallet/crate/Cargo.toml"
   ]
 }
