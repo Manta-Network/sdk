@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Added
-- [\#133](https://github.com/Manta-Network/sdk/pull/133) Restore pruning and add UTXO consolidation
+- [\#133](https://github.com/Manta-Network/sdk/pull/133) Restore pruning and add UTXO consolidation && add Api `estimateTransferPostsCount` && add Api `consolidateTransferSend`
 - [\#131](https://github.com/Manta-Network/sdk/pull/131) Add synced ledger count api
 - [\#128](https://github.com/Manta-Network/sdk/pull/128) Add total ledger count
 - [\#127](https://github.com/Manta-Network/sdk/pull/127) Add ledger sync progress
