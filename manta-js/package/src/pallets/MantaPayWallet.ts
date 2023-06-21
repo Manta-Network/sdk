@@ -177,7 +177,6 @@ export default class MantaPayWallet
             },
           };
         });
-        console.log(originUtxoList);
         this.log('Consolidate Start');
         const posts = await this.wasmWallet.consolidate(
           originUtxoList,
