@@ -11,16 +11,17 @@ import type {
   ILedgerApi,
   PalletName,
   Network,
+  UtxoInfo,
+  PrivateTransactionType,
 } from '.././interfaces';
 import {
-  mapPostToTransaction,
+  getSignedTransaction,
   privateTransferBuildUnsigned,
   toPrivateBuildUnsigned,
   toPublicBuildUnsigned,
-  transactionsToBatches,
-  transferPost,
 } from '../utils';
 import PrivateWallet from '../PrivateWallet';
+import { bnToBn, bnToU8a, nToBigInt, u8aToBn } from '@polkadot/util';
 
 const CURRENT_PALLET_NAME: PalletName = 'mantaPay';
 
@@ -58,12 +59,15 @@ export default class MantaPayWallet
   ): Promise<SignedTransaction | null> {
     const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
-        const transaction = await toPrivateBuildUnsigned(
-          this.wasm,
+        const transaction = await this.getTransaction(
+          'publicToPrivate',
           assetId,
           amount,
         );
-        const signResult = await this.signTransaction(null, transaction);
+        const signResult = await this.signTransaction(
+          null,
+          transaction.transaction,
+        );
         return signResult;
       },
       (ex: Error) => {
@@ -83,13 +87,11 @@ export default class MantaPayWallet
     const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         await this.baseWallet.isApiReady();
-        const transaction = await privateTransferBuildUnsigned(
-          this.wasm,
-          this.api,
+        const transaction = await this.getTransaction(
+          'privateToPrivate',
           assetId,
           amount,
           toZkAddress,
-          this.network,
         );
         const signResult = await this.signTransaction(
           transaction.assetMetadataJson,
@@ -114,13 +116,11 @@ export default class MantaPayWallet
     const result = await this.baseWallet.wrapWalletIsBusy(
       async () => {
         await this.baseWallet.isApiReady();
-        const transaction = await toPublicBuildUnsigned(
-          this.wasm,
-          this.api,
+        const transaction = await this.getTransaction(
+          'privateToPublic',
           assetId,
           amount,
           polkadotAddress,
-          this.network,
         );
         const signResult = await this.signTransaction(
           transaction.assetMetadataJson,
@@ -133,6 +133,124 @@ export default class MantaPayWallet
       },
     );
     return result;
+  }
+
+  async getAllUtxoList() {
+    const result = await this.baseWallet.wrapWalletIsBusy(async () => {
+      const assetList = this.wasmWallet.asset_list(this.getWasmNetWork());
+      const utxoList: UtxoInfo[] = [];
+      assetList.forEach((item: any) => {
+        utxoList.push({
+          asset: {
+            id: u8aToBn(item.asset.id).toString(),
+            value: item.asset.value.toString(),
+          },
+          identifier: {
+            is_transparent: item.identifier.is_transparent,
+            utxo_commitment_randomness: u8aToBn(
+              item.identifier.utxo_commitment_randomness,
+            ).toString(),
+          },
+        } as UtxoInfo);
+      });
+      return utxoList;
+    });
+    return result;
+  }
+
+  async consolidateTransactionBuild(utxoList: UtxoInfo[]) {
+    const result = await this.baseWallet.wrapWalletIsBusy(
+      async () => {
+        await this.baseWallet.isApiReady();
+        const originUtxoList = utxoList.map((item: UtxoInfo) => {
+          return {
+            asset: {
+              id: bnToU8a(bnToBn(item.asset.id), { bitLength: 256 }),
+              value: nToBigInt(item.asset.value),
+            },
+            identifier: {
+              is_transparent: item.identifier.is_transparent,
+              utxo_commitment_randomness: bnToU8a(
+                bnToBn(item.identifier.utxo_commitment_randomness),
+                { bitLength: 256 },
+              ),
+            },
+          };
+        });
+        this.log('Consolidate Start');
+        const posts = await this.wasmWallet.consolidate(
+          originUtxoList,
+          this.getWasmNetWork(),
+        );
+        this.log('Consolidate End');
+        const result = await getSignedTransaction(
+          this.palletName,
+          this.api,
+          posts,
+        );
+        return result;
+      },
+      (ex: Error) => {
+        console.error('Failed to build consolidateTransactionBuild.', ex);
+      },
+    );
+    return result;
+  }
+
+  async estimateTransferPostsCount(
+    type: PrivateTransactionType,
+    assetId: BN,
+    amount: BN,
+    operateAddress?: Address,
+  ) {
+    const result = await this.baseWallet.wrapWalletIsBusy(
+      async () => {
+        const transaction = await this.getTransaction(
+          type,
+          assetId,
+          amount,
+          operateAddress,
+        );
+        const count = this.wasmWallet.estimate_transferposts(
+          transaction.transaction,
+          this.getWasmNetWork(),
+        );
+        return count;
+      },
+      (ex: Error) => {
+        console.error('Failed to build toPrivateBuild.', ex);
+      },
+    );
+    return result;
+  }
+
+  private async getTransaction(
+    type: PrivateTransactionType,
+    assetId: BN,
+    amount: BN,
+    operateAddress?: Address,
+  ): Promise<any> {
+    if (type === 'publicToPrivate') {
+      return toPrivateBuildUnsigned(this.wasm, assetId, amount);
+    } else if (type === 'privateToPrivate') {
+      return privateTransferBuildUnsigned(
+        this.wasm,
+        this.api,
+        assetId,
+        amount,
+        operateAddress!,
+        this.network,
+      );
+    } else if (type === 'privateToPublic') {
+      return toPublicBuildUnsigned(
+        this.wasm,
+        this.api,
+        assetId,
+        amount,
+        operateAddress,
+        this.network,
+      );
+    }
   }
 
   /// Signs the a given transaction returning posts, transactions and batches.
@@ -152,22 +270,7 @@ export default class MantaPayWallet
       this.getWasmNetWork(),
     );
     this.log('Sign End');
-    const transactions = [];
-    for (let i = 0; i < posts.length; i++) {
-      const convertedPost = transferPost(posts[i]);
-      const transaction = await mapPostToTransaction(
-        this.palletName,
-        this.api,
-        convertedPost,
-      );
-      transactions.push(transaction);
-    }
-    const txs = await transactionsToBatches(this.api, transactions);
-    return {
-      posts,
-      transactionData: null,
-      transactions,
-      txs,
-    };
+    const result = await getSignedTransaction(this.palletName, this.api, posts);
+    return result;
   }
 }

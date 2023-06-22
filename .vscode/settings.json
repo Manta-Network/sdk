@@ -1,0 +1,9 @@
+{
+  "cSpell.words": [
+    "transferposts",
+    "Utxo"
+  ],
+  "rust-analyzer.linkedProjects": [
+    "./manta-js/package/src/wallet/crate/Cargo.toml"
+  ]
+}

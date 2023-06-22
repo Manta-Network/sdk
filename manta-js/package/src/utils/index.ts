@@ -3,7 +3,12 @@ import { ApiPromise } from '@polkadot/api';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import { base58Decode, decodeAddress } from '@polkadot/util-crypto';
 import { bnToU8a } from '@polkadot/util';
-import type { Address, PalletName, Network } from '../interfaces';
+import type {
+  Address,
+  PalletName,
+  Network,
+  SignedTransaction,
+} from '../interfaces';
 import { NATIVE_TOKEN_ASSET_ID, PRIVATE_ASSET_PREFIX } from '../constants';
 
 /// Convert a private address to JSON.
@@ -68,11 +73,11 @@ export function toPrivateBuildUnsigned(
   wasm: any,
   assetId: BN,
   amount: BN,
-): Promise<any> {
+): any {
   const assetIdArray = bnToU8a(assetId, { bitLength: 256 });
   const txJson = `{ "ToPrivate": { "id": [${assetIdArray}], "value": ${amount.toString()} }}`;
   const transaction = wasm.Transaction.from_string(txJson);
-  return transaction;
+  return { transaction };
 }
 
 /// private transfer transaction
@@ -275,4 +280,28 @@ export function getLedgerSyncedCount(checkpoint: any) {
     );
   }
   return (checkpoint.sender_index || 0) + (receiverTotal || 0);
+}
+
+export async function getSignedTransaction(
+  palletName: PalletName,
+  api: ApiPromise,
+  posts: any[],
+): Promise<SignedTransaction> {
+  const transactions = [];
+  for (let i = 0; i < posts.length; i++) {
+    const convertedPost = transferPost(posts[i]);
+    const transaction = await mapPostToTransaction(
+      palletName,
+      api,
+      convertedPost,
+    );
+    transactions.push(transaction);
+  }
+  const txs = await transactionsToBatches(api, transactions);
+  return {
+    transactionData: null,
+    posts,
+    transactions,
+    txs,
+  };
 }
