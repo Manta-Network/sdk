@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Removed
 
 ### Fixed
+- [\#136](https://github.com/Manta-Network/sdk/pull/136) Asset selection fix
 - [\#129](https://github.com/Manta-Network/sdk/pull/129) Signer bug fix.
 
 ### Security
