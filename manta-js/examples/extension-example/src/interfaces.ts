@@ -21,7 +21,7 @@ export type InjectedWeb3 = {
   enable: (originName: string) => Promise<Injected>;
 };
 
-export type Network = string;
+export type Network = 'Dolphin' | 'Calamari' | 'Manta';
 
 export interface PrivateWalletStateInfo {
   isWalletInitialized: boolean;
