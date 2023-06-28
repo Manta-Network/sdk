@@ -2,25 +2,30 @@ import { ApiPromise, HttpProvider, WsProvider } from '@polkadot/api';
 import BigNumber from 'bignumber.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Injected, InjectedWeb3, PrivateWalletStateInfo } from './interfaces';
+import {
+  Injected,
+  InjectedWeb3,
+  PrivateWalletStateInfo,
+  Network,
+} from './interfaces';
 
 const networkConfigs: Record<
   string,
   { rpc: string | string[]; assetName: string; decimals: number }
 > = {
   Manta: {
-    rpc: ['https://c1.manta.seabird.systems/rpc'],
+    rpc: ['https://ws.manta.systems'],
     assetName: 'MANTA',
-    decimals: 18
-  },
-  Dolphin: {
-    rpc: ['https://calamari.seabird.systems/rpc'],
-    assetName: 'DOL',
-    decimals: 12,
+    decimals: 18,
   },
   Calamari: {
-    rpc: ['https://calamari.systems/rpc'],
+    rpc: ['https://ws.calamari.systems'],
     assetName: 'KMA',
+    decimals: 12,
+  },
+  Dolphin: {
+    rpc: ['https://ws.calamari.seabird.systems'],
+    assetName: 'DOL',
     decimals: 12,
   },
 };
@@ -37,7 +42,7 @@ let isConnecting = false;
 export default function App() {
   const [isInjected] = useState(!!injectedWeb3);
   const [injected, setInjected] = useState<Injected | null>(null);
-  const [network, setNetwork] = useState<string>('');
+  const [network, setNetwork] = useState<Network | undefined>(undefined);
   const [api, setApi] = useState<ApiPromise | null>(null);
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [zkAddress, setZkAddress] = useState<string | null>(null);
@@ -67,6 +72,9 @@ export default function App() {
   }, [setInjected]);
 
   const currentNetwork = useMemo(() => {
+    if (!network) {
+      return null;
+    }
     return networkConfigs[network];
   }, [network]);
 
@@ -75,7 +83,7 @@ export default function App() {
   }, [injected]);
 
   const fetchBalance = useCallback(async () => {
-    if (!stateInfo?.isWalletReady) {
+    if (!stateInfo?.isWalletReady || !network || !currentNetwork) {
       return null;
     }
     const balance = await injected?.privateWallet.getZkBalance({
@@ -88,10 +96,10 @@ export default function App() {
     return new BigNumber(balance)
       .div(new BigNumber(10).pow(currentNetwork.decimals))
       .toFixed();
-  }, [injected, network]);
+  }, [injected, network, stateInfo?.isWalletReady]);
 
   const fetchPublicBalance = useCallback(async () => {
-    if (!api) {
+    if (!api || !currentNetwork) {
       return;
     }
     const accountInfo = await api.query.system.account(publicAddress);
@@ -143,6 +151,9 @@ export default function App() {
     async (func: () => Promise<any>, checkResult = true) => {
       if (!publicAddress) {
         setResult('publicAddress is empty');
+        return;
+      }
+      if (!network) {
         return;
       }
       try {
@@ -200,6 +211,9 @@ export default function App() {
   );
 
   const toPrivateTransaction = useCallback(async () => {
+    if (!currentNetwork || !network) {
+      return;
+    }
     sendTransaction(async () => {
       const response = await injected?.privateWallet.toPrivateBuild({
         assetId,
@@ -222,6 +236,9 @@ export default function App() {
   ]);
 
   const privateTransferTransaction = useCallback(async () => {
+    if (!currentNetwork || !network) {
+      return;
+    }
     sendTransaction(async () => {
       const response = await injected?.privateWallet.privateTransferBuild({
         assetId,
@@ -246,6 +263,9 @@ export default function App() {
   ]);
 
   const toPublicTransaction = useCallback(async () => {
+    if (!currentNetwork || !network) {
+      return;
+    }
     sendTransaction(async () => {
       const response = await injected?.privateWallet.toPublicBuild({
         assetId,
@@ -268,6 +288,9 @@ export default function App() {
   ]);
 
   const multiSbtPostBuildTransition = useCallback(async () => {
+    if (!network) {
+      return;
+    }
     sendTransaction(async () => {
       return injected?.privateWallet.multiSbtPostBuild({
         sbtInfoList: [
@@ -280,6 +303,9 @@ export default function App() {
   }, [startAssetId, injected, sendTransaction, network]);
 
   const getSbtIdentityProof = useCallback(async () => {
+    if (!network) {
+      return;
+    }
     await sendTransaction(async () => {
       return injected?.privateWallet.getSbtIdentityProof({
         virtualAsset,
@@ -338,7 +364,12 @@ export default function App() {
           : currentNetwork.rpc;
       const provider = new HttpProvider(rpcUrl);
       // const provider = new WsProvider(rpcUrl);
-      setApi(null);
+      setApi((api) => {
+        if (api) {
+          api.disconnect();
+        }
+        return null;
+      });
       const api = await ApiPromise.create({ provider });
       console.log(`[connected rpcUrl]: ${rpcUrl}`);
       api.setSigner(injected.signer);
@@ -353,7 +384,7 @@ export default function App() {
       return;
     }
     updateBalance();
-  }, [updateBalance, api]);
+  }, [updateBalance, api, stateInfo?.isWalletReady]);
 
   // auto connect wallet
   useEffect(() => {
@@ -401,10 +432,10 @@ export default function App() {
               <fieldset>
                 <legend>Balance</legend>
                 <p>
-                  {currentNetwork.assetName}: <strong>{publicBalance}</strong>
+                  {currentNetwork?.assetName}: <strong>{publicBalance}</strong>
                 </p>
                 <p>
-                  zk{currentNetwork.assetName}: <strong>{balance}</strong>
+                  zk{currentNetwork?.assetName}: <strong>{balance}</strong>
                 </p>
               </fieldset>
               <fieldset>
@@ -417,7 +448,7 @@ export default function App() {
                         setToPrivateAmount(e.target.value);
                       }}
                     />
-                    <i>{currentNetwork.assetName}</i>
+                    <i>{currentNetwork?.assetName}</i>
                   </span>
                   <button
                     type="button"
@@ -435,7 +466,7 @@ export default function App() {
                         setPrivateTransferAmount(e.target.value);
                       }}
                     />
-                    <i>zk{currentNetwork.assetName}</i>
+                    <i>zk{currentNetwork?.assetName}</i>
                   </span>
                   <button
                     type="button"
@@ -462,7 +493,7 @@ export default function App() {
                         setToPublicAmount(e.target.value);
                       }}
                     />
-                    <i>zk{currentNetwork.assetName}</i>
+                    <i>zk{currentNetwork?.assetName}</i>
                   </span>
                   <button
                     type="button"
