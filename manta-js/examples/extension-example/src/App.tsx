@@ -41,6 +41,7 @@ let isConnecting = false;
 
 export default function App() {
   const [isInjected] = useState(!!injectedWeb3);
+  const [isExtensionActive, setIsExtensionActive] = useState(false);
   const [injected, setInjected] = useState<Injected | null>(null);
   const [network, setNetwork] = useState<Network | undefined>(undefined);
   const [api, setApi] = useState<ApiPromise | null>(null);
@@ -68,7 +69,14 @@ export default function App() {
     if (!injected) {
       return;
     }
+    setIsExtensionActive(true);
     setInjected(injected);
+    injected.on('connect', () => {
+      setIsExtensionActive(true);
+    });
+    injected.on('disconnect', () => {
+      setIsExtensionActive(false);
+    });
   }, [setInjected]);
 
   const currentNetwork = useMemo(() => {
@@ -416,11 +424,17 @@ export default function App() {
                   Address)
                 </p>
                 <p>
-                  <strong className="address">{zkAddress}</strong>(zKAddress)
+                  <strong className="address">{zkAddress}</strong>(zkAddress)
                 </p>
               </fieldset>
               <fieldset>
-                <legend>Wallet State</legend>
+                <legend>Extension State</legend>
+                <p>
+                  isActive: <strong>{String(isExtensionActive)}</strong>
+                </p>
+              </fieldset>
+              <fieldset>
+                <legend>Private Wallet State</legend>
                 {stateInfo &&
                   Object.keys(stateInfo).map((key: string) => (
                     <p key={key}>
@@ -431,6 +445,9 @@ export default function App() {
               </fieldset>
               <fieldset>
                 <legend>Balance</legend>
+                <p style={{ marginBottom: 14 }}>
+                  Network: <strong>{network}</strong>
+                </p>
                 <p>
                   {currentNetwork?.assetName}: <strong>{publicBalance}</strong>
                 </p>
