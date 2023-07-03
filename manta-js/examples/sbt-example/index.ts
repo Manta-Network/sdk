@@ -15,7 +15,7 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-const apiEndpoint = ['wss://c1.calamari.seabird.systems'];
+const apiEndpoint = ['wss://crispy.baikal.testnet.calamari.systems'];
 const currentNetwork: interfaces.Network = 'Calamari';
 const provingFilePath =
   'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving';
