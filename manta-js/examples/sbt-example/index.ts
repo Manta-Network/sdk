@@ -1,7 +1,7 @@
 import BN from 'bn.js';
 import type { interfaces } from 'manta-extension-sdk';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
-import { decodeAddress, cryptoWaitReady } from '@polkadot/util-crypto';
+import { base58Decode, decodeAddress, cryptoWaitReady } from '@polkadot/util-crypto';
 import { ethers } from 'ethers';
 import { Keyring } from '@polkadot/api';
 import { u8aToBn, hexToU8a, u8aToHex, u8aWrapBytes, u8aUnwrapBytes } from '@polkadot/util';
@@ -15,7 +15,8 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-const apiEndpoint = ['wss://c1.calamari.seabird.systems'];
+//const apiEndpoint = ['wss://c1.calamari.seabird.systems'];
+const apiEndpoint = ['wss://crispy.baikal.testnet.calamari.systems'];
 const currentNetwork: interfaces.Network = 'Calamari';
 const provingFilePath =
   'https://media.githubusercontent.com/media/Manta-Network/manta-rs/main/manta-parameters/data/pay/proving';
@@ -118,16 +119,12 @@ const mintSbtWithSignature = async (privateWallet: MantaSbtWallet) => {
   }
   const [startAssetId, endAssetId] = assetIdRange?.unwrap();
   console.log(`asset id start: ${startAssetId} end:${endAssetId}`);
-  const sbtInfoList: interfaces.SbtInfo[] = [
-      { assetId: new BN(startAssetId) },
-  ];
+  const sbtInfoList: interfaces.SbtInfo[] = [{ assetId: new BN(startAssetId) }];
 
   const { transactionDatas, posts } = await privateWallet.multiSbtPostBuild(sbtInfoList);
   console.log(`tx data: ${JSON.stringify(transactionDatas)}`);
-  const batchesTx: any[] = [];
 
   const genesis = (await privateWallet.api.rpc.chain.getBlockHash(0)).toHex();
-
   const domain = {
       name: "Claim Free SBT",
       version: "1",
@@ -138,31 +135,65 @@ const mintSbtWithSignature = async (privateWallet: MantaSbtWallet) => {
       Transaction: [{ name: "proof", type: "bytes" }],
   };
 
-  for (const post of posts) {
-    const zkp = post[0];
-    const value = {
-        proof: zkp.proof,
-    };
-    const structHash = ethers.utils._TypedDataEncoder.hash(domain, types, value)
-    const wrapHex = u8aWrapBytes(structHash);
-    const public_signature = signerAccount.sign(wrapHex);
-
-    const sigAndPubKey = {
-      sig: {
-          Sr25519: Array.from(public_signature)
-      },
-      pub_key: {
-          Sr25519: Array.from(signerAccount.publicKey)
-      }
-    }
-
-    const tx = privateWallet.api.tx.mantaSbt.toPrivate(null, null, sigAndPubKey, zkp, "hello");
-    batchesTx.push(tx);
+  const post = posts[0];
+  const zkp = post[0];
+  const value = {
+      proof: zkp.proof,
   };
+  const structHash = ethers.utils._TypedDataEncoder.hash(domain, types, value)
+  const wrapHex = u8aWrapBytes(structHash);
+  const public_signature = signerAccount.sign(wrapHex);
+  const sigAndPubKey = {
+    sig: {Sr25519: Array.from(public_signature)},
+    pub_key: {Sr25519: Array.from(signerAccount.publicKey)}
+  }
+  const zkAddress = await privateWallet.getZkAddress();
 
-  const sbtTx = privateWallet.api.tx.utility.batch(batchesTx);
-  await publishTransaction([sbtTx]);
+  const tx = privateWallet.api.tx.mantaSbt.toPrivate(null, null, sigAndPubKey, zkp, "hello");
+
+  await tx.signAndSend(signerAccount, { nonce: -1 }, async ({ events = [], status, txHash, dispatchError }) => {
+    if (status.isInBlock || status.isFinalized) {
+      const proof_info = await proofInfo(transactionDatas, startAssetId, "TOKEN", zkAddress, "0xf5F1bb0420543b1db39351F0B8c63a844e8F982c", "https://manta.network/");
+      const post_proof_info = {
+        "address": signerAccount.address,
+        "proof_info": proof_info
+      }
+      // TODO: save proof info to NPO platform.
+    }
+  });
+  // await publishTransaction([sbtTx]);
 };
+
+const proofInfo = async(transactionDatas: any, assetId: string, tokenType: string, zkAddress: string, ethAddress: string, url: string) => {
+  const bytes = base58Decode(zkAddress);
+  const addressBytes = Array.from(bytes);
+  const proofInfos = transactionDatas?.map((tx: any) => {
+    const proofId = u8aToHex(
+      tx[0].ToPrivate[0]['utxo_commitment_randomness']
+    );
+    const identifier = tx[0].ToPrivate[0];
+    const asset_info = tx[0].ToPrivate[1];
+    return {
+      transaction_data: {
+        asset_info: {
+          id: asset_info.id,
+          value: Number(asset_info.value)
+        },
+        identifier,
+        zk_address: {
+          receiving_key: addressBytes
+        }
+      },
+      proof_id: proofId,
+      blur_url: url,
+      asset_id: parseInt(assetId),
+      token_type: tokenType,
+      eth_address: ethAddress
+    };
+  });
+  console.log(`proof info: ${JSON.stringify(proofInfos)}`);
+  return proofInfos;
+}
 
 const resetData = async (privateWallet: interfaces.IPrivateWallet) => {
   await privateWallet.resetState();
