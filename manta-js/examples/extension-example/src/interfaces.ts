@@ -14,6 +14,7 @@ declare global {
 
 export interface Injected extends PolkadotInjected {
   privateWallet: InjectedPrivateWallet;
+  on(eventName: string | symbol, listener: (...args: any[]) => void): this;
 }
 
 export type InjectedWeb3 = {
