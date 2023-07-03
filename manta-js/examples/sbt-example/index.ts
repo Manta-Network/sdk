@@ -15,7 +15,6 @@ import {
   del as delIdbData,
 } from 'idb-keyval';
 
-//const apiEndpoint = ['wss://c1.calamari.seabird.systems'];
 const apiEndpoint = ['wss://crispy.baikal.testnet.calamari.systems'];
 const currentNetwork: interfaces.Network = 'Calamari';
 const provingFilePath =
@@ -153,11 +152,17 @@ const mintSbtWithSignature = async (privateWallet: MantaSbtWallet) => {
 
   await tx.signAndSend(signerAccount, { nonce: -1 }, async ({ events = [], status, txHash, dispatchError }) => {
     if (status.isInBlock || status.isFinalized) {
-      const proof_info = await proofInfo(transactionDatas, startAssetId, "TOKEN", zkAddress, "0xf5F1bb0420543b1db39351F0B8c63a844e8F982c", "https://manta.network/");
-      const post_proof_info = {
-        "address": signerAccount.address,
-        "proof_info": proof_info
-      }
+      let tx_data = transactionDatas[0];
+      const proofId = u8aToHex(
+        tx_data[0].ToPrivate[0]['utxo_commitment_randomness']
+      );
+      console.log("ProofKey:" + proofId);
+      // let eth_address = "0xf5F1bb0420543b1db39351F0B8c63a844e8F982c";
+      // const proof_info = await proofInfo(transactionDatas, startAssetId, "TOKEN", zkAddress, eth_address, "https://manta.network/");
+      // const post_proof_info = {
+        // "address": signerAccount.address,
+        // "proof_info": proof_info
+      // }
       // TODO: save proof info to NPO platform.
     }
   });
