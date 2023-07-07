@@ -5,9 +5,9 @@ const getDbPath = (palletName, network, address) => {
 }
 
 const overrideToJSON = () => {
-  let beforeBigIntToJSON = BigInt.prototype.toJSON
-  let beforeUint8ArrayToJSON = Uint8Array.prototype.toJSON
-  let beforeMapToJSON = Map.prototype.toJSON
+  const beforeBigIntToJSON = BigInt.prototype.toJSON
+  const beforeUint8ArrayToJSON = Uint8Array.prototype.toJSON
+  const beforeMapToJSON = Map.prototype.toJSON
 
   BigInt.prototype.toJSON = function () {
     return {

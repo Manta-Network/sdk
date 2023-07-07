@@ -149,7 +149,7 @@ const start = async () => {
   await baseWallet.isApiReady()
 
   const zkAccountSeedPhrase =
-    'present comic balcony bargain rare brass wage fly unit concert illegal simple'
+    'steak jelly sentence pumpkin crazy fantasy album uncover giant novel strong message'
   const publicAccountSeedPhrase = zkAccountSeedPhrase
 
   const actions = await initialWallet(
