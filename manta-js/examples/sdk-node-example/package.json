@@ -1,0 +1,19 @@
+{
+  "name": "sdk-node-example",
+  "version": "1.0.0",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "start_node": "node ./src/index.js",
+    "start": "yarn --cwd ../../package && yarn --cwd ../../package build-node && yarn add file:../../package && yarn start_node"
+  },
+  "dependencies": {
+    "bn.js": "^5.2.0",
+    "buffer": "^6.0.3",
+    "classic-level": "^1.3.0",
+    "manta-extension-sdk": "file:../../package"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

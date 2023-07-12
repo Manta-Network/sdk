@@ -53,10 +53,6 @@ export default class LedgerApi implements ILedgerApi {
         MAX_RECEIVERS_PULL_SIZE,
       );
 
-      if (this.loggingEnabled) {
-        this._log('initial pull result ' + JSON.stringify(result));
-      }
-
       const decodedUtxoData = $Utxos.decode(
         base64Decode(result.utxo_data.toString()),
       );
@@ -79,9 +75,6 @@ export default class LedgerApi implements ILedgerApi {
         membership_proof_data: membershipProofData,
         nullifier_count: result.nullifier_count.toString(),
       };
-      if (this.loggingEnabled) {
-        this._log('initial pull response: ' + JSON.stringify(pull_result));
-      }
       // JSON.stringify does not support bigint
       pull_result.nullifier_count = nToBigInt(result.nullifier_count);
 
@@ -110,9 +103,6 @@ export default class LedgerApi implements ILedgerApi {
         MAX_RECEIVERS_PULL_SIZE,
         MAX_SENDERS_PULL_SIZE,
       );
-      if (this.loggingEnabled) {
-        this._log('pull result ' + JSON.stringify(result));
-      }
 
       const decodedReceivers = $Receivers.decode(
         base64Decode(result.receivers.toString()),
@@ -134,9 +124,6 @@ export default class LedgerApi implements ILedgerApi {
         receivers: receivers,
         senders: senders,
       };
-      if (this.loggingEnabled) {
-        this._log('pull response: ' + JSON.stringify(pull_result));
-      }
       this.syncProgress = {
         current: getLedgerSyncedCount(checkpoint),
         total: u8aToBn(result.senders_receivers_total).toNumber(),
