@@ -1,4 +1,5 @@
 import { ApiPromise, HttpProvider, WsProvider } from '@polkadot/api';
+import { ApiOptions } from '@polkadot/api/types';
 import * as mantaWasm from './wallet/crate/pkg/manta_wasm_wallet';
 import type {
   SaveStorageStateToLocal,
@@ -34,6 +35,7 @@ export default class BaseWallet implements IBaseWallet {
     getStorageStateFromLocal: GetStorageStateFromLocal,
     loggingEnabled: boolean,
     apiTimeout?: number,
+    partialApiOptions?: Partial<ApiOptions>,
   ) {
     this.wasm = wasm;
     this.fullParameters = fullParameters;
@@ -44,7 +46,7 @@ export default class BaseWallet implements IBaseWallet {
 
     this.taskSchedule = new TaskSchedule();
 
-    this.updateApi(apiEndpoint, apiTimeout);
+    this.updateApi(apiEndpoint, apiTimeout, partialApiOptions);
   }
 
   protected static log(
@@ -74,7 +76,11 @@ export default class BaseWallet implements IBaseWallet {
     }
   }
 
-  updateApi(apiEndpoint: string | string[], apiTimeout?: number) {
+  updateApi(
+    apiEndpoint: string | string[],
+    apiTimeout?: number,
+    partialApiOptions?: Partial<ApiOptions>,
+  ) {
     this.log('Initial api');
 
     this.apiEndpoint = apiEndpoint;
@@ -84,6 +90,7 @@ export default class BaseWallet implements IBaseWallet {
       provider: this.getApiProvider(apiEndpoint, apiTimeout),
       types: mantaConfig.TYPES,
       rpc: mantaConfig.RPC,
+      ...partialApiOptions,
     });
 
     return this.api;
@@ -169,6 +176,7 @@ export default class BaseWallet implements IBaseWallet {
       config.getStorageStateFromLocal,
       loggingEnabled,
       config.apiTimeout,
+      config.partialApiOptions,
     );
   }
 
