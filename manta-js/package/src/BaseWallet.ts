@@ -1,5 +1,5 @@
 import { ApiPromise, HttpProvider, WsProvider } from '@polkadot/api';
-import { ApiOptions } from '@polkadot/api/types';
+import type { ApiOptions } from '@polkadot/api/types';
 import * as mantaWasm from './wallet/crate/pkg/manta_wasm_wallet';
 import type {
   SaveStorageStateToLocal,
