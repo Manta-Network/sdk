@@ -1,7 +1,7 @@
 import type BN from 'bn.js';
 import type { ApiPromise } from '@polkadot/api';
 import type { Wallet } from './wallet/crate/pkg/manta_wasm_wallet';
-import type { SubmittableExtrinsic } from '@polkadot/api/types';
+import type { ApiOptions, SubmittableExtrinsic } from '@polkadot/api/types';
 
 export type PalletName = 'mantaPay' | 'mantaSBT';
 
@@ -65,6 +65,7 @@ export type BaseWalletConfig = {
   parametersFilePath: string;
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
+  partialApiOptions?: Partial<ApiOptions>;
 };
 
 export type SbtInfo = {
@@ -102,7 +103,11 @@ export interface IBaseWallet {
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy: boolean;
-  updateApi(apiEndpoint: string | string[], apiTimeout?: number): ApiPromise;
+  updateApi(
+    apiEndpoint: string | string[],
+    apiTimeout?: number,
+    partialApiOptions?: Partial<ApiOptions>,
+  ): ApiPromise;
   isApiReady(): Promise<ApiPromise>;
   disconnectApi(): Promise<boolean>;
   wrapWalletIsBusy<T>(

@@ -8,12 +8,13 @@ import {
   MantaPayWallet,
   MantaSbtWallet,
 } from 'manta-extension-sdk';
-
 import {
-  get as getIdbData,
-  set as setIdbData,
-  del as delIdbData,
-} from 'idb-keyval';
+  delStorageState,
+  getMetadataFromLocal,
+  getStorageStateFromLocal,
+  saveMetaData,
+  saveStorageStateToLocal,
+} from './utils';
 
 const apiEndpoint = ['https://calamari.systems/rpc'];
 // 'https://calamari.seabird.systems/rpc';
@@ -36,7 +37,6 @@ const transferOutAmount = getTokenAmount(5);
 
 let currentSeedPhrase =
   'steak jelly sentence pumpkin crazy fantasy album uncover giant novel strong message';
-
 
 // spike napkin obscure diamond slice style excess table process story excuse absurd
 const defaultToZkAddress = 'KqjRB8VgFqADvhgHvjnvENPVieWUR4fYufGTAUwCCWp';
@@ -98,36 +98,17 @@ const publishTransition = async (
 };
 
 const getBaseWallet = async () => {
+  const metaDataCache = await getMetadataFromLocal();
   const baseWallet = await BaseWallet.init({
     apiEndpoint,
     loggingEnabled,
     provingFilePath,
     parametersFilePath,
-    saveStorageStateToLocal: async (
-      palletName: interfaces.PalletName,
-      network: interfaces.Network,
-      data: any,
-    ): Promise<boolean> => {
-      try {
-        await setIdbData(`storage_state_${palletName}_${network}`, data);
-      } catch (ex) {
-        console.error(ex);
-        return false;
-      }
-      return true;
+    partialApiOptions: {
+      metadata: metaDataCache,
     },
-    getStorageStateFromLocal: async (
-      palletName: interfaces.PalletName,
-      network: interfaces.Network,
-    ): Promise<any> => {
-      let result: string;
-      try {
-        result = await getIdbData(`storage_state_${palletName}_${network}`);
-      } catch (ex) {
-        console.error(ex);
-      }
-      return result || null;
-    },
+    saveStorageStateToLocal,
+    getStorageStateFromLocal,
   });
   return baseWallet;
 };
@@ -147,8 +128,9 @@ const initWalletData = async (
     return;
   }
 
-  const isInitialed = await getIdbData(
-    `storage_state_${privateWallet.palletName}_${currentNetwork}`,
+  const isInitialed = await getStorageStateFromLocal(
+    privateWallet.palletName,
+    currentNetwork,
   );
   if (
     newAccountFeatureEnabled &&
@@ -302,9 +284,7 @@ const getIdentityProof = async (privateWallet: MantaSbtWallet) => {
 
 const resetData = async (privateWallet: interfaces.IPrivateWallet) => {
   await privateWallet.resetState();
-  await delIdbData(
-    `storage_state_${privateWallet.palletName}_${currentNetwork}`,
-  );
+  await delStorageState(privateWallet.palletName, currentNetwork);
 };
 
 const relaunch = async (privateWallet: interfaces.IPrivateWallet) => {
@@ -312,6 +292,11 @@ const relaunch = async (privateWallet: interfaces.IPrivateWallet) => {
   currentSeedPhrase =
     'must payment asthma judge tray recall another course zebra morning march engine';
   await initWalletData(privateWallet);
+};
+
+const saveChainMetaData = async (baseWallet: BaseWallet) => {
+  await baseWallet.api.isReady;
+  await saveMetaData(baseWallet.api);
 };
 
 const pallets: Record<string, interfaces.IPrivateWallet> = {
@@ -345,12 +330,14 @@ window.actions = {
     );
   },
   async estimateToPrivate(amount?: number | string) {
-    const count = await (pallets.mantaPay as MantaPayWallet).estimateTransferPostsCount(
+    const count = await (
+      pallets.mantaPay as MantaPayWallet
+    ).estimateTransferPostsCount(
       'publicToPrivate',
       assetId,
       amount ? getTokenAmount(amount) : transferInAmount,
     );
-    console.log(`estimateToPrivate: ${count}`)
+    console.log(`estimateToPrivate: ${count}`);
   },
   async toPublicSend(amount?: number | string) {
     await toPublicSend(
@@ -359,13 +346,15 @@ window.actions = {
     );
   },
   async estimateToPublic(amount?: number | string) {
-    const count = await (pallets.mantaPay as MantaPayWallet).estimateTransferPostsCount(
+    const count = await (
+      pallets.mantaPay as MantaPayWallet
+    ).estimateTransferPostsCount(
       'privateToPublic',
       assetId,
       amount ? getTokenAmount(amount) : transferOutAmount,
       polkadotConfig.polkadotAddress,
     );
-    console.log(`estimateToPublic: ${count}`)
+    console.log(`estimateToPublic: ${count}`);
   },
   async privateTransferSend(amount?: number | string, toZkAddress?: string) {
     await privateTransferSend(
@@ -374,14 +363,19 @@ window.actions = {
       toZkAddress,
     );
   },
-  async estimatePrivateTransfer(amount?: number | string, toZkAddress?: string) {
-    const count = await (pallets.mantaPay as MantaPayWallet).estimateTransferPostsCount(
+  async estimatePrivateTransfer(
+    amount?: number | string,
+    toZkAddress?: string,
+  ) {
+    const count = await (
+      pallets.mantaPay as MantaPayWallet
+    ).estimateTransferPostsCount(
       'privateToPrivate',
       assetId,
       amount ? getTokenAmount(amount) : transferOutAmount,
       toZkAddress ?? defaultToZkAddress,
     );
-    console.log(`estimatePrivateTransfer: ${count}`)
+    console.log(`estimatePrivateTransfer: ${count}`);
   },
   async consolidateTransferSend(utxoList: interfaces.UtxoInfo[]) {
     await consolidateSend(pallets.mantaPay as MantaPayWallet, utxoList);
@@ -426,6 +420,9 @@ async function main() {
   pallets.mantaPay = MantaPayWallet.init(currentNetwork, baseWallet);
   pallets.mantaSbt = MantaSbtWallet.init(currentNetwork, baseWallet);
   _log('Initial pallets end');
+
+  _log('Cache chain metadata to storage');
+  await saveChainMetaData(baseWallet);
 
   _log('Initial mantaPay data');
   await initWalletData(pallets.mantaPay);
