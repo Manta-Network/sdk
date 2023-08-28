@@ -177,8 +177,9 @@ export default class PrivateWallet implements IPrivateWallet {
       this.log('Start initial new account');
       await this.baseWallet.isApiReady();
       await this.wasmWallet.initial_sync(this.getWasmNetWork());
-      this.log('Initial new account completed');
+      this.log('Initial new account sync completed');
       await this.saveStateToLocal();
+      this.log('Initial new account prune&save completed');
       this.initialSyncIsFinished = true;
       return true;
     });

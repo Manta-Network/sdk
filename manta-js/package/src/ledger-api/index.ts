@@ -13,7 +13,7 @@ import $, {
   currentPathToJson,
 } from './decodeUtils';
 import type { ILedgerApi, LedgerSyncProgress, PalletName } from '../interfaces';
-import { getLedgerSyncedCount, log } from '../utils';
+import { getLedgerSyncedCount, log, requestData } from '../utils';
 import { ApiPromise } from '@polkadot/api';
 
 export default class LedgerApi implements ILedgerApi {
@@ -47,11 +47,18 @@ export default class LedgerApi implements ILedgerApi {
       if (this.loggingEnabled) {
         this._log('checkpoint ' + JSON.stringify(checkpoint));
       }
-      // @ts-ignore
-      const result = await this.api.rpc[this.palletName].dense_initial_pull(
-        checkpoint,
-        MAX_RECEIVERS_PULL_SIZE,
-      );
+
+      const { result, success, error } = await requestData(() => {
+        // @ts-ignore
+        return this.api.rpc[this.palletName].dense_initial_pull(
+          checkpoint,
+          MAX_RECEIVERS_PULL_SIZE,
+        );
+      });
+
+      if (!success) {
+        throw error;
+      }
 
       const decodedUtxoData = $Utxos.decode(
         base64Decode(result.utxo_data.toString()),
