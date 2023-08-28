@@ -34,7 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Removed
 
 ### Fixed
-- [\#150](https://github.com/Manta-Network/sdk/pull/150) Fixes a bug which was causing prune not to work on trees initialized by initial_sync. & Add a retry mechanism to the initial_sync api
+- [\#150](https://github.com/Manta-Network/sdk/pull/150) Fixes a bug which was causing prune not to work on trees initialized by initial_sync.
 - [\#136](https://github.com/Manta-Network/sdk/pull/136) Asset selection fix
 - [\#129](https://github.com/Manta-Network/sdk/pull/129) Signer bug fix.
 
