@@ -58,7 +58,7 @@ export type GetStorageStateFromLocal = (
 ) => Promise<any>;
 
 export type BaseWalletConfig = {
-  apiEndpoint: string | string[];
+  apiEndpoint: string | string[] | ApiPromise;
   apiTimeout?: number;
   loggingEnabled: boolean;
   provingFilePath: string;
@@ -94,8 +94,6 @@ export type UtxoInfo = {
 
 export interface IBaseWallet {
   api: ApiPromise;
-  apiEndpoint: string | string[];
-  apiTimeout: number;
   wasm: any;
   loggingEnabled: boolean;
   fullParameters: any;
@@ -104,7 +102,7 @@ export interface IBaseWallet {
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy: boolean;
   updateApi(
-    apiEndpoint: string | string[],
+    api: string | string[] | ApiPromise,
     apiTimeout?: number,
     partialApiOptions?: Partial<ApiOptions>,
   ): ApiPromise;
