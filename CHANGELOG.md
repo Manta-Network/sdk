@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - [\#51](https://github.com/Manta-Network/sdk/pull/51) Update to MantaPay v1
 
 ### Changed
+- [\#156](https://github.com/Manta-Network/sdk/pull/156) Upgrade Polkadot.js SDK version to v10.1.4 and update BaseWallet Api constructor
 - [\#124](https://github.com/Manta-Network/sdk/pull/124) Upgrade manta-rs dependencies to v0.5.15.
 - [\#103](https://github.com/Manta-Network/sdk/pull/103) Update manta-rs to v0.5.12.
 - [\#102](https://github.com/Manta-Network/sdk/pull/102) Include sink accounts in ToPublic. Removes `assetIdToUInt8Array` function as it encodes values < 255 incorrectly, now changed to use polkadot.js utility function.
