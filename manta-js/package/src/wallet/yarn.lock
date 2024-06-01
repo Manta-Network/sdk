@@ -729,9 +729,9 @@ dns-equal@^1.0.0:
   integrity sha1-s55/HabrCnW6nBcySzR1PEfgZU0=
 
 dns-packet@^5.2.2:
-  version "5.3.1"
-  resolved "https://registry.yarnpkg.com/dns-packet/-/dns-packet-5.3.1.tgz#eb94413789daec0f0ebe2fcc230bdc9d7c91b43d"
-  integrity sha512-spBwIj0TK0Ey3666GwIdWVfUpLyubpU53BTCu8iPn4r4oXd9O14Hjg3EHw3ts2oed77/SeckunUYCyRlSngqHw==
+  version "5.4.0"
+  resolved "https://registry.yarnpkg.com/dns-packet/-/dns-packet-5.4.0.tgz#1f88477cf9f27e78a213fb6d118ae38e759a879b"
+  integrity sha512-EgqGeaBB8hLiHLZtp/IbaDQTL8pZ0+IvwzSHA6d7VyMDM+B9hgddEMa9xjK5oYnw0ci0JQ6g2XCD7/f6cafU6g==
   dependencies:
     "@leichtgewicht/ip-codec" "^2.0.1"
 
@@ -1370,16 +1370,6 @@ lower-case@^2.0.2:
   integrity sha512-7fm3l3NAF9WfN6W3JOmf5drwpVqX78JtoGJ3A6W0a6ZnldM41w2fV5D490psKFTpMds8TJse/eHLFFsNHHjHgg==
   dependencies:
     tslib "^2.0.3"
-
-manta-wasm-wallet-api@^1.5.1-dev-2:
-  version "1.5.1-dev-2"
-  resolved "https://registry.yarnpkg.com/manta-wasm-wallet-api/-/manta-wasm-wallet-api-1.5.1-dev-2.tgz#c9371f564178e3d29fb8353f949d0b91a234610f"
-  integrity sha512-hk7L0BJHggsPU6dwplX2a0UTYlJuZNLuNU3XvxYwvBNkwKWQcCyFeW72gzSMkKdYuurJs2PyZLCxJsDuP+hULQ==
-
-manta-wasm-wallet@^1.5.1-dev-2:
-  version "1.5.1-dev-2"
-  resolved "https://registry.yarnpkg.com/manta-wasm-wallet/-/manta-wasm-wallet-1.5.1-dev-2.tgz#22376b63d9929f6670e7fea7de736267c60d2b35"
-  integrity sha512-laHrdq44Mn5/1hcxcBDKlwmoVtBYuLKUnVP9Cp+Wf5rEu4QFu3nG4NrSpdrIXLGRlPTjE7aEEiGaE9Cto0MYnA==
 
 media-typer@0.3.0:
   version "0.3.0"
