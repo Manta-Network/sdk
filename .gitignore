@@ -1,7 +1,6 @@
 dist
 node_modules
 target
-Cargo.lock
 .pkg/
 .idea/
 .DS_Store
