@@ -26,8 +26,6 @@ export type GetStorageStateFromLocal = (
 
 export interface IBaseWallet {
   api: ApiPromise;
-  apiEndpoint: string | string[];
-  apiTimeout: number;
   wasm: any;
   loggingEnabled: boolean;
   fullParameters: any;
@@ -35,7 +33,7 @@ export interface IBaseWallet {
   saveStorageStateToLocal: SaveStorageStateToLocal;
   getStorageStateFromLocal: GetStorageStateFromLocal;
   walletIsBusy: boolean;
-  updateApi(apiEndpoint: string | string[], apiTimeout?: number): ApiPromise;
+  updateApi(api: string | string[] | ApiPromise, apiTimeout?: number): ApiPromise;
   disconnectApi(): Promise<boolean>;
   log(message: string, name?: string): void;
 }

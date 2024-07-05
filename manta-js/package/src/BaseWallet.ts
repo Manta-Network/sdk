@@ -14,8 +14,6 @@ import TaskSchedule, { TaskTimeoutError } from './utils/TaskSchedule';
 
 export default class BaseWallet implements IBaseWallet {
   api: ApiPromise;
-  apiEndpoint: string | string[];
-  apiTimeout: number;
   wasm: any;
   loggingEnabled: boolean;
   fullParameters: any;
@@ -28,7 +26,7 @@ export default class BaseWallet implements IBaseWallet {
 
   constructor(
     wasm: any,
-    apiEndpoint: string | string[],
+    api: string | string[] | ApiPromise,
     fullParameters: any,
     multiProvingContext: any,
     saveStorageStateToLocal: SaveStorageStateToLocal,
@@ -46,7 +44,7 @@ export default class BaseWallet implements IBaseWallet {
 
     this.taskSchedule = new TaskSchedule();
 
-    this.updateApi(apiEndpoint, apiTimeout, partialApiOptions);
+    this.updateApi(api, apiTimeout, partialApiOptions);
   }
 
   protected static log(
@@ -72,22 +70,24 @@ export default class BaseWallet implements IBaseWallet {
         : apiEndpoint;
       return new HttpProvider(endPoint);
     } else {
-      return new WsProvider(this.apiEndpoint, 2500, {}, apiTimeout);
+      return new WsProvider(apiEndpoint, 2500, {}, apiTimeout);
     }
   }
 
   updateApi(
-    apiEndpoint: string | string[],
+    api: string | string[] | ApiPromise,
     apiTimeout?: number,
     partialApiOptions?: Partial<ApiOptions>,
   ) {
     this.log('Initial api');
 
-    this.apiEndpoint = apiEndpoint;
-    this.apiTimeout = apiTimeout || 60 * 1000;
+    if (api instanceof ApiPromise) {
+      this.api = api;
+      return api;
+    }
 
     this.api = new ApiPromise({
-      provider: this.getApiProvider(apiEndpoint, apiTimeout),
+      provider: this.getApiProvider(api, apiTimeout || 60 * 1000),
       types: mantaConfig.TYPES,
       rpc: mantaConfig.RPC,
       ...partialApiOptions,
