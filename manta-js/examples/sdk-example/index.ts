@@ -91,7 +91,7 @@ const publishTransition = async (
   for (let i = 0; i < txs.length; i++) {
     await txs[i].signAndSend(
       polkadotConfig.polkadotAddress,
-      { nonce: -1 },
+      { nonce: -1, withSignedTransaction: true },
       () => {},
     );
   }
